@@ -6,7 +6,7 @@ When you're building your rules, you might find certain numbers/strings particul
 
 Simply writing in the tax rate every time you need it can be a bit of a pain, and causes headaches every time you need to update it. Instead, you can use **dynamic values** to store these values in one place, and reference them in your rules.
 
-![Dynamic Values](/static/images/advanced-features/values-1.png)
+![Dynamic Values](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/advanced-features/values-1.png)
 
 Dynamic values are great not only because they make your rules easier to maintain, but also because they make your rules more readable. Instead of seeing a number like `0.08` and wondering what it means, you can see a neat label like `Tax Rate` and know exactly what it's for.
 
@@ -18,19 +18,19 @@ import { Steps } from 'nextra/components'
 
 To create a dynamic value, open the Rulebricks dashboard, and click the "Values" tab.
 
-![Values Tab](/static/images/advanced-features/dynamic-values-tab.png)
+![Values Tab](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/advanced-features/dynamic-values-tab.png)
 
 ### Create a new value
 
 Scroll down to the "Dynamic Values" section, and click "Create New Value". Fill in a name, select a data type, and enter a value.
 
-![New Value](/static/images/advanced-features/creating-values.png)
+![New Value](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/advanced-features/creating-values.png)
 
 ### Use the value in your rule
 
 Now, you can reference this value in your rules. Simply click a comparison cell in your rule (matching the data type of the value), and click the variable mode toggle on the right of the little popup. You'll see a list of all the dynamic values you've created, and you can select the one you want to use.
 
-![Use Value](/static/images/advanced-features/values-1.png)
+![Use Value](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/advanced-features/values-1.png)
 
 </Steps>
 
@@ -43,4 +43,4 @@ The reason functions are listed alongside dynamic values is because they're trea
 1. Functions can only be used in "Response" columns of your rules, as outputs of your rules.
 2. To reference functions, instead of using the variable mode toggle, you create a "Function" type column, and type "$" to see a list of all the functions you've created and can use in the decision table editor.
 
-![Functions](/static/images/advanced-features/values-2.png)
+![Functions](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/advanced-features/values-2.png)

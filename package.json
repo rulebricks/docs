@@ -15,6 +15,7 @@
     "mini-css-extract-plugin": "^2.9.0",
     "moment": "^2.30.1",
     "next": "^14.2.3",
+    "next-sitemap": "^4.2.3",
     "nextra": "^2.13.4",
     "nextra-theme-docs": "^2.13.4",
     "patch-package": "^8.0.0",
@@ -28,7 +29,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "postinstall": "patch-package"
+    "postinstall": "patch-package",
+    "postbuild": "next-sitemap"
   },
   "devDependencies": {
     "@types/node": "20.12.7",

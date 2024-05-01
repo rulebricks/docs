@@ -3,9 +3,7 @@ User-agent: *
 Allow: /
 
 # Host
-Host: https://rulebricks.com
+Host: https://rulebricks.com/docs
 
 # Sitemaps
-Sitemap: https://rulebricks.com/sitemap.xml
-Sitemap: https://rulebricks.com/server-sitemap-index.xml
-Sitemap: https://rulebricks.com/server-sitemap.xml
+Sitemap: https://rulebricks.com/docs/sitemap.xml

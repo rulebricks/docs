@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:news="http://www.google.com/schemas/sitemap-news/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:mobile="http://www.google.com/schemas/sitemap-mobile/1.0" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1" xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">
+<url><loc>https://rulebricks.com/docs</loc><lastmod>2024-05-01T17:44:56.866Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://rulebricks.com/docs/advanced-features/condition-priorities</loc><lastmod>2024-05-01T17:44:56.867Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://rulebricks.com/docs/advanced-features/groups-and-hit-policies</loc><lastmod>2024-05-01T17:44:56.867Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://rulebricks.com/docs/advanced-features/scheduled-conditions</loc><lastmod>2024-05-01T17:44:56.867Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://rulebricks.com/docs/advanced-features/values-and-functions</loc><lastmod>2024-05-01T17:44:56.867Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://rulebricks.com/docs/api-reference</loc><lastmod>2024-05-01T17:44:56.867Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://rulebricks.com/docs/building-forms/creating-a-form</loc><lastmod>2024-05-01T17:44:56.867Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://rulebricks.com/docs/building-forms/editing-fields</loc><lastmod>2024-05-01T17:44:56.867Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://rulebricks.com/docs/building-forms/sharing-forms</loc><lastmod>2024-05-01T17:44:56.867Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://rulebricks.com/docs/getting-started/integration</loc><lastmod>2024-05-01T17:44:56.867Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://rulebricks.com/docs/getting-started/requests-and-responses</loc><lastmod>2024-05-01T17:44:56.867Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://rulebricks.com/docs/getting-started/start-building</loc><lastmod>2024-05-01T17:44:56.867Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://rulebricks.com/docs/getting-started/what-is-a-rule</loc><lastmod>2024-05-01T17:44:56.867Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://rulebricks.com/docs/integrating-rules/rule-flows</loc><lastmod>2024-05-01T17:44:56.867Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://rulebricks.com/docs/managing-rules/publishing-rules</loc><lastmod>2024-05-01T17:44:56.867Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://rulebricks.com/docs/managing-rules/rule-logging</loc><lastmod>2024-05-01T17:44:56.867Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://rulebricks.com/docs/managing-rules/testing-rules</loc><lastmod>2024-05-01T17:44:56.867Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://rulebricks.com/docs/private-deployment/getting-access</loc><lastmod>2024-05-01T17:44:56.867Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://rulebricks.com/docs/private-deployment/rulebricks-on-aws</loc><lastmod>2024-05-01T17:44:56.867Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://rulebricks.com/docs/private-deployment/rulebricks-on-gcp</loc><lastmod>2024-05-01T17:44:56.867Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://rulebricks.com/docs/security/service-level-agreement</loc><lastmod>2024-05-01T17:44:56.867Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://rulebricks.com/docs/security/subprocessor-list</loc><lastmod>2024-05-01T17:44:56.867Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://rulebricks.com/docs/security/system-architecture</loc><lastmod>2024-05-01T17:44:56.867Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://rulebricks.com/docs/security/terms-of-service</loc><lastmod>2024-05-01T17:44:56.867Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://rulebricks.com/docs/video-introduction</loc><lastmod>2024-05-01T17:44:56.867Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://rulebricks.com/docs/workspace-management/customer-portal</loc><lastmod>2024-05-01T17:44:56.867Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://rulebricks.com/docs/workspace-management/inviting-collaborators</loc><lastmod>2024-05-01T17:44:56.867Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://rulebricks.com/docs/workspace-management/updating-your-account</loc><lastmod>2024-05-01T17:44:56.867Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+</urlset>

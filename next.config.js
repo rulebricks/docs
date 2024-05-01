@@ -26,5 +26,5 @@ module.exports = {
 
     return withNextra().webpack(config, options)
   },
-  assetPrefix: 'https://docs.rulebricks.com',
+  basePath: '/docs',
 }
