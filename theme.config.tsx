@@ -1,8 +1,8 @@
 import React from 'react'
 import { DocsThemeConfig } from 'nextra-theme-docs'
 import NavbarLogo from './components/NavbarLogo'
-import { IconCube3dSphere } from '@tabler/icons-react'
-import { timeStamp } from 'console'
+import { IconCube3dSphere, IconHistory } from '@tabler/icons-react'
+import moment from 'moment'
 
 const config: DocsThemeConfig = {
   logo: NavbarLogo,
@@ -46,8 +46,9 @@ const config: DocsThemeConfig = {
   },
   gitTimestamp: ({ timestamp }) => {
     return (
-      <div className="text-sm text-white">
-        Last updated: {timestamp.toISOString()}
+      <div className="text-sm text-gray-500 opacity-65">
+        <IconHistory className="w-4 h-4 inline-block mr-1.5" />
+        This page was last updated {moment(timestamp).fromNow()}
       </div>
     )
   },
