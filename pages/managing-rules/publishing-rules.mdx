@@ -1,0 +1,42 @@
+# Publishing rules
+
+Once you've created a rule, you will need to publish it to make it available for use in your applications. Publishing a rule enables you to run it via the Rulebricks API, turn it into a Rulebricks form, and unlock it for use in Rule Flows.
+
+Every time you publish a rule, a new version is created, and the changes you've made since your last publish are saved. You may publish and unpublish your rule as many times as you like.
+
+import { Steps } from 'nextra/components'
+import { Callout } from 'nextra/components'
+
+<Steps>
+
+### Open the publish menu
+
+To publish your rule, open the rule you want to publish in the Rulebricks editor. In the top right corner of the rule editor, you'll see a "Publish" button. Click this button to open the publish menu.
+
+![Publish Button](/static/images/managing-rules/publishing-rules-1.png)
+
+### Publish your rule
+
+In the publish menu, you'll see a history of prior versions.
+
+When you're ready, click the "Publish" button to publish your rule.
+
+![Publish Menu](/static/images/managing-rules/publishing-rules-2.png)
+
+<Callout type="info" emoji="">
+  This menu is evolving and will soon include more features, such as the ability
+  to understand the changes between versions, and to revert to a previous
+  version.
+</Callout>
+
+</Steps>
+
+---
+
+That's all there is to it. Note that any further changes you make to your rule in the editor will not be reflected in the published version until you publish another version. You are free to publish and unpublish your rule as many times as you like.
+
+<Callout emoji="">
+  Note that new versions of your rule will take effect roughly 1 minute after
+  you publish them. This is because we'll need to update our caches to reflect
+  the latest version of your rule.
+</Callout>

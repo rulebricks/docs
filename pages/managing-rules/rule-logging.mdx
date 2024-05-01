@@ -1,0 +1,31 @@
+# Rule Logs
+
+Rule logs are a powerful tool for debugging and understanding how your rules are being used. They provide a detailed history of every time your rule has been run, and the results of those runs.
+
+Logs in Rulebricks, on most plans, are retained for 3 days, and are available in the Rulebricks dashboard a few seconds after a rule is run.
+
+Logs are a paid feature, and are available on any paid plan.
+
+## Viewing logs
+
+To view the logs for a rule, open the Rulebricks dashboard and navigate to the "Logs" tab.
+
+Here, you'll see a list of all the times rules & flows have been run, along with the results of each run, down to the exact data that was sent to the rule, result returned, and conditions met.
+
+![Logs](/static/images/managing-rules/rule-logs-1.png)
+
+Rules are incredibly detailed, containing everything from the IP address that invoked the rule API to the conditions that were met/unmet, and can be filtered in various ways.
+
+In this particular example, we can see that the rule failed because some data was missing from the request object.
+
+![Logs2](/static/images/managing-rules/rule-logs-2.png)
+
+## Logs API
+
+import { Callout } from 'nextra/components'
+
+<Callout type="info" emoji="">
+  Logs in Rulebricks will soon be available for longer, and will be retrievable
+  via the Rulebricks API. This will allow you to access logs programmatically,
+  and build your own custom logging solutions or BI tools.
+</Callout>

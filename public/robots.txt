@@ -1,0 +1,11 @@
+# *
+User-agent: *
+Allow: /
+
+# Host
+Host: https://rulebricks.com
+
+# Sitemaps
+Sitemap: https://rulebricks.com/sitemap.xml
+Sitemap: https://rulebricks.com/server-sitemap-index.xml
+Sitemap: https://rulebricks.com/server-sitemap.xml

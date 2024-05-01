@@ -1,0 +1,23 @@
+### **Configuration**
+
+Docker Compose via and EC2 t4g.medium (ARM instance) and a small (20GB SSD) EBS volume. Postgres is hosted locally, so `terraform destroy` without a manually provisioned and attached volume will cause data destruction. For robust deployment using this method, we recommend also configuring EBS snapshots to recover data in the case of an outage.
+
+### **Instructions**
+
+Running the single terraform script provided to you via `terraform apply` should be all you need to create your own, private instance of Rulebricks, but there are two major things to keep in mind before execution.
+
+1. You will need to update your DNS records **quickly** after terraform completes creating resources. We recommend deciding on a subdomain, and logging in and pulling up your DNS management console for wherever your primary domain is hosted **before** running terraform.
+2. There are certain defaults inside the terraform script you may wish to customize, such as the locations/regions of any resources created. Like any terraform script you execute, we recommend a complete read-through to thoroughly understand the resources being created. Things in the script you may need to line up, should you edit the deployment region:
+    1. Region (any valid AWS region e.g. us-west-1)
+    2. Availability Zone (any valid zone within the selected region e.g. us-west-1a)
+    3. AMI ID (Public AMI ID corresponding to `Amazon Linux 2023 AMI ARM 64-bit (HVM), SSD Volume Type` ex: ami-0b660115243d1c4b6) (These ID’s can relatively easily be looked up on the AWS console, just ensure the correct region is set first)
+
+### **Receiving Updates**
+
+Live updates using our compose scheme cause a small amount of downtime (1 min/update received)– unless a blue-green scheme is engineered manually, which we do not have. 
+
+Your deployment will automatically scan for updates via watchtower at a rather high frequency of once a minute– this can be disabled and will regardless be adjusted down and towards periods of low usage as our private cloud offering matures.
+
+### **Resolving Issues**
+
+Issues with deployment can usually be resolved by reading the contents of `/var/log/user-data.log` (AWS’s startup “user data” script logs)

@@ -1,0 +1,16 @@
+# Rulebricks Subprocessors
+
+| Subprocessor | Technology Provided   | Description                                                   | Website                            |
+|--------------|-----------------------|---------------------------------------------------------------|------------------------------------|
+| Vercel       | Hosting & Edge Caching | Provides cloud hosting and edge caching services. Vercel is used for hosting the Next.js application, which includes React and Node.js environments. They also manage the Edge Cache to enhance content delivery speeds. | [Vercel](https://vercel.com)       |
+| Supabase     | Cloud Database        | Acts as a backend service. Supabase offers a PostgreSQL database service, authentication, real-time subscriptions, and storage capabilities. It is used to manage and store all the application data in the cloud securely. | [Supabase](https://supabase.com)   |
+| Upstash      | Redis Cache           | Provides managed Redis services. Upstash is used for caching frequently accessed data to reduce latency and improve the performance of database operations. | [Upstash](https://upstash.com)     |
+
+## Details
+
+- **Next.js**: A React framework that enables server-side rendering and static site generation, which is hosted on Vercel. _Region – Vercel – IAD1 (Washington, D.C.)_
+- **Node 16**: Part of the backend framework running on Vercel, handling server-side logic.
+- **Vercel Edge Cache**: Utilizes Vercel's global network to cache and serve static and dynamic content at the edge, closest to the users, for faster performance.
+- **Supabase (Cloud)**: A cloud-hosted backend-as-a-service that provides not only database solutions but also handles authentication and real-time data functionality. _Region – Supabase – US East (N. Virginia)_
+- **Redis (Upstash)**: Utilized for its fast data retrieval capabilities, Rulebricks uses Upstash to manage user rate limits.
+

@@ -1,0 +1,52 @@
+# Sharing Forms
+
+Congrats– you've created a form! Now it's time to share it with the world. There're a few ways you can do this, and a few things you need to keep in mind, so we'll walk through them here.
+
+## Your form is live
+
+When you create a form in Rulebricks, it's automatically public. This means that anyone with the link can access and submit the form. This is great for sharing your form with others, but it also means you need to be careful about who you share the link with.
+
+Each time someone submits your form, the data is sent to your rule, and the result is displayed to the user. This uses up one of your monthly rule executions/runs, so be mindful of this as you share your form. Of course, you can always upgrade your plan if you need more rule executions/runs.
+
+## Sharing your form
+
+To share your form, you can simply copy the URL from the "Sharing" section of the sidebar in the form editor. This URL is unique to your form, and can be shared with anyone you'd like to fill out the form.
+
+![Form Sharing](/static/images/building-forms/try-form.png)
+
+## Three options
+
+There are three ways you can share/use your Rulebricks forms. Each of the menus below is available in the sidebar of the form editor, so simply scroll down to find them.
+
+import { Tabs } from 'nextra/components'
+
+<Tabs
+  items={[
+    'Sharing the URL',
+    'Embedding on your website',
+    'Using an integration',
+  ]}
+>
+  <Tabs.Tab>
+    You can share your form by copying the URL from the "Sharing" section of the sidebar in the form editor. This URL is unique to your form, and can be shared with anyone you'd like to fill out the form.
+
+![Form Sharing](/static/images/building-forms/sharing-forms-url.png)
+
+  </Tabs.Tab>
+  <Tabs.Tab>
+  You embed your form on your website by copying the embed code from the "Embed" section of the sidebar. This will allow you to display your form directly on your website, so users can fill it out without leaving your site.
+
+![Form Embed](/static/images/building-forms/sharing-forms-embed.png)
+
+  </Tabs.Tab>
+  <Tabs.Tab>
+    You can use an integration to connect your form to other tools you use in your business. For example, you can use Zapier to connect your form to your CRM, or to send an email notification when someone fills out your form.
+
+    This approach focuses less on the way you share the form, and more on what you do with the data once it's submitted.
+
+    To use this, simply provide a Webhook URL to the tool you want to integrate with, and we'll send the form data, along with the rule result, to that URL whenever a form is submitted.
+
+![Form Integration](/static/images/building-forms/sharing-forms-integration.png)
+
+  </Tabs.Tab>
+</Tabs>

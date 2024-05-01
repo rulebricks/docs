@@ -1,0 +1,268 @@
+# Build your first rule
+
+Let’s get started building a rule. First, go to the [dashboard](https://rulebricks.com/dashboard). If this is your first time creating a rule, it will look something like this:
+
+![1670951979.png](/static/images/Build%20your%20first%20rule/1670951979.png)
+
+---
+
+import { Steps } from "nextra/components";
+
+<Steps>
+
+### Step 1
+
+# Using the rule editor
+
+Click the “Create Rule” button in the top right. You’ll be presented with a dialog; fill out the request.
+
+![1670952087.png](/static/images/Build%20your%20first%20rule/1670952087.png)
+
+### Step 2
+
+Your rule will be created, and you’ll be dropped into the **rule editor**. Some sample data has been loaded for you.
+
+![1670952129.png](/static/images/Build%20your%20first%20rule/1670952129.png)
+
+</Steps>
+
+Let’s go over the sections of the editor.
+
+## The Rule Table
+
+The **rule table** is the table view in the left-center area. This contains the data that defines your rule.
+
+The rule table is split into two sections, **request** and **response.** You can always tell which section a column is in by the labels above the table. They scroll horizontally with the table.
+
+At the top of each column is the **column header**. In black, the column’s name is listed. By default, this name is automatically generated from the column key. As you know, each column corresponds to a key in the rule’s request or its response. The key is included in the header cell for each column in light gray. The column header also includes an icon indicating the type.
+
+Rulebricks supports several types of data that are commonly used in decision-making.
+
+import { Tabs } from "nextra/components";
+import { Callout } from 'nextra/components';
+import {
+  IconBrackets,
+  IconCalendar,
+  Icon123,
+  IconAlphabetLatin,
+  IconCheckbox,
+  IconMathFunction
+} from "@tabler/icons-react";
+
+<Tabs items={['List', 'Number', 'Date', 'Text', 'Boolean', 'Function']}>
+  <Tabs.Tab>
+
+    <IconBrackets size={64} className="bg-sky-100 text-sky-800 rounded-md border border-sky-300 p-2"/>
+    
+    A list is a collection of items. Each item in the list can be of a different type. For example, a list of numbers could contain the numbers 1, 2, and 3.
+    
+    Example:
+        
+        ```jsx
+        [1, 2, 3]
+        ```
+
+    Example operations on lists: Checking if a list contains a value, checking if a list is empty, and checking if a list has a certain length, among others.
+  </Tabs.Tab>
+  <Tabs.Tab>
+
+  <Icon123 size={64} className="bg-red-100 text-red-800 rounded-md border border-red-300 p-2"/>
+
+  A number is a numerical value. It can be an integer or a floating-point number. For example, the number 3.14 is a floating-point number.
+
+  Example:
+
+      ```jsx
+      3.14
+      ```
+
+  Example operations on numbers: Checking if a number is greater than another number, checking if a number is less than another number, and checking if a number is equal to another number, among others.
+  </Tabs.Tab>
+  <Tabs.Tab>
+  
+  <IconCalendar size={64} className="bg-orange-200 text-orange-500 rounded-md border border-orange-500 p-2"/>
+
+  A date is a calendar date and time. For example, the date and time December 6, 2022, at 6:43:38 PM UTC can be represented as 2022-12-06T18:43:38+0000.
+
+  Example:
+
+      ```jsx
+      "2022-12-06T18:43:38+0000"
+      ```
+
+  Example operations on dates: Checking if a date is before another date, checking if a date is after another date, and checking if a date is within the last 30 days, among others.
+  </Tabs.Tab>
+  <Tabs.Tab>
+  
+  <IconAlphabetLatin size={64} className="bg-green-200 text-green-500 rounded-md border border-green-500 p-2"/>
+
+  Text is a string of characters. For example, the text "Hello, world!" is a string.
+
+  Example:
+
+      ```jsx
+      "Hello, world!"
+      ```
+
+  Example operations on text: Checking if a text contains another text, checking if some text is equal to another text, and checking if text is a valid email, among others.
+  </Tabs.Tab>
+  <Tabs.Tab>
+  
+  <IconCheckbox size={64} className="bg-purple-200 text-purple-500 rounded-md border border-purple-500 p-2"/>
+
+  A boolean is a logical value that can be either true or false. For example, the value true represents the logical value of true.
+
+  Example:
+
+      ```jsx
+      true
+      ```
+
+  Example operations on booleans: Checking if a boolean is true or false.
+  </Tabs.Tab>
+  <Tabs.Tab>
+  <IconMathFunction size={64} className="bg-neutral-200 text-neutral-500 rounded-md border border-neutral-500 p-2"/>
+
+  A function is a mathematical expression or a piece of code that can be evaluated to produce a value. For example, the function `x + 2` can be evaluated to produce a value.
+
+  <Callout>
+    Note that functions can only be used in the response section of a rule, to compute a value based on the request that the rule should return.
+  </Callout>
+
+  Example:
+
+      ```jsx
+      x + 2
+      ```
+  </Tabs.Tab>
+</Tabs>
+
+---
+
+Below the table headers are the **condition rows**. Those contain the conditions that define your rule (in the request section) and the values that the rule returns (in the response section). You can edit any cell by clicking the pencil icon that appears when you hover over the cell, or by double-clicking the cell.
+
+## The Sidebar
+
+On the right side is the **sidebar**. It has three tabs: the **request tab**, **response tab**, and **test tab**. Let’s go over these one by one, while building out our first rule.
+
+<Steps>
+
+### Step 1
+
+The **request tab** allows you to edit the schema for requests. This will modify the columns, including their names and types. To provide a sample request object, open the disclosure labeled **Request Format**.
+
+![1670953366.png](/static/images/Build%20your%20first%20rule/1670953366.png)
+
+A sample JSON object has been provided, but you can replace it with your own. For example, try pasting the following JSON object:
+
+```jsx
+{
+	"price": 40,
+	"date_purchased": "2022-12-06T18:43:38+0000",
+	"gift": false,
+}
+```
+
+### Step 2
+
+Then, press **Update Columns**. The table will update to reflect this object by creating three columns corresponding to the three keys, **price**, **date_purchased**, and **gift**. Notice that the types were automatically inferred from the object. **Note:** **removing a column from the JSON schema will delete all of the data in its cells**.
+
+To edit a specific column, you can select its key in the dropdown under the **Edit Columns** header.
+
+![1670973054.png](/static/images/Build%20your%20first%20rule/1670973054.png)
+
+Here, you can change the column’s name, type, and default value. Changing the type of a column will clear any data stored in that column.
+
+You can also set whether the column is visible or not. Columns that have data in them cannot be hidden, and if there’s only one column in the section, you can’t hide it either.
+
+### Step 4
+
+The **response tab** works pretty much like the request tab. The only difference is that you can’t hide response columns. If you’re following along with this guide, try pasting the following JSON and hitting **Update Columns.**
+
+```jsx
+{
+	"result": true
+}
+```
+
+### Step 5
+
+The **test tab** allows you to _locally_ test your rule against a particular request. That is, it will not test that the rule is actually available online- it just evaluates your conditions within your web browser.
+
+If you pasted the two JSON values above and updated your table schema, your table should look like this:
+
+![1670973460.png](/static/images/Build%20your%20first%20rule/1670973460.png)
+
+<Steps>
+
+#### Part 1
+
+Try adding a condition to the price column on the left, checking if the price is greater than 10.
+
+![1670973658.png](/static/images/Build%20your%20first%20rule/1670973658.png)
+
+#### Part 2
+
+Finally, add the value **true** to the result column on the right.
+
+![1670973705.png](/static/images/Build%20your%20first%20rule/1670973705.png)
+
+Now the table looks like this:
+
+![1670973749.png](/static/images/Build%20your%20first%20rule/1670973749.png)
+
+</Steps>
+
+### Step 6
+
+<Steps>
+
+#### Part 1
+
+Great, you’re ready to test the rule. Open the test tab and paste the following JSON object. Then press the **Test** button.
+
+```jsx
+{
+	"price": 20
+}
+```
+
+Your screen should now look like this. In the sidebar, you can see the response object that Rulebricks generated along with the HTTP status code returned with the request. In this case, the test JSON matched the first row, which is why all three cells in the request section are highlighted in green. Then, since that row succeeded, Rulebricks used the response section of that row to generate the response JSON— that’s why the cell with **true** in it is highlighted in blue.
+
+![1670973843.png](/static/images/Build%20your%20first%20rule/1670973843.png)
+
+#### Part 2
+
+Now, let’s try a different price. Replace the value **20** with **5** in the test JSON object, and press **Test** again.
+
+![1670974082.png](/static/images/Build%20your%20first%20rule/1670974082.png)
+
+</Steps>
+
+### Step 7
+
+Oops! Since the price was not greater than 10, the first cell in the first row did not succeed, and the row as a whole failed. Since no rows succeeded, Rulebricks could not generate a response object. In this case, an HTTP 400 error is returned.
+
+<Steps>
+
+#### Part 1
+
+To fix this issue, click the **Add Row** button in the navbar. This adds a blank row.
+
+![1670974242.png](/static/images/Build%20your%20first%20rule/1670974242.png)
+
+#### Part 2
+
+Now, replace the value in the result column of the second row with **false**. Press **Test** again.
+
+![1670974308.png](/static/images/Build%20your%20first%20rule/1670974308.png)
+
+</Steps>
+
+This time, the first row failed, but the second row succeeded! This is because **Any** will match any value. Then, Rulebricks used the response section of the second row to generate the response. Since at least one row was successful, the HTTP code is 200 OK.
+
+</Steps>
+
+---
+
+That’s it! You’ve built and tested your first rule. Continue to the next section to learn how to deploy the rule to the cloud.

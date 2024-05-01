@@ -1,0 +1,46 @@
+# Dynamic Values & Functions
+
+## Dynamic Values
+
+When you're building your rules, you might find certain numbers/strings particularly repetitive. For example, you might have a rule that calculates the price of a product, and you want to use the same tax rate across multiple rules.
+
+Simply writing in the tax rate every time you need it can be a bit of a pain, and causes headaches every time you need to update it. Instead, you can use **dynamic values** to store these values in one place, and reference them in your rules.
+
+![Dynamic Values](/static/images/advanced-features/values-1.png)
+
+Dynamic values are great not only because they make your rules easier to maintain, but also because they make your rules more readable. Instead of seeing a number like `0.08` and wondering what it means, you can see a neat label like `Tax Rate` and know exactly what it's for.
+
+import { Steps } from 'nextra/components'
+
+<Steps>
+
+### Navigate to the Values tab
+
+To create a dynamic value, open the Rulebricks dashboard, and click the "Values" tab.
+
+![Values Tab](/static/images/advanced-features/dynamic-values-tab.png)
+
+### Create a new value
+
+Scroll down to the "Dynamic Values" section, and click "Create New Value". Fill in a name, select a data type, and enter a value.
+
+![New Value](/static/images/advanced-features/creating-values.png)
+
+### Use the value in your rule
+
+Now, you can reference this value in your rules. Simply click a comparison cell in your rule (matching the data type of the value), and click the variable mode toggle on the right of the little popup. You'll see a list of all the dynamic values you've created, and you can select the one you want to use.
+
+![Use Value](/static/images/advanced-features/values-1.png)
+
+</Steps>
+
+## Functions
+
+Functions are one of the most powerful features in Rulebricks. They combine Rulebricks with the power of JavaScript, allowing you to write custom code that can be used in your rules to calculate results in your rules.
+
+The reason functions are listed alongside dynamic values is because they're treated similarly in the Rulebricks editor. You can create a function in the same place, and then reference it in your rules. But there are two key differences:
+
+1. Functions can only be used in "Response" columns of your rules, as outputs of your rules.
+2. To reference functions, instead of using the variable mode toggle, you create a "Function" type column, and type "$" to see a list of all the functions you've created and can use in the decision table editor.
+
+![Functions](/static/images/advanced-features/values-2.png)

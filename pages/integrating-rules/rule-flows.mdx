@@ -1,0 +1,55 @@
+# Rule Flows
+
+![Rule Flows](/static/images/integrating-rules/flow-reactivity.gif)
+
+Rule Flows are a powerful way to chain together multiple rules, alongside calls to external services, and create complex decision-making workflows.
+
+Rule Flows are particularly useful when you have a series of decisions that need to be made in a specific order, or when you'd like to separate logic into multiple rules for easier maintenance of your decision-making logic.
+
+import { Steps } from 'nextra/components'
+
+## Creating a Rule Flow
+
+<Steps>
+
+### Navigate to the Flows tab
+
+Open the Rulebricks dashboard, and click the "Flows" tab.
+
+![Flows Tab](/static/images/integrating-rules/flows-tab.png)
+
+### Create a new flow
+
+Click the "Create Flow" button to create a new Rule Flow. **Note that in order to create a Rule Flow, you must have at least one rule created and published in your workspace** to use as a starting point for your flow.
+
+![Create Flow](/static/images/integrating-rules/create-flow.png)
+
+Upon creating a new flow, you'll be taken to the Rule Flow editor, where you can drag and drop other published rules in your workspace from the sidebar onto the canvas, and connect them together to create a flow.
+
+There are a few other nodes you can add to your flow as well, such as the code execution node, which allows you to make calls to external services, amongst other things, and an important **Result Object** node, which is the final output of your flow.
+
+![Rule Flow Editor](/static/images/integrating-rules/flow-start.png)
+
+### Connect your nodes
+
+Try adding a few rules to your flow, and connecting them together. You can drag and drop the nodes around the canvas, and connect them together by dragging from an output handle of one node to the input of another.
+
+![Rule Flow Editor](/static/images/integrating-rules/flow-edit.png)
+
+</Steps>
+
+---
+
+### Flow Reactivity
+
+The Rulebricks Flow editor is "reactive", meaning that as you make changes to rule input fields in your flow, the editor will automatically update the results of your flow in real-time. This makes it easy to see how your flow behaves as you build it out.
+
+Reactivity applies to all sequences of nodes until code execution nodes are reached, at which point the flow will pause and wait for you to manually run the code execution node using the button on it before continuing. This is to ensure any external services you're calling are only called when you're ready and are not spammed with requests.
+
+import { Callout } from 'nextra/components'
+
+<Callout type="info">
+  Eventually, we plan to add more features to Rule Flows, such as the ability to
+  natively trigger flows from events in other popular business applications.
+  Stay tuned!
+</Callout>

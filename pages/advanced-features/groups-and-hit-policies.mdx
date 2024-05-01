@@ -1,0 +1,65 @@
+# Groups & Hit Policies
+
+In Rulebricks, conditions in a decision table can be grouped in various ways. Often, this grouping functionality provides an elegant solution to situations where your decision tables would otherwise become large and unwieldy.
+
+Let's take a look at how groups work in Rulebricks, and how you can use them to organize your decision tables.
+
+---
+
+import { Steps } from 'nextra/components'
+
+<Steps>
+
+### Creating a group
+
+To create a group, select the conditions you want to group together, and select the "Group" icon from the toolbar. If you are confused which icon is the "Group" icon, hover over the icons to see their tooltips.
+
+![Group Icon](/static/images/advanced-features/group-rows.png)
+
+### Explore the group's settings
+
+Once you've created a group, you can open the group settings menu by clicking either the group indicator, or any row's settings icon within the group.
+
+![Group Settings](/static/images/advanced-features/settings-openers.png)
+
+You should see a menu that allows you to configure the group's hit policy, and other settings.
+
+![Group Settings Menu](/static/images/advanced-features/group-settings-menu.png)
+
+### Configure the group's hit policy
+
+The hit policy determines how the output of the decision table is calculated. They are outlined in the menu you just opened, and we'll cover them in more detail below.
+
+![Hit Policy](/static/images/advanced-features/hit-policies.png)
+
+1. #### List Aggregation
+
+List aggregation is the default group hit policy in Rulebricks. It allows you to return a list of all satisfied results from the decision table. This is useful when you want to return multiple results from a single rule, instead of stopping at the first result for which all conditions are met.
+
+An example of where this might be useful is in a rule that calculates discounts for a customer based on a variety of conditions. Instead of returning the first discount that applies, you can return all discounts that apply.
+
+import { Callout } from 'nextra/components'
+
+<Callout type="warning">
+  Note that because list aggregation returns a list, rather than a single
+  object, certain features like Rulebricks Forms and Flows may not work as
+  expected.
+</Callout>
+
+2. #### Object Aggregation
+
+Object aggregation works differently from list aggregation in that it returns a single object, rather than a list of objects. For each satisfied condition in the group, the object aggregation hit policy will identify any new non-null response dimensions and add them to the output object.
+
+For example, if you have a group with two conditions, and the first condition returns a percentage discount of 10% but a flat price of `null`, and the second condition returns a flat price of $5 but a percentage discount of `null`, the object aggregation hit policy will return an object with both the percentage discount and the flat price. This is useful when you want to return a single object that contains all the results from the decision table.
+
+3. #### Value Aggregation
+
+Value aggregation in Rulebricks groups is similar to object aggregation, but rather than simply filling in non-null response dimensions, it will actually try to add the values together. This is useful when you want to return a single value that is the sum of all the values from response rows satisfied in the decision table.
+
+</Steps>
+
+---
+
+You can visually identify groups in your decision table by the group indicator, which is a small colored circle that appears to the left of the group's conditions. Different groups are assigned random unique colors.
+
+![Group Indicator](/static/images/advanced-features/group-dots.png)

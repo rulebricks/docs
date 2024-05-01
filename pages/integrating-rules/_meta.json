@@ -1,0 +1,9 @@
+{
+    "rule-flows": "Flows on Rulebricks",
+    "zapier": {
+        "title": "Zapier Integration ↗",
+        "type": "page",
+        "href": "https://zapier.com/apps/rulebricks/integrations",
+        "newWindow": true
+      }
+}

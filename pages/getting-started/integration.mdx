@@ -1,0 +1,29 @@
+# Go live and integrate your rule
+
+Once you’ve finished configuring and testing your rule, it's time to publish your rule, and integrate it into your workflows.
+
+You'll need to decide, given the technologies your business already uses, what the best way to integrate it into your existing systems looks like.
+
+We offer two primary ways to integrate Rulebricks into your workflows that nearly all business software can integrate with: via API, and via Zapier.
+
+## Via API
+
+A few API endpoints are made available for developers to effectively integrate a Rulebricks decision from anywhere.
+
+The endpoints below all require the `x-api-key` header (with the API key found on your dashboard), and follow the URL: `[https://rulebricks.com/api/v1](https://rulebricks.com/api/v1)`
+
+`/solve/[slug]` – **POST** your JSON request data to this endpoint to run your rule
+
+`/flows/[id]` – **POST** your JSON request data to a Rule Flow you've created using this rule to run it as part of a larger sequence
+
+Read more about these endpoints in [API Reference](/api-reference).
+
+## Via Zapier
+
+Rulebricks offers a powerful Zapier integration that allows you to create and use rules when you need to make complex decisions in your Zaps for your business, especially decisions you would like to make editable to non-Zapier users.
+
+To use the integration, discover the action “Make Decision in Rulebricks” in your Zap, after accepting our invitation to use our action.
+
+![Untitled](/static/images/Go%20live%20and%20integrate%20your%20rule/Untitled.png)
+
+The action will guide you fully through the process of connecting your Rulebricks account to Zapier, connecting a rule to your Zap, and finally mapping data in your automation to send to the rule. If you ever run into issues with the action that do not seem clear, try deleting and re-creating the entire step, and if you’re still stuck, send us a quick email.

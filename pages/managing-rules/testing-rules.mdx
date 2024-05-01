@@ -1,0 +1,45 @@
+# Testing Rules
+
+Testing rules is a critical part of the rule development process. Rulebricks provides powerful testing capabilities that allow you to ensure your rules are working as expected before you publish them.
+
+Testing rules is extremely straightforward, since we're really only asking one question: _Given certain input data, does the rule return the expected output?_
+
+## Testing in the Rulebricks Editor
+
+import { Steps } from 'nextra/components'
+
+<Steps>
+
+### Open the rule editor
+
+To test a rule, open the rule you want to test in the Rulebricks editor, open the sidebar, and click the "Test" tab.
+
+![Rule Editor](/static/images/managing-rules/testing-rules-1.png)
+
+You'll notice there are two test modes available: "Single Request", and "Suite".
+
+### Single Request
+
+In "Single Request" mode, you can test your rule with a single request object. This is useful for testing your rule with a specific set of data, particularly as you're building out your rule.
+
+To test your rule with a single request object, simply paste a particular request object you're interested in handling into the JSON text editor, and click "Test".
+
+![Single Request](/static/images/managing-rules/testing-rules-single-request.png)
+
+You'll see the result of the rule displayed in the "Results" section, along with a detailed breakdown of the rule execution represented visually on the decision table.
+
+Cells that are green represent conditions that were met, while cells that are red represent conditions that were not met. Yellow cells represent the results of the rule that your rule returned.
+
+It is possible at this step you encounter an error, which likely means you do not handle the data you provided in your rule.
+
+### Suite – Regression Testing
+
+In "Suite" mode, you can test your rule with multiple request objects at once. This is useful for testing your rule with a variety of data, and ensuring it behaves as expected in a variety of scenarios.
+
+This mode is particularly useful for regression testing, where you want to ensure that changes you make to your rule don't break existing functionality.
+
+![Suite](/static/images/managing-rules/testing-rules-suite.png)
+
+A quick way to build out a testing suite is to copy and paste a variety of request objects into the JSON text editor under "Single Request", click "Test", copy the result, and save a new test case in Suite mode using the results, alternating between the two modes to generate payloads.
+
+</Steps>

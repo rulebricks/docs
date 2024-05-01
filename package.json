@@ -1,0 +1,39 @@
+{
+  "name": "rulebricks-docs",
+  "version": "0.0.1",
+  "description": "Rulebricks documentation project",
+  "author": "Sid Garimella <sid@rulebricks.com>",
+  "homepage": "https://rulebricks.com",
+  "dependencies": {
+    "@scalar/api-reference": "^1.22.17",
+    "@scalar/api-reference-react": "^0.1.59",
+    "@tabler/core": "^1.0.0-beta20",
+    "@tabler/icons-react": "^3.2.0",
+    "add": "^2.0.6",
+    "css-loader": "^7.1.1",
+    "ignore-loader": "^0.1.2",
+    "mini-css-extract-plugin": "^2.9.0",
+    "next": "^14.2.3",
+    "nextra": "^2.13.4",
+    "nextra-theme-docs": "^2.13.4",
+    "patch-package": "^8.0.0",
+    "postinstall-postinstall": "^2.1.0",
+    "raw-loader": "^4.0.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "yarn": "^1.22.22"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "postinstall": "patch-package"
+  },
+  "devDependencies": {
+    "@types/node": "20.12.7",
+    "autoprefixer": "^10.4.19",
+    "postcss": "^8.4.38",
+    "tailwindcss": "^3.4.3",
+    "typescript": "5.4.5"
+  }
+}
