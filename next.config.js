@@ -1,4 +1,5 @@
 const { webpack } = require('next/dist/compiled/webpack/webpack')
+const { redirect } = require('next/dist/server/api-utils')
 
 const withNextra = require('nextra')({
   theme: 'nextra-theme-docs',
@@ -27,5 +28,18 @@ module.exports = {
     return withNextra().webpack(config, options)
   },
   basePath: '/docs',
-  assetPrefix: 'https://docs.rulebricks.com/docs',
+  assetPrefix:
+    process.env.NODE_ENV == 'development'
+      ? ''
+      : 'https://docs.rulebricks.com/docs',
+  async redirects() {
+    return [
+      {
+        source: '/',
+        destination: '/docs',
+        basePath: false,
+        permanent: false,
+      },
+    ]
+  },
 }
