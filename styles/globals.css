@@ -229,3 +229,24 @@ html.dark .scalar-api-reference {
 .request-body-description {
   text-transform: none !important;
 }
+
+.references-classic-header-container {
+  display: none !important;
+}
+
+.section.introduction-section {
+  padding-top: 20px !important;
+}
+
+.scalar-api-reference {
+  min-height: unset !important;
+}
+
+.api-client-drawer-exit {
+  background-color: #000000 !important;
+  width: -webkit-fill-available !important;
+}
+
+.section-header.tight {
+  display: none !important;
+}
