@@ -4,21 +4,19 @@ Let’s get started building a rule. First, go to the [dashboard](https://rulebr
 
 ![1670951979.png](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/Build%20your%20first%20rule/1670951979.png)
 
----
+## Start Building
 
 import { Steps } from 'nextra/components'
 
 <Steps>
 
-### Step 1
-
-# Using the rule editor
+### Create a new rule
 
 Click the “Create Rule” button in the top right. You’ll be presented with a dialog; fill out the request.
 
 ![1670952087.png](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/Build%20your%20first%20rule/1670952087.png)
 
-### Step 2
+### Open the editor
 
 Your rule will be created, and you’ll be dropped into the **rule editor**. Some sample data has been loaded for you.
 
@@ -68,6 +66,7 @@ import {
   <Tabs.Tab>
 
 {' '}
+
 <Icon123
   size={64}
   className="bg-red-100 text-red-800 rounded-md border border-red-300 p-2"
@@ -135,6 +134,7 @@ Example operations on booleans: Checking if a boolean is true or false.
 A function is a mathematical expression or a piece of code that can be evaluated to produce a value. For example, the function `x + 2` can be evaluated to produce a value.
 
 {' '}
+
 <Callout>
   Note that functions can only be used in the response section of a rule, to
   compute a value based on the request that the rule should return.
@@ -159,7 +159,7 @@ On the right side is the **sidebar**. It has three tabs: the **request tab**, **
 
 <Steps>
 
-### Step 1
+### Edit the request object
 
 The **request tab** allows you to edit the schema for requests. This will modify the columns, including their names and types. To provide a sample request object, open the disclosure labeled **Request Format**.
 
@@ -175,7 +175,7 @@ A sample JSON object has been provided, but you can replace it with your own. Fo
 }
 ```
 
-### Step 2
+### Updating columns
 
 Then, press **Update Columns**. The table will update to reflect this object by creating three columns corresponding to the three keys, **price**, **date_purchased**, and **gift**. Notice that the types were automatically inferred from the object. **Note:** **removing a column from the JSON schema will delete all of the data in its cells**.
 
@@ -187,7 +187,7 @@ Here, you can change the column’s name, type, and default value. Changing the 
 
 You can also set whether the column is visible or not. Columns that have data in them cannot be hidden, and if there’s only one column in the section, you can’t hide it either.
 
-### Step 4
+### Edit the response object
 
 The **response tab** works pretty much like the request tab. The only difference is that you can’t hide response columns. If you’re following along with this guide, try pasting the following JSON and hitting **Update Columns.**
 
@@ -197,7 +197,7 @@ The **response tab** works pretty much like the request tab. The only difference
 }
 ```
 
-### Step 5
+### Adding a condition
 
 The **test tab** allows you to _locally_ test your rule against a particular request. That is, it will not test that the rule is actually available online- it just evaluates your conditions within your web browser.
 
@@ -225,7 +225,7 @@ Now the table looks like this:
 
 </Steps>
 
-### Step 6
+### Testing your rule
 
 <Steps>
 
@@ -251,7 +251,7 @@ Now, let’s try a different price. Replace the value **20** with **5** in the t
 
 </Steps>
 
-### Step 7
+### Fixing your rule
 
 Oops! Since the price was not greater than 10, the first cell in the first row did not succeed, and the row as a whole failed. Since no rows succeeded, Rulebricks could not generate a response object. In this case, an HTTP 400 error is returned.
 

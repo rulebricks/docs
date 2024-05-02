@@ -250,3 +250,12 @@ html.dark .scalar-api-reference {
 .section-header.tight {
   display: none !important;
 }
+
+.nextra-banner-container {
+  cursor: pointer !important;
+  background-color: #3b8321 !important;
+}
+
+.nextra-banner-container > div {
+  cursor: pointer !important;
+}

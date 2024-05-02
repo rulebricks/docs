@@ -84,9 +84,12 @@ const config: DocsThemeConfig = {
         <a
           href="https://www.rulebricks.com/blog/reactive-rule-flows"
           target="_blank"
-          className="flex flex-row justify-center items-center text-center align-middle"
+          className="flex flex-row justify-center items-center text-center align-middle hover:text-lime-100 duration-50"
         >
-          <IconCube3dSphere className="size-3 sm:size-4 text-white inline-block mr-2" />
+          <IconCube3dSphere
+            strokeWidth={3}
+            className="size-3 sm:size-4 inline-block mr-2"
+          />
           <span className="text-xs sm:text-base align-middle self-center">
             New in Rulebricks: Reactive Rule Flows. More →
           </span>
