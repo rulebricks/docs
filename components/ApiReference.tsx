@@ -1,14 +1,36 @@
 import { ApiReferenceReact } from '@scalar/api-reference-react'
+import { IconLoader } from '@tabler/icons-react'
 import { useTheme } from 'nextra-theme-docs'
-import React from 'react'
+import { useEffect, useState } from 'react'
 
 function ApiReference() {
   const { theme } = useTheme()
-  return (
+  const [openapiSpec, setOpenapiSpec] = useState(null)
+
+  useEffect(() => {
+    if (window?.localStorage.getItem('openapiSpec')) {
+      setOpenapiSpec(JSON.parse(window?.localStorage.getItem('openapiSpec')))
+    }
+    fetch('https://rulebricks.com/api/v1/openapi.json')
+      .then((response) => response.json())
+      .then((data) => {
+        setOpenapiSpec(data)
+        window?.localStorage.setItem('openapiSpec', JSON.stringify(data))
+      })
+  }, [])
+  return !openapiSpec ? (
+    <div className="h-[908px] w-full align-middle text-center items-center flex">
+      <IconLoader
+        size={64}
+        strokeWidth={1.5}
+        className="m-auto opacity-50 animate-spin"
+      />
+    </div>
+  ) : (
     <ApiReferenceReact
       configuration={{
         spec: {
-          url: 'https://rulebricks.com/api/v1/openapi.json',
+          content: openapiSpec,
         },
         hideDownloadButton: true,
         hideModels: true,
