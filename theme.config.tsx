@@ -38,7 +38,7 @@ const config: DocsThemeConfig = {
       site_name: 'Rulebricks User Guide',
       images: [
         {
-          url: 'https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/application/logo.png',
+          url: 'https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/application/social.png',
           alt: 'Rulebricks Logo',
         },
       ],
