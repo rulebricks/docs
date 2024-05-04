@@ -175,3 +175,86 @@ This library is generated programmatically. We suggest [opening an issue](https:
 ##### License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE.txt) file for details.
+
+---
+
+#### <ins>Java</ins>
+
+The [Rulebricks Java SDK](https://github.com/rulebricks/java-sdk) provides convenient access to the Rulebricks API from Java applications. SDK usage allows for solving rules, bulk solving rules, and more.
+
+##### Installation
+
+For Maven, add this dependency to your project's `pom.xml` file:
+
+```xml
+<dependency>
+  <groupId>com.rulebricks</groupId>
+  <artifactId>rulebricks-sdk-java</artifactId>
+  <version>1.0.0</version>
+</dependency>
+```
+
+For Gradle, add this to your `build.gradle` file:
+
+```groovy
+implementation 'com.rulebricks:rulebricks-sdk-java:1.0.0'
+```
+
+##### Configuration
+
+Instantiate a `RulebricksApiClient` with your API key:
+
+```java
+RulebricksApiClient client = RulebricksApiClient.builder()
+    .apiKey("YOUR_API_KEY")
+    .build();
+```
+
+##### Basic Usage
+
+Solve a rule:
+
+```java
+Map<String, Object> requestData = new HashMap<>();
+requestData.put("dataKey", "dataValue");
+
+Map<String, Object> result = client.rules().solve("rule-slug", requestData);
+```
+
+Bulk solve rules:
+
+```java
+List<Map<String, Object>> requestDataList = new ArrayList<>();
+requestDataList.add(requestData);
+
+List<Map<String, Object>> results = client.rules().bulkSolve("rule-slug", requestDataList);
+```
+
+Parallel solve rules:
+
+```java
+Map<String, Map<String, Object>> requestDataMap = new HashMap<>();
+requestDataMap.put("rule-slug", requestData);
+
+Map<String, Object> results = client.rules().parallelSolve(requestDataMap);
+```
+
+##### Error Handling
+
+The SDK throws exceptions to indicate API errors:
+
+```java
+try {
+    Map<String, Object> result = client.rules().solve("rule-slug", requestData);
+} catch (Exception e) {
+    // Handle the error
+}
+```
+
+##### Feedback and Contributions
+
+Feedback and contributions are welcome. Please report any issues or suggestions through the [GitHub issue tracker](https://github.com/rulebricks/java-sdk/issues).
+
+##### License
+
+The Rulebricks Java SDK is released under the MIT License. See the LICENSE file for more details.
