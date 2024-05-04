@@ -229,7 +229,7 @@ Solve a rule:
 Map<String, Object> requestData = new HashMap<>();
 requestData.put("dataKey", "dataValue");
 
-Map<String, Object> result = client.rules().solve("rule-slug", requestData);
+Map<String, Object> result = client.rules().solve("<rule-slug>", requestData);
 ```
 
 Bulk solve rules:
@@ -238,14 +238,27 @@ Bulk solve rules:
 List<Map<String, Object>> requestDataList = new ArrayList<>();
 requestDataList.add(requestData);
 
-List<Map<String, Object>> results = client.rules().bulkSolve("rule-slug", requestDataList);
+List<Map<String, Object>> results = client.rules().bulkSolve("<rule-slug>", requestDataList);
 ```
 
-Parallel solve rules:
+Parallel solving rules requires a particular format using `$rule` alongside respective data payloads:
 
 ```java
 Map<String, Map<String, Object>> requestDataMap = new HashMap<>();
-requestDataMap.put("rule-slug", requestData);
+requestDataMap.put("eligibility", {
+    "$rule": "1ef03ms",
+    "customer_id": "anc39as3",
+    "purchase_history": ["t-shirt", "mug"],
+    "account_age_days": 4,
+    "last_purchase_days_ago": 3,
+    "email_subscription": false
+});
+requestDataMap.put("offers", {
+    "$rule": "OvmsYwn",
+    "customer_id": "anc39as3",
+    "last_purchase_days_ago": 3,
+    "selected_plan": "premium"
+});
 
 Map<String, Object> results = client.rules().parallelSolve(requestDataMap);
 ```
@@ -256,7 +269,7 @@ The SDK throws exceptions to indicate API errors:
 
 ```java
 try {
-    Map<String, Object> result = client.rules().solve("rule-slug", requestData);
+    Map<String, Object> result = client.rules().solve("<rule-slug>", requestData);
 } catch (Exception e) {
     // Handle the error
 }
@@ -304,7 +317,7 @@ client := client.NewClient(opts)
 To solve a rule with the SDK, you can use the `Solve` function of the client. Here's an example of how to solve a rule identified by its unique slug:
 
 ```go
-response, err := client.Rules.Solve(context.Background(), "rule-slug", map[string]interface{}{
+response, err := client.Rules.Solve(context.Background(), "<rule-slug>", map[string]interface{}{
     "data": "your-data-here",
 })
 if err != nil {
@@ -316,7 +329,7 @@ if err != nil {
 For bulk operations, you can use the `BulkSolve` function to execute a rule against multiple data payloads:
 
 ```go
-responses, err := client.Rules.BulkSolve(context.Background(), "rule-slug", []map[string]interface{}{
+responses, err := client.Rules.BulkSolve(context.Background(), "<rule-slug>", []map[string]interface{}{
     {"data": "first-payload"},
     {"data": "second-payload"},
     // Add more payloads as needed
@@ -327,13 +340,14 @@ if err != nil {
 // Use the responses
 ```
 
-To execute multiple rules in parallel, use the `ParallelSolve` function:
+To execute multiple rules in parallel, use the `ParallelSolve` function, along with the special parallel solve format:
 
 ```go
 responses, err := client.Rules.ParallelSolve(context.Background(), map[string]interface{}{
-    "first-rule-slug":  {"data": "first-payload"},
-    "second-rule-slug": {"data": "second-payload"},
-    // Add more rules and payloads as needed
+    "eligibility":  {"$rule": "tJOCd8XX", "customer_id": "anc39as3", "purchase_history": []string{"t-shirt", "mug"}, "account_age_days": 4, "last_purchase_days_ago": 3, "email_subscription": false},
+    "offers": {"$rule": "Ovms3XX", "customer_id": "anc39as3", "last_purchase_days_ago": 3, "selected_plan": "premium"},
+    // Note the non top-level keyword $rule is used to identify the rule to be executed
+    // alongside the data payload that should be passed to that particular rule
 })
 if err != nil {
     // Handle error
@@ -347,7 +361,7 @@ The SDK supports asynchronous operations using Go routines. You can use the `Sol
 
 ```go
 go func() {
-    response, err := client.Rules.Solve(context.Background(), "rule-slug", map[string]interface{}{
+    response, err := client.Rules.Solve(context.Background(), "<rule-slug>", map[string]interface{}{
         "data": "your-data-here",
     })
     if err != nil {
