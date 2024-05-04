@@ -1,7 +1,7 @@
 import React from 'react'
 import { DocsThemeConfig } from 'nextra-theme-docs'
 import NavbarLogo from './components/NavbarLogo'
-import { IconCube3dSphere, IconHistory } from '@tabler/icons-react'
+import { IconCube, IconCube3dSphere, IconHistory } from '@tabler/icons-react'
 import moment from 'moment'
 import { useRouter } from 'next/router'
 
@@ -84,11 +84,11 @@ const config: DocsThemeConfig = {
         <a
           href="https://www.rulebricks.com/blog/reactive-rule-flows"
           target="_blank"
-          className="flex flex-row justify-center items-center text-center align-middle hover:text-lime-100 duration-50"
+          className="flex flex-row justify-center items-center text-center align-middle group duration-100 transition-all hover:text-lime-200"
         >
-          <IconCube3dSphere
+          <IconCube
             strokeWidth={3}
-            className="size-3 sm:size-4 inline-block mr-2"
+            className="size-3 group-hover:fill-lime-300/50 group-hover:rotate-[120deg] transition-all duration-150 sm:size-4 inline-block mr-2"
           />
           <span className="text-xs sm:text-base align-middle self-center">
             New in Rulebricks: Reactive Rule Flows. More →
@@ -99,9 +99,11 @@ const config: DocsThemeConfig = {
   },
   gitTimestamp: ({ timestamp }) => {
     return (
-      <div className="text-sm text-neutral-700 opacity-80 invert-dark">
-        <IconHistory className="w-4 h-4 inline-block mr-1.5" />
-        This page was last updated {moment(timestamp).fromNow()}
+      <div className="text-sm text-neutral-700 opacity-80 align-middle inline-flex items-center invert-dark">
+        <IconHistory className="w-4 h-4 self-center inline-block mr-1.5" />
+        <span className="self-center">
+          This page was last updated {moment(timestamp).fromNow()}
+        </span>
       </div>
     )
   },
