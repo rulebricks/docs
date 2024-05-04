@@ -1,7 +1,7 @@
 /** @type {import('next-sitemap').IConfig} */
 module.exports = {
   siteUrl: 'https://rulebricks.com/docs',
-  changefreq: 'daily',
-  priority: 0.7,
+  changefreq: 'weekly',
+  priority: 0.8,
   generateRobotsTxt: true,
 }
