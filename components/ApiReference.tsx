@@ -32,7 +32,7 @@ function ApiReference() {
         spec: {
           content: openapiSpec,
         },
-        hideDownloadButton: true,
+        hideDownloadButton: false,
         hideModels: true,
         authentication: {
           preferredSecurityScheme: 'x-api-key',
