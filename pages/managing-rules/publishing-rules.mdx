@@ -23,10 +23,16 @@ When you're ready, click the "Publish" button to publish your rule.
 
 ![Publish Menu](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/managing-rules/publishing-rules-2.png)
 
-<Callout type="info" emoji="">
-  This menu is evolving and will soon include more features, such as the ability
-  to understand the changes between versions, and to revert to a previous
-  version.
+#### Rule versioning
+
+Publishing your rule creates a new version, as you'll see appear on the "History" section of the Publish menu. Versions are simply annotated by an increasing number, like v1, v2, etc. 
+
+Differences between each versions are precisely tracked and can both be reviewed visually, by clicking the colored tags that appear in the details for each version, as well as be used to reconstruct your rule at a prior version as an API target.
+
+To target specific prior versions of your rule, use the slugs that appear on the right side of each version in the history– simply append the number to the URL. For example, in the image from above, rather than targeting the rule using the slug "hlDPsJMVGQ", which would target the latest version of the rule, I'd simply use "hlDPsJMVGQ/2" to target the second version of the rule. Incorporating version numbers directly into rule slugs allows you to create development & release processes around your rules.
+
+<Callout emoji="">
+  To the far right of each version listed in the history UI, you'll notice a clock icon– this allows you to "rollback" a rule to a prior version. It is important to bear in mind this can be a highly destructive operation– any versions between your current edits and the version you're rolling back to will permanently be lost as targets.
 </Callout>
 
 </Steps>
