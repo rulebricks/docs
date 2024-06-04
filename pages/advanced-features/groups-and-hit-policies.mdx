@@ -36,29 +36,21 @@ The hit policy determines how the output of the decision table is calculated. Th
 
 ![Hit Policy](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/advanced-features/hit-policies.png)
 
-1. #### List Aggregation
+1. #### Fill Values
 
-List aggregation is the default group hit policy in Rulebricks. It allows you to return a list of all satisfied results from the decision table. This is useful when you want to return multiple results from a single rule, instead of stopping at the first result for which all conditions are met.
+For each satisfied condition in the group, the *Fill Values* hit policy will identify any new non-null response dimensions and add them to the output object.
 
-An example of where this might be useful is in a rule that calculates discounts for a customer based on a variety of conditions. Instead of returning the first discount that applies, you can return all discounts that apply.
+For example, if you have a group with two conditions, and the first condition returns a percentage discount of 10% but a flat price of `null`, and the second condition returns a flat price of $5 but a percentage discount of `null`, this policy will return an object with both the percentage discount and the flat price. This is useful when you want to create a decision table that incrementally updates response data dimensions (i.e. first you have a set of rows that decides what the "percentage_discount" should be, then you have a set of rows that decides what the "flat_price_discount" should be, and you want to return both).
 
-import { Callout } from 'nextra/components'
+2. #### Add Values
 
-<Callout type="warning">
-  Note that because list aggregation returns a list, rather than a single
-  object, certain features like Rulebricks Forms and Flows may not work as
-  expected.
-</Callout>
+*Add Values* in Rulebricks groups is similar to *Fill Values*, but rather than simply filling in non-null response dimensions, it will actually try to add non-null values together. This is useful when you want to return a single value that is the sum or score of all the values from multiple response rows satisfied in the decision table.
 
-2. #### Object Aggregation
+3. #### Compute Values
 
-Object aggregation works differently from list aggregation in that it returns a single object, rather than a list of objects. For each satisfied condition in the group, the object aggregation hit policy will identify any new non-null response dimensions and add them to the output object.
+*Compute Values* is the most advanced hit policy in Rulebricks and allows you to define a custom accumulation pattern for each column. This policy is useful if you want to add up the results of multiple satisfied rows for some columns, but not for others. It's also useful if you'd like more control over how you combine responses from multiple satisfied rows, rather than just adding up everything– this policy also allows you to write your own accumulation function, should you need it.
 
-For example, if you have a group with two conditions, and the first condition returns a percentage discount of 10% but a flat price of `null`, and the second condition returns a flat price of $5 but a percentage discount of `null`, the object aggregation hit policy will return an object with both the percentage discount and the flat price. This is useful when you want to return a single object that contains all the results from the decision table.
-
-3. #### Value Aggregation
-
-Value aggregation in Rulebricks groups is similar to object aggregation, but rather than simply filling in non-null response dimensions, it will actually try to add the values together. This is useful when you want to return a single value that is the sum of all the values from response rows satisfied in the decision table.
+A good example of this policy in action can be found on [this use-case page](https://rulebricks.com/examples/rules/investment-portfolio-builder).
 
 </Steps>
 
