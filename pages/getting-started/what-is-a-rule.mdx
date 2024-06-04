@@ -1,12 +1,16 @@
+---
+metaDescription: Understanding what a rule is in Rulebricks is the first step to building powerful automations. Learn more about rules here.
+---
+
 # What is a rule?
 
 ## A quick example
 
-The fastest way to understand how rules work is by example. 
+The fastest way to understand how rules work is by example.
 
 Let’s say we’re working at a software company and have a few automations on Zapier that help us engage prospects that sign up on our website, follow up with them as potential customers, and add them to our CRM, and we’re looking to start scoring these prospects so we have a better understanding of which are more likely to convert and actually provide us with their business.
 
-Our ideal customer could be anyone, but for the purposes of this example let’s say we’re looking specifically for startups in financial technology– these are the people most likely to buy our software. From some form responses and lead enrichment technologies, we have a bunch of data on each prospect, and we mainly need to look for industry and company size matches. 
+Our ideal customer could be anyone, but for the purposes of this example let’s say we’re looking specifically for startups in financial technology– these are the people most likely to buy our software. From some form responses and lead enrichment technologies, we have a bunch of data on each prospect, and we mainly need to look for industry and company size matches.
 
 There might be some exceptions here, however– if someone from a particularly big company reaches out, we’ll probably at least want to talk with them to understand their needs, so we can score them highly. And our market might be local to the US, so we might like that as well.
 
@@ -14,23 +18,20 @@ From what we’ve written down so far, a decision table to score leads for our b
 
 ### **Conditions → Results**
 
-
-| Industry    | Company Size | HQ Location | Last Contact  |   | Score    |
-|-------------|--------------|-------------|---------------|---|---------|
-| Fintech     | < 500        | in US       | Any           | → | 100     |
-| Fintech     | > 2,000      | in US       | < 30 days ago | → | 90      |
-| Fintech     | Any          | not in US   | < 30 days ago | → | 80      |
-| Finance     | Any          | in US       | < 30 days ago | → | 70      |
-| Insurance   | Any          | in US       | < 30 days ago | → | 50      |
-| Government  | Any          | in US       | < 30 days ago | → | 50      |
-| Any         | Any          | in US       | Any           | → | 10      |
-| Any         | Any          | Any         | Any           | → | 0       |
-
-
+| Industry   | Company Size | HQ Location | Last Contact  |     | Score |
+| ---------- | ------------ | ----------- | ------------- | --- | ----- |
+| Fintech    | < 500        | in US       | Any           | →   | 100   |
+| Fintech    | > 2,000      | in US       | < 30 days ago | →   | 90    |
+| Fintech    | Any          | not in US   | < 30 days ago | →   | 80    |
+| Finance    | Any          | in US       | < 30 days ago | →   | 70    |
+| Insurance  | Any          | in US       | < 30 days ago | →   | 50    |
+| Government | Any          | in US       | < 30 days ago | →   | 50    |
+| Any        | Any          | in US       | Any           | →   | 10    |
+| Any        | Any          | Any         | Any           | →   | 0     |
 
 Unpacking this is quite straightforward.
 
-Using our data on a prospect, we can identify if they meet all the comparisons in a row, looking at each row one at a time, from top to bottom. If we have a large US fintech that’s recently reached out, we’d find they meet all the conditions in the second row and stop there. 
+Using our data on a prospect, we can identify if they meet all the comparisons in a row, looking at each row one at a time, from top to bottom. If we have a large US fintech that’s recently reached out, we’d find they meet all the conditions in the second row and stop there.
 
 We then look at the results table for that particular row– any values in the second row of the results table are now our output and returned as results of this decision. The decision table above only has one column, so only the number 90 for the score is returned, but we could easily modify it to return other information along with this as well.
 
@@ -43,8 +44,7 @@ All the “Any” values at the bottom of the table are our catch-all, as we’l
 - **Request Data (Object)**: The incoming data for each decision we are using our rule to make using the left side of the table, i.e. the data that is being compared to the conditions.
 - **Results/Response Data (Object)**: The outgoing data on the right side of the table, i.e. the data that is returned from our rule when a condition row is considered a match.
 
-Some terminology is used interchangeably, but these are the most common terms you’ll see when working on Rulebricks. 
-
+Some terminology is used interchangeably, but these are the most common terms you’ll see when working on Rulebricks.
 
 ## What this actually looks like
 
@@ -54,14 +54,14 @@ Decision tables are fairly simple conceptually, and can be straightforward enoug
 
 ```json
 {
-	"industry": "Financial technology",
-	"company_size": 4400,
-	"location": {
-		"city": "San Francisco",
-		"state": "California",
-		"country": "United States"
-	},
-	"date_form_completed": "2022-11-23"
+  "industry": "Financial technology",
+  "company_size": 4400,
+  "location": {
+    "city": "San Francisco",
+    "state": "California",
+    "country": "United States"
+  },
+  "date_form_completed": "2022-11-23"
 }
 ```
 
@@ -69,15 +69,15 @@ Decision tables are fairly simple conceptually, and can be straightforward enoug
 
 ```json
 {
-	"score": 90
+  "score": 90
 }
 ```
 
 import { Callout } from 'nextra/components'
 
-
 <Callout type="info">
-If you look closely, you’ll notice some details that make this decision possible that aren’t obvious– the data is not *exactly* what we represented it in the decision table, and the date is just text, so it’s not immediately clear how to set up a comparison for that. 
+If you look closely, you’ll notice some details that make this decision possible that aren’t obvious– the data is not *exactly* what we represented it in the decision table, and the date is just text, so it’s not immediately clear how to set up a comparison for that.
 
 Here we can start seeing a few of the logistics around defining rules that Rulebricks can make particularly easy.
+
 </Callout>

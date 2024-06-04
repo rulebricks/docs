@@ -1,5 +1,5 @@
 import React from 'react'
-import { DocsThemeConfig } from 'nextra-theme-docs'
+import { DocsThemeConfig, useConfig } from 'nextra-theme-docs'
 import NavbarLogo from './components/NavbarLogo'
 import { IconCube, IconCube3dSphere, IconHistory } from '@tabler/icons-react'
 import moment from 'moment'
@@ -22,6 +22,7 @@ const config: DocsThemeConfig = {
   },
   useNextSeoProps() {
     const { asPath } = useRouter()
+    const { frontMatter } = useConfig()
     let seoOptions = {}
     if (asPath !== '/') {
       seoOptions['titleTemplate'] = `%s – User Guide – Rulebricks`
@@ -29,8 +30,26 @@ const config: DocsThemeConfig = {
       seoOptions['titleTemplate'] = 'User Guide – Rulebricks'
     }
     seoOptions['defaultTitle'] = 'User Guide – Rulebricks'
-    seoOptions['description'] =
-      'Learn how to build rules in Rulebricks and integrate them into your applications.'
+    seoOptions['keywords'] = [
+      'javascript rule engine',
+      'json rule engine',
+      'decision rules',
+      'simple rule engine',
+      'make decision api',
+      'spreadsheet to app',
+      'rule engine for javascript',
+      'rule engine for json',
+      'rule engine for decision tables',
+      'decision tables',
+      'decision trees',
+      'cloud decision engine',
+    ].join(', ')
+    if (asPath == '/') {
+      seoOptions['description'] =
+        'Learn how to build rules in Rulebricks and integrate them into your applications.'
+    } else {
+      seoOptions['description'] = frontMatter.metaDescription
+    }
     seoOptions['openGraph'] = {
       type: 'website',
       locale: 'en_US',

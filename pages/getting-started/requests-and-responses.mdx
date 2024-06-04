@@ -1,8 +1,12 @@
+---
+metaDescription: Requests and responses are the inputs and outputs to any rule in Rulebricks. Learn how to configure them here.
+---
+
 # Requests & Responses
 
 ## Inputs and outputs
 
-Request & Response objects are, respectively, the inputs and outputs to any rule in Rulebricks. Specifically, they are any object in JSON notation, as previewed at the end of the last section. 
+Request & Response objects are, respectively, the inputs and outputs to any rule in Rulebricks. Specifically, they are any object in JSON notation, as previewed at the end of the last section.
 
 Let’s look at those one more time:
 
@@ -10,14 +14,14 @@ Let’s look at those one more time:
 
 ```json
 {
-	"industry": "Financial technology",
-	"company_size": 4400,
-	"location": {
-		"city": "San Francisco",
-		"state": "California",
-		"country": "United States"
-	},
-	"date_form_completed": "2022-11-23"
+  "industry": "Financial technology",
+  "company_size": 4400,
+  "location": {
+    "city": "San Francisco",
+    "state": "California",
+    "country": "United States"
+  },
+  "date_form_completed": "2022-11-23"
 }
 ```
 
@@ -25,25 +29,25 @@ Let’s look at those one more time:
 
 ```json
 {
-	"score": 90
+  "score": 90
 }
 ```
 
 ## Inputs
 
-**To begin configuring any rule in Rulebricks, you require a Request Object**. Rulebricks uses the attributes available in the JSON object provided to initialize the columns of an empty decision table. Most applications will document examples of objects their platform outputs from various API endpoints and integrations on their website, but we’re working on direct integrations with tools like Zapier to automatically grab these for you and configure a table. 
+**To begin configuring any rule in Rulebricks, you require a Request Object**. Rulebricks uses the attributes available in the JSON object provided to initialize the columns of an empty decision table. Most applications will document examples of objects their platform outputs from various API endpoints and integrations on their website, but we’re working on direct integrations with tools like Zapier to automatically grab these for you and configure a table.
 
 The fresh decision table initialized in Rulebricks using this request object might look like:
 
 ### **Conditions**
 
 | Industry `industry` | Company Size `company_size` | Location City `location.city` | Location State `location.state` | Location Country `location.country` | Date Form Completed `date_form_completed` |
-|---------------------|-----------------------------|-------------------------------|---------------------------------|--------------------------------------|----------------------------------------|
-|                     |                             |                               |                                 |                                      |                                        |
+| ------------------- | --------------------------- | ----------------------------- | ------------------------------- | ----------------------------------- | ----------------------------------------- |
+|                     |                             |                               |                                 |                                     |                                           |
 
 Something that isn’t shown here is that the table also figures out what kind of data is in each column, determining whether it contains text, numbers, dates, or lists.
 
-From here, you’re able to hide columns you’d like to ignore, rename columns to make information more meaningful, add ****data transformations to columns, and set default values for information that is missing from future request objects.
+From here, you’re able to hide columns you’d like to ignore, rename columns to make information more meaningful, add \*\*\*\*data transformations to columns, and set default values for information that is missing from future request objects.
 
 ## Outputs
 
