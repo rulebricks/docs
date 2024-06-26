@@ -30,20 +30,6 @@ const config: DocsThemeConfig = {
       seoOptions['titleTemplate'] = 'User Guide – Rulebricks'
     }
     seoOptions['defaultTitle'] = 'User Guide – Rulebricks'
-    seoOptions['keywords'] = [
-      'javascript rule engine',
-      'json rule engine',
-      'decision rules',
-      'simple rule engine',
-      'make decision api',
-      'spreadsheet to app',
-      'rule engine for javascript',
-      'rule engine for json',
-      'rule engine for decision tables',
-      'decision tables',
-      'decision trees',
-      'cloud decision engine',
-    ].join(', ')
     if (asPath == '/') {
       seoOptions['description'] =
         'Learn how to build rules in Rulebricks and integrate them into your applications.'
