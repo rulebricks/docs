@@ -395,3 +395,197 @@ For contributions, please submit a pull request with a clear description of the 
 ##### License
 
 The Rulebricks Go SDK is released under the MIT License. See the LICENSE file for more details.
+
+---
+
+#### <ins>C#</ins>
+
+The [Rulebricks C# SDK](https://github.com/rulebricks/csharp-sdk) provides convenient access to the Rulebricks API from C# applications. SDK usage allows for solving rules, bulk solving rules, and more.
+
+##### Installation
+
+To install the Rulebricks C# SDK, add the following package to your project:
+
+```sh
+dotnet add package RulebricksApi
+```
+
+##### Configuration
+
+Instantiate a `RulebricksApiClient` with your API key:
+
+```csharp
+var client = new RulebricksApiClient("YOUR_API_KEY");
+```
+
+##### Basic Usage
+
+Solve a rule:
+
+```csharp
+var requestData = new Dictionary<string, object>
+{
+    { "dataKey", "dataValue" }
+};
+
+var result = client.Rules.Solve("<rule-slug>", requestData);
+```
+
+Bulk solve rules:
+
+```csharp
+var requestDataList = new List<Dictionary<string, object>>
+{
+    new Dictionary<string, object> { { "dataKey", "dataValue" } }
+};
+
+var results = client.Rules.BulkSolve("<rule-slug>", requestDataList);
+```
+
+Parallel solving rules requires a particular format using `$rule` alongside respective data payloads:
+
+```csharp
+var requestDataMap = new Dictionary<string, Dictionary<string, object>>
+{
+    { "eligibility", new Dictionary<string, object>
+        {
+            { "$rule", "1ef03ms" },
+            { "customer_id", "anc39as3" },
+            { "purchase_history", new List<string> { "t-shirt", "mug" } },
+            { "account_age_days", 4 },
+            { "last_purchase_days_ago", 3 },
+            { "email_subscription", false }
+        }
+    },
+    { "offers", new Dictionary<string, object>
+        {
+            { "$rule", "OvmsYwn" },
+            { "customer_id", "anc39as3" },
+            { "last_purchase_days_ago", 3 },
+            { "selected_plan", "premium" }
+        }
+    }
+};
+
+var results = client.Rules.ParallelSolve(requestDataMap);
+```
+
+##### Error Handling
+
+The SDK throws exceptions to indicate API errors:
+
+```csharp
+try
+{
+    var result = client.Rules.Solve("<rule-slug>", requestData);
+}
+catch (Exception e)
+{
+    // Handle the error
+}
+```
+
+##### Feedback and Contributions
+
+Feedback and contributions are welcome. Please report any issues or suggestions through the [GitHub issue tracker](https://github.com/rulebricks/csharp-sdk/issues).
+
+##### License
+
+The Rulebricks C# SDK is released under the MIT License. See the LICENSE file for more details.
+
+---
+
+#### <ins>Ruby</ins>
+
+The [Rulebricks Ruby SDK](https://github.com/rulebricks/ruby-sdk) provides convenient access to the Rulebricks API from Ruby applications. SDK usage allows for solving rules, bulk solving rules, and more.
+
+##### Installation
+
+To install the Rulebricks Ruby SDK, add the following line to your Gemfile:
+
+```ruby
+gem 'rulebricks_api_client'
+```
+
+Then run:
+
+```sh
+bundle install
+```
+
+##### Configuration
+
+Configure the SDK with your API key:
+
+```ruby
+require 'rulebricks_api_client'
+
+RulebricksApiClient.configure do |config|
+  config.api_key = 'YOUR_API_KEY'
+end
+```
+
+##### Basic Usage
+
+Solve a rule:
+
+```ruby
+request_data = {
+  dataKey: 'dataValue'
+}
+
+result = RulebricksApiClient::Rules.solve('<rule-slug>', request_data)
+```
+
+Bulk solve rules:
+
+```ruby
+request_data_list = [
+  { dataKey: 'dataValue' }
+]
+
+results = RulebricksApiClient::Rules.bulk_solve('<rule-slug>', request_data_list)
+```
+
+Parallel solving rules requires a particular format using `$rule` alongside respective data payloads:
+
+```ruby
+request_data_map = {
+  eligibility: {
+    '$rule' => '1ef03ms',
+    customer_id: 'anc39as3',
+    purchase_history: ['t-shirt', 'mug'],
+    account_age_days: 4,
+    last_purchase_days_ago: 3,
+    email_subscription: false
+  },
+  offers: {
+    '$rule' => 'OvmsYwn',
+    customer_id: 'anc39as3',
+    last_purchase_days_ago: 3,
+    selected_plan: 'premium'
+  }
+}
+
+results = RulebricksApiClient::Rules.parallel_solve(request_data_map)
+```
+
+##### Error Handling
+
+The SDK raises exceptions to indicate API errors:
+
+```ruby
+begin
+  result = RulebricksApiClient::Rules.solve('<rule-slug>', request_data)
+rescue StandardError => e
+  # Handle the error
+end
+```
+
+##### Feedback and Contributions
+
+Feedback and contributions are welcome. Please report any issues or suggestions through the [GitHub issue tracker](https://github.com/rulebricks/ruby-sdk/issues).
+
+##### License
+
+The Rulebricks Ruby SDK is released under the MIT License. See the LICENSE file for more details.
