@@ -1,0 +1,43 @@
+---
+metaDescription: There are three user roles in Rulebricks you can use to enable different levels of access to your workspace– Administrator, Developer, and Editor. Learn more about managing roles in Rulebricks.
+---
+
+## Assigning Roles
+
+You can assign roles to users in your workspace by navigating to the "Team" tab in your Rulebricks dashboard and selecting the role you'd like to assign to a user.
+
+import { Steps } from 'nextra/components'
+
+<Steps>
+
+### Open the role dialog
+
+To assign a role to a user, find the user in the "Team" tab of your Rulebricks dashboard and click on the pencil icon next to their role.
+
+![Assigning Roles](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/workspace-management/workspace-change-role.png)
+
+### Select a role
+
+A dialog will appear where you can select the role you'd like to assign to the user. You can assign one of two roles: Developer, and Editor– the Administrator role is reserved exclusively for the workspace owner, and cannot be assigned to other users.
+
+![Role Dialog](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/workspace-management/workspace-role-dialog.png)
+
+</Steps>
+
+## Role Overviews
+
+### Developer
+
+Developers have full access to your workspace, with the exception of editing the team as an administrator, or viewing/modifying billing settings. Developers can otherwise create, edit, and delete rules, view your API key, as well as view logs and other workspace settings.
+
+Users who are assigned this role should be fully trusted, internal team members who need full access to your workspace.
+
+### Editor
+
+Editors have highly limited access to your workspace, with the ability to view & edit pre-existing rules, view dynamic values, and a list of other team members. Editors do not have access to your API key, and cannot view or edit billing, team, and rule settings. Editors also do not have access to workspace logs, and Rulebricks Flows.
+
+Users who are assigned this role should be external collaborators or clients who still need to view and propose changes rules.
+
+![Rule Settings](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/workspace-management/workspace-rule-settings.png)
+
+The editor role is somewhat customizable on a rule-by-rule basis, allowing you to grant or restrict different levels of access to specific rules as needed. Particularly, you can restrict access to update the request and response schemas of a rule, meaning that the editor can only view and edit the rule's conditions. This way, rules can be edited without potentially breaking the rule's integration with your application/data pipelines.

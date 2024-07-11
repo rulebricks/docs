@@ -1,5 +1,6 @@
 {
-    "testing-rules": "Testing Rules",
-    "publishing-rules": "Publishing Rules",
-    "rule-logging": "Decision Logs"
+  "testing-rules": "Testing Rules",
+  "publishing-rules": "Publishing Rules",
+  "exporting-rules": "Exporting Rules",
+  "rule-logging": "Decision Logs"
 }

@@ -1,0 +1,47 @@
+---
+metaDescription: Exporting a rule or flow in Rulebricks allows you to back up a rule as a local file. Learn more about exporting & importing rules & flows here.
+---
+
+## Exporting rules & flows
+
+Exporting a rule or flow in Rulebricks allows you to back up assets in Rulebricks as local files. This can be useful for a variety of reasons, such as version control, sharing rules with others, or simply as a hard backup.
+
+import { Steps } from 'nextra/components'
+
+<Steps>
+
+### Navigate to the rule or flow you want to export
+
+To export a rule or flow, navigate to the rule or flow you want to export in the Rulebricks editor and open it.
+
+### Export from the navigation menu
+
+In the top right corner of the rule or flow editor, you should find an "Export" or "Download" button. Click this button to immediately download the rule or flow as a local file.
+
+For rules:
+
+![Exporting Rules](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/managing-rules/export-rule.png)
+
+For flows:
+
+![Exporting Flows](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/managing-rules/export-flow.png)
+
+</Steps>
+
+## Importing rules & flows
+
+Importing a rule or flow in Rulebricks is just as easy. You can import assets in Rulebricks in the same place you can create them.
+
+![Importing Rules](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/managing-rules/import-rule.png)
+
+import { Callout } from 'nextra/components'
+
+<Callout>
+  Note that importing a rule or flow is only possible if a version of that rule or flow does not already exist in your account. If you attempt to import a rule or flow with the same name as an existing rule or flow, you will be prompted to delete the rule or flow you are importing. This is because Rulebricks will not know how to merge the histories of the two assets.
+</Callout>
+
+### Import Dependencies
+
+Exports in Rulebricks are currently always full exports to a single file, even for flows, which embed the full contents of any rule used inside the flow.
+
+There is one major dependency that does not get exported, however, and those are Dynamic Values. **If you have any Dynamic Value references in your rule or flow, they will only be functional if you export & import from the same workspace.** We are working on options to "rasterize" these values into the file, but this is not yet available. Recreating the Dynamic Values in a new workspace will not work as well, as the internal ID's associated with the values will be different.
