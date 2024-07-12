@@ -120,7 +120,7 @@ Using a combination of `solve`, `bulk_solve`, `parallel_solve` and `flows` in sy
 
 The Forge SDK is a powerful tool within the Rulebricks package that allows you to programmatically create and manage rules. It provides a flexible and intuitive way to define rule sets, conditions, and responses.
 
-### Purpose
+###### Purpose
 
 The Forge SDK enables you to:
 - Define complex rule structures
@@ -128,7 +128,7 @@ The Forge SDK enables you to:
 - Specify request and response schemas
 - Generate rule representations in various formats (JSON, tabular, file)
 
-### Creating a Rule
+###### Creating a Rule
 
 Here's an example of how to create a simple rule using the Forge SDK:
 
@@ -165,7 +165,7 @@ builder.set_condition_response(condition2, "discount_eligible", True)
 builder.set_condition_response(condition2, "discount_percentage", 10)
 ```
 
-### Available Operators
+###### Available Operators
 
 The Forge SDK provides a range of operators for different data types. You can find the full list of available operators in the following files:
 
@@ -173,7 +173,7 @@ The Forge SDK provides a range of operators for different data types. You can fi
 
 This file contains the definitions for `BooleanOperator`, `NumberOperator`, `StringOperator`, `DateOperator`, and `ListOperator`.
 
-### Outputting Rules
+###### Outputting Rules
 
 The Forge SDK offers several ways to output your rules:
 
@@ -221,7 +221,7 @@ The Forge SDK offers several ways to output your rules:
 
    This will create a file with the `.rbx` extension in your current directory. The filename will be based on the rule name you set, with "-Generated.rbx" appended.
 
-### Complete Example
+###### Complete Example
 
 Here's a complete example that demonstrates creating a rule and using all output methods:
 
