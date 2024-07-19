@@ -66,7 +66,7 @@ We'll cover each of these functions in more detail below.
 
 The For Each node allows you to iterate over a list of items and apply a rule to each item in the list. This is useful when you have a list of items and you want to apply a rule to each item in the list.
 
-If your list contains objects, For Each nodes will automatically explode the object into individual fields that can you can use in your flow.
+If your list contains objects/values, For Each nodes will automatically explode the object into individual fields that can you can use in your flow. **If your list is empty, the For Each node will not know what values to iterate over and will remain empty and unusable.**
 
 For Each nodes must culminate in a Result Object node, which will collect the results of each iteration and be used to return a transformed list of items.
 
