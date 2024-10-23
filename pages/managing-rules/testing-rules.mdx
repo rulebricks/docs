@@ -42,8 +42,18 @@ In "Suite" mode, you can test your rule with multiple request objects at once. T
 
 This mode is particularly useful for regression testing, where you want to ensure that changes you make to your rule don't break existing functionality.
 
+Because you may want to upload a large number of test cases at once, we have API endpoints available to assist with mounting test cases into any Rulebricks rule or flow.
+
 ![Suite](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/managing-rules/testing-rules-suite.png)
 
-A quick way to build out a testing suite is to copy and paste a variety of request objects into the JSON text editor under "Single Request", click "Test", copy the result, and save a new test case in Suite mode using the results, alternating between the two modes to generate payloads.
+Otherwise, a quick way to build out a testing suite is to copy and paste a variety of request objects into the JSON text editor under "Single Request", click "Test", copy the result, and save a new test case in Suite mode using the results, alternating between the two modes to generate payloads.
+
+#### Continuous Testing
+
+You can ensure all tests in your rule/flow run automatically before publishing new releases of your rule by enabling "Continuous Testing" in the "Settings" menu of your rule/flow found by clicking the gear icon from within the rule/flow editor at the top right. Tests in your suite marked as "Critical" will then prevent new versions of assets from being published if they fail.
+
+When this feature is enabled, you will also see a score next to every published version of an asset. This score is a percentage of tests that passed in the suite for that version, and helps you understand the integrity/coverage of every given version of your rule/flow.
+
+![Scores](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/managing-rules/continuous-tests.webp)
 
 </Steps>

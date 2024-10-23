@@ -6,7 +6,7 @@ function NavbarLogo(props) {
         src="https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/application/logo.png"
         alt="Rulebricks Logo"
       />
-      <span className="text-xl font-semibold mt-0.5">Rulebricks</span>
+      <span className="text-xl font-semibold">Rulebricks</span>
     </div>
   )
 }

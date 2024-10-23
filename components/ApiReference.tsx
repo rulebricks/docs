@@ -7,6 +7,8 @@ function ApiReference() {
   const { theme } = useTheme()
   const [openapiSpec, setOpenapiSpec] = useState(null)
 
+  //
+
   useEffect(() => {
     if (window?.localStorage.getItem('openapiSpec')) {
       setOpenapiSpec(JSON.parse(window?.localStorage.getItem('openapiSpec')))
@@ -15,7 +17,13 @@ function ApiReference() {
       .then((response) => response.json())
       .then((data) => {
         setOpenapiSpec(data)
-        window?.localStorage.setItem('openapiSpec', JSON.stringify(data))
+        // if its different from the current one, reload the page
+        if (
+          window?.localStorage.getItem('openapiSpec') !== JSON.stringify(data)
+        ) {
+          window?.localStorage.setItem('openapiSpec', JSON.stringify(data))
+          window?.location.reload()
+        }
       })
   }, [])
   return !openapiSpec ? (

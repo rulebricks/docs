@@ -1,0 +1,41 @@
+---
+metaDescription: Team templates in Rulebricks allow you to create reusable rules for your end-users to bootstrap new decision models. Create a template from an existing rule to instantly make it available to your team via the create menu.
+---
+
+# Team Templates
+
+Team templates in Rulebricks are powerful ways to share common schemas and decision models with your end-users to help them bootstrap new projects. Templates are created from existing rules and are instantly available to anyone on your team via the create menu.
+
+import { Steps } from 'nextra/components'
+import { Callout } from 'nextra/components'
+
+<Steps>
+
+### Create a new rule
+
+First, create a new rule in the Rulebricks editor, and set it up as you'd like your template to appear. Note that any settings you apply to your rule, including workflow settings like defining an approver and adding tests, will be carried directly over to the template.
+
+### Publish the template
+
+In the top menu bar inside the decision table editor, you'll see a "Create Template" button. Click this button to create a new template from your rule.
+
+![Create Template](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/managing-rules/create-template.webp)
+
+### Using the template
+
+All published templates are available to your team in the "Create Rule" menu, under the templates tab. Administrator and Developer role users are able to delete templates to ensure an organized and up-to-date list of templates for your team.
+
+![Find Template](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/managing-rules/find-template.webp)
+
+</Steps>
+
+---
+
+Be sure to give your template a strongly identifying name and description to help your team understand its purpose. Templates are a great way to standardize your decision-making logic across your team and ensure consistency across rules.
+
+<Callout emoji="">
+  Note that templates are accessible to all users on your team, irrespective of
+  their User Group. If this behavior is undesirable, another way to accomplish a
+  similar goal is simply to create an example rule within a group, and have
+  future end-users simply duplicate the rule to create their own version.
+</Callout>
