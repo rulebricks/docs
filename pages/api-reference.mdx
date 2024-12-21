@@ -120,13 +120,132 @@ Using a combination of `solve`, `bulk_solve`, `parallel_solve` and `flows` in sy
 
 The Forge SDK is a powerful tool within the Rulebricks package that allows you to programmatically create and manage rules. It provides a flexible and intuitive way to define rule sets, conditions, and responses.
 
+Looking for more comprehensive documentation? Read through our [Forge SDK implementation examples](https://github.com/rulebricks/examples).
+
 ###### Purpose
 
 The Forge SDK enables you to:
-- Define complex rule structures
+- Define complex and large rule structures
 - Create and manage conditions within rules
 - Specify request and response schemas
 - Generate rule representations in various formats (JSON, tabular, file)
+
+###### Field Types
+
+These operators match the ones available to you when defining conditions in the Rulebricks decision table editor.
+We are always adding more operators, so the lists below likely will not be exhaustive.
+
+####### Boolean Fields
+
+Boolean fields support these operations:
+
+```python
+boolean_field = rule.add_boolean_field("field_name")
+boolean_field.equals(True)    # Check if true
+boolean_field.equals(False)   # Check if false
+boolean_field.any()           # Match any value
+```
+
+####### Number Fields
+
+Number fields support these operations:
+
+```python
+number_field = rule.add_number_field("field_name")
+number_field.equals(value)                    # Exact match
+number_field.not_equals(value)                # Not equal to
+number_field.greater_than(value)              # Greater than
+number_field.less_than(value)                 # Less than
+number_field.greater_than_or_equal(value)     # Greater than or equal to
+number_field.less_than_or_equal(value)        # Less than or equal to
+number_field.between(start, end)              # Between two values (inclusive)
+number_field.not_between(start, end)          # Not between two values
+number_field.is_even()                        # Check if even
+number_field.is_odd()                         # Check if odd
+number_field.is_positive()                    # Check if positive
+number_field.is_negative()                    # Check if negative
+number_field.is_zero()                        # Check if zero
+number_field.is_not_zero()                    # Check if not zero
+number_field.is_multiple_of(value)            # Check if multiple of value
+number_field.is_not_multiple_of(value)        # Check if not multiple of value
+number_field.is_power_of(base)                # Check if power of base
+```
+
+####### String Fields
+
+String fields support these operations:
+
+```python
+string_field = rule.add_string_field("field_name")
+string_field.contains(value)                # Contains substring
+string_field.not_contains(value)            # Does not contain substring
+string_field.equals(value)                  # Exact match
+string_field.not_equals(value)              # Not equal to
+string_field.is_empty()                     # Check if empty
+string_field.is_not_empty()                 # Check if not empty
+string_field.starts_with(value)             # Starts with prefix
+string_field.ends_with(value)               # Ends with suffix
+string_field.is_included_in(list)           # Value is in list
+string_field.is_not_included_in(list)       # Value is not in list
+string_field.contains_any_of(list)          # Contains any value from list
+string_field.not_contains_any_of(list)      # Contains none from list
+string_field.matches_regex(pattern)         # Matches regex pattern
+string_field.not_matches_regex(pattern)     # Does not match regex
+string_field.is_email()                     # Is valid email
+string_field.is_not_email()                 # Is not valid email
+string_field.is_url()                       # Is valid URL
+string_field.is_not_url()                   # Is not valid URL
+string_field.is_ip()                        # Is valid IP address
+string_field.is_not_ip()                    # Is not valid IP address
+```
+
+####### Date Fields
+
+Date fields support these operations:
+
+```python
+date_field = rule.add_date_field("field_name")
+date_field.is_past()                        # Date is in the past
+date_field.is_future()                      # Date is in the future
+date_field.days_ago(days)                   # Exact number of days ago
+date_field.less_than_days_ago(days)         # Less than N days ago
+date_field.more_than_days_ago(days)         # More than N days ago
+date_field.days_from_now(days)              # Exact number of days from now
+date_field.less_than_days_from_now(days)    # Less than N days from now
+date_field.more_than_days_from_now(days)    # More than N days from now
+date_field.is_today()                       # Is today
+date_field.is_this_week()                   # Is this week
+date_field.is_this_month()                  # Is this month
+date_field.is_this_year()                   # Is this year
+date_field.after(date)                      # After date
+date_field.on_or_after(date)                # On or after date
+date_field.before(date)                     # Before date
+date_field.on_or_before(date)               # On or before date
+date_field.between(start, end)              # Between two dates
+date_field.not_between(start, end)          # Not between two dates
+```
+
+####### List Fields
+
+List fields support these operations:
+
+```python
+list_field = rule.add_list_field("field_name")
+list_field.contains(value)                  # Contains value
+list_field.is_empty()                       # Is empty list
+list_field.is_not_empty()                   # Is not empty
+list_field.length_equals(length)            # Has exact length
+list_field.length_not_equals(length)        # Does not have length
+list_field.longer_than(length)              # Longer than length
+list_field.shorter_than(length)             # Shorter than length
+list_field.contains_all(values)             # Contains all values
+list_field.contains_any(values)             # Contains any value
+list_field.contains_none(values)            # Contains none of values
+list_field.equals(other)                    # Equals another list
+list_field.not_equals(other)                # Not equal to list
+list_field.has_duplicates()                 # Has duplicate values
+list_field.no_duplicates()                  # Has no duplicates
+```
 
 ###### Creating a Rule
 
@@ -641,6 +760,116 @@ catch (Exception e)
 {
     // Handle the error
 }
+```
+
+##### Forge Module
+
+The Forge module provides a fluent interface for creating and managing rules in your Rulebricks workspace. It offers a type-safe way to define rules, fields, conditions, and dynamic values.
+
+###### Rule Creation
+
+```csharp
+using RulebricksApi.Forge;
+
+// Create a new rule
+var rule = new Rule()
+    .SetName("Health Insurance Account Selector")
+    .SetDescription("Assists individuals in selecting the most suitable health insurance account option.")
+    .SetWorkspace(client);
+
+// Add fields to capture request data
+rule
+    .AddNumberField("age", "Age of individual", 0)
+    .AddBooleanField("hasChronicCondition", "Has any chronic conditions", false)
+    .AddNumberField("annualIncome", "Annual income in USD", 0)
+    .AddStringField("preferredHospital", "Preferred hospital name")
+    .AddListField("currentMedications", "List of current medications");
+
+// Add response fields
+rule
+    .AddStringResponse("recommendedPlan", "Recommended insurance plan")
+    .AddNumberResponse("monthlyPremium", "Monthly premium amount")
+    .AddBooleanResponse("hsaEligible", "Eligible for Health Savings Account");
+
+// Create conditions using When() and Any()
+rule
+    .When(new Dictionary<string, object[]>
+    {
+        { "age", new object[] { "greater_than", 65 } },
+        { "hasChronicCondition", new object[] { "equals", true } }
+    })
+    .Then(new Dictionary<string, object>
+    {
+        { "recommendedPlan", "Medicare Advantage Plus" },
+        { "monthlyPremium", 175.50 },
+        { "hsaEligible", false }
+    });
+
+rule
+    .Any(new Dictionary<string, object[]>
+    {
+        { "annualIncome", new object[] { "less_than", 30000 } },
+        { "hasChronicCondition", new object[] { "equals", true } }
+    })
+    .Then(new Dictionary<string, object>
+    {
+        { "recommendedPlan", "Essential Care Plus" },
+        { "monthlyPremium", 125.00 },
+        { "hsaEligible", true }
+    });
+
+// Save the rule to your workspace
+await rule.Update();
+```
+
+###### Dynamic Values
+
+The Forge module also supports dynamic values that can be managed across your workspace:
+
+```csharp
+using RulebricksApi.Forge;
+
+// Configure dynamic values with your workspace
+DynamicValues.Configure(client);
+
+// Set dynamic values
+await DynamicValues.Set(new Dictionary<string, object>
+{
+    { "maxDeductible", 5000 },
+    { "minPremium", 50 },
+    { "availablePlans", new[] { "Basic", "Standard", "Premium" } }
+});
+
+// Get a dynamic value reference
+var maxDeductible = await DynamicValues.Get("maxDeductible");
+
+// Use dynamic values in rules
+rule
+    .When(new Dictionary<string, object[]>
+    {
+        { "annualIncome", new object[] { "greater_than", 50000 } }
+    })
+    .Then(new Dictionary<string, object>
+    {
+        { "monthlyPremium", maxDeductible }
+    });
+```
+
+###### Type Safety
+
+The Forge module is built with strong typing and provides compile-time type checking:
+
+```csharp
+// Field types are enforced at compile time
+rule.AddNumberField("age", "Age of individual", "invalid"); // Compiler error
+rule.AddBooleanField("isActive", "Is account active", 0); // Compiler error
+
+// Operator types are validated
+rule.When(new Dictionary<string, object[]>
+{
+    { "age", new object[] { "contains", "value" } }, // Runtime error: 'contains' not valid for number fields
+    { "isActive", new object[] { "greater_than", true } } // Runtime error: 'greater_than' not valid for boolean fields
+});
 ```
 
 ##### Feedback and Contributions
