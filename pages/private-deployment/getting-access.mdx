@@ -4,6 +4,53 @@ metaDescription: Request access to Rulebricks' private cloud deployment, and lea
 
 ![Private Deployment](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/application/api-docs.png)
 
+Before you get started deploying privately, you should understand the different deployment options available to you. We've made this simple chart to help you decide which option is best for your needs.
+
+## Deployment Options
+
+```mermaid
+flowchart TD
+      %% Starting point
+      START[Start] --> Q1{Are you planning to run\nover 10M rule\nexecutions per month?}
+
+      %% High volume branch - Customer Resources required
+      Q1 -->|"Yes"| Q2{Do you need full\ndata control?}
+      Q2 -->|"Yes"| YC["<b><u>On-Premise</u></b>\nYour Compute\nYour Database"]
+      YC --> IA[internal.acme.com]
+
+      Q2 -->|"No"| HY["<b><u>Self Hosted</u></b>\nYour Compute\nManaged DB"]
+      HY --> AR[acme.rulebricks.com]
+
+      %% Low volume branch - Our Resources is an option
+      Q1 -->|"No"| Q3{Who manages the\ninfrastructure?}
+
+      %% Our Resources sub-branch
+      Q3 -->|"Provider\n(Our Resources)"| Q4{Public or Private\nDeployment?}
+      Q4 -->|"Private"| OC["<b><u>Private Cloud</u></b>\nOur Compute\nManaged Database"]
+      OC --> CR[client.rulebricks.com]
+
+      Q4 -->|"Public"| PC["<b><u>Public Cloud</u></b>\nOur Compute\nOur Database"]
+      PC --> RB[rulebricks.com]
+
+      %% Your Resources (low volume) sub-branch
+      Q3 -->|"Customer\n(Your Resources)"| Q5{Prefer hybrid\narchitecture?}
+      Q5 -->|"Yes"| HY["<b><u>Self Hosted</u></b>\nYour Compute\nManaged Database"]
+      Q5 -->|"No"| YC["<b><u>On-Premise</u></b>\nYour Compute\nYour Database"]
+
+      %% Styling
+      classDef question fill:#fff0dd,stroke:#ff9933,stroke-width:1.5px,color:#222222,font-weight:bold
+      classDef ourRes fill:#e6f3ff,stroke:#4682b4,stroke-width:1.5px,color:#222222
+      classDef yourRes fill:#e6ffe6,stroke:#228b22,stroke-width:1.5px,color:#222222
+      classDef hybrid fill:#fff2e6,stroke:#ff8c00,stroke-width:1.5px,color:#222222
+      classDef endpoint fill:#e1ffe1,stroke:#228b22,stroke-width:2px,font-style:italic,font-weight:bold,color:#005500
+
+      class Q1,Q2,Q3,Q4 question
+      class OC,IN,PC ourRes
+      class YC yourRes
+      class HY hybrid
+      class RB,CR,IA,AR endpoint
+```
+
 ## ✉️  Request Access
 
 Rulebricks offers straightforward ~5 minute self-installing private cloud deployment via Terraform on **AWS** & **GCP**, allowing for deployments in sensitive, even airgapped environments, or for deployments where it’s important to co-locate the rule engine with backend resources to achieve particularly low latencies.
