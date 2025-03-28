@@ -18,13 +18,13 @@ To assign a role to a user, find the user in the "Team" tab of your Rulebricks d
 
 ### Select a role
 
-A dialog will appear where you can select the role you'd like to assign to the user. You can assign one of two roles: Developer, and Editor– the Administrator role is reserved exclusively for the workspace owner, and cannot be assigned to other users.
+A dialog will appear where you can select the role you'd like to assign to the user. You can assign one of two built-in system roles: Developer, and Editor– the Administrator role is reserved exclusively for the workspace owner, and cannot be assigned to other users. If you've created any custom role, you can select among them here as well.
 
 ![Role Dialog](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/workspace-management/workspace-role-dialog.png)
 
 </Steps>
 
-## Role Overviews
+## System Role Overviews
 
 ### Developer
 
@@ -38,6 +38,12 @@ Editors have highly limited access to your workspace, with the ability to view &
 
 Users who are assigned this role should be external collaborators or clients who still need to view and propose changes rules.
 
-![Rule Settings](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/workspace-management/workspace-rule-settings.png)
+## Custom Roles
 
-The editor role is somewhat customizable on a rule-by-rule basis, allowing you to grant or restrict different levels of access to specific rules as needed. Particularly, you can restrict access to update the request and response schemas of a rule, meaning that the editor can only view and edit the rule's conditions. This way, rules can be edited without potentially breaking the rule's integration with your application/data pipelines.
+![Custom Role Dialog](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/workspace-management/editing-custom-roles.png)
+
+In addition to the default roles, you can create custom roles with specific permissions to nearly any aspect of your workspace.
+
+![Role Entitlements](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/workspace-management/custom-role-entitlements.png)
+
+Custom roles can be assigned to users who require more granular access control. This can be incredibly useful for tailoring Rulebricks to specific end-users when embedded in your applications or served to external clients.
