@@ -72,11 +72,11 @@ For Each nodes must culminate in a Result Object node, which will collect the re
 
 **Note that because values in the For Each node are being iterated over and within a specific loop, they cannot connect to parts of your flow that are not within or downstream of that same loop.** This is intentional and indicated by a change in the color of connecting edges emitted from the For Each node.
 
-#### **If/Else**
+#### **Continue If**
 
-![If/Else](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/integrating-rules/if-else.png)
+![If/Else](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/integrating-rules/continue-if.png)
 
-The If/Else node allows you to proceed based on if a condition is true or "truthy" (not empty, non-zero, non-null). If the condition is true, the flow will continue along the edges from the "True" section, otherwise, it will continue along the edges from the "False" section. This flow function is useful if you would like to only execute specific parts of your flow.
+The Continue If node allows you to proceed based on one of three selectable conditions: if a property is "truthy" (not empty, non-zero, non-null), "true" (exactly a boolean that equals true), or "false" (exactly a boolean that equals false). If the condition is met, the flow will continue along the edges exiting the node. This flow function is useful if you would like to only execute specific branches of rules/actions. Simply use two "Continue If" nodes to model if/else logic. __Note that all data you would like to proceed with in your flow after this node must be wired in as inputs.__
 
 #### **Result Object**
 
