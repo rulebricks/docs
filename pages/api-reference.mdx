@@ -392,7 +392,7 @@ var requestData = new Dictionary<string, object>
     { "dataKey", "dataValue" }
 };
 
-var result = client.Rules.Solve("<rule-slug>", requestData);
+var result = client.Rules.SolveAsync("<rule-slug>", requestData);
 ```
 
 Bulk solve rules:
@@ -403,7 +403,7 @@ var requestDataList = new List<Dictionary<string, object>>
     new Dictionary<string, object> { { "dataKey", "dataValue" } }
 };
 
-var results = client.Rules.BulkSolve("<rule-slug>", requestDataList);
+var results = client.Rules.BulkSolveAsync("<rule-slug>", requestDataList);
 ```
 
 Parallel solving rules requires a particular format using `$rule` alongside respective data payloads:
@@ -431,7 +431,7 @@ var requestDataMap = new Dictionary<string, Dictionary<string, object>>
     }
 };
 
-var results = client.Rules.ParallelSolve(requestDataMap);
+var results = client.Rules.ParallelSolveAsync(requestDataMap);
 ```
 
 #### Error Handling
@@ -441,7 +441,7 @@ The SDK throws exceptions to indicate API errors:
 ```csharp
 try
 {
-    var result = client.Rules.Solve("<rule-slug>", requestData);
+    var result = client.Rules.SolveAsync("<rule-slug>", requestData);
 }
 catch (Exception e)
 {

@@ -1,2 +1,4 @@
 .next
 node_modules
+CHANGELOG_PROMPT.md
+.DS_Store

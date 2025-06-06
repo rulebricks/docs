@@ -1,20 +1,21 @@
 {
-  "blog": {
-    "title": "Our Blog ↗",
-    "type": "page",
-    "href": "https://rulebricks.com/blog",
-    "newWindow": true
-  },
-  "twitter": {
-    "title": "Follow us on X ↗",
-    "type": "page",
-    "href": "https://x.com/rulebricks",
-    "newWindow": true
-  },
-  "contact-us": {
-    "title": "Contact Support ↗",
-    "type": "page",
-    "href": "mailto:support@rulebricks.com",
-    "newWindow": true
-  }
+	"changelog": "Changelog",
+	"blog": {
+		"title": "Our Blog ↗",
+		"type": "page",
+		"href": "https://rulebricks.com/blog",
+		"newWindow": true
+	},
+	"twitter": {
+		"title": "Follow us on X ↗",
+		"type": "page",
+		"href": "https://x.com/rulebricks",
+		"newWindow": true
+	},
+	"contact-us": {
+		"title": "Contact Support ↗",
+		"type": "page",
+		"href": "mailto:support@rulebricks.com",
+		"newWindow": true
+	}
 }
