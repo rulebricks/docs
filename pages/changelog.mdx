@@ -5,7 +5,7 @@ metaDescription: Track the latest updates, improvements, and bug fixes to the Ru
 ![SDK Banner](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/changelog-banner-dark.png)
 
 
-## June 3-5, 2025 🚀
+## June 3-9, 2025 🚀
 
 ### New Features
 
@@ -22,11 +22,21 @@ metaDescription: Track the latest updates, improvements, and bug fixes to the Ru
 - **Template Support**: Use dynamic templates in database queries with variable substitution
 - **Consistent Date Handling**: All database dates now use standardized ISO 8601 format across PostgreSQL, MySQL, and MSSQL
 
+#### Security & Integration
+- **Vault Nodes**: New secure secret management for flows - integrate with AWS Secrets Manager, Azure Key Vault, Google Cloud Secret Manager, and HashiCorp Vault without exposing credentials
+- **Team Invitations**: Streamlined team member onboarding with proper invitation flows and organization details
+
+#### Code Node Improvements
+- **Better Output Management**: Code nodes now use a cleaner outputs object pattern with built-in help documentation
+- **Type Validation**: Automatic data type tracking and validation when connecting code nodes to other nodes
+- **Enhanced UI**: Collapsible help sections and improved placeholder text for better developer experience
+
 ### Bug Fixes
 - Fixed notification settings not saving when notifications were disabled
 - Improved stability of conditional (if/else) nodes with better undefined value handling
 - Fixed asset filtering in release creation to show only relevant options
 - Enhanced performance by reducing database preview limits
+- Fixed orphaned edges when removing node outputs
 
 ---
 
@@ -251,4 +261,4 @@ metaDescription: Track the latest updates, improvements, and bug fixes to the Ru
 
 ---
 
-*Last updated: June 6, 2025*
+*Last updated: June 9, 2025*
