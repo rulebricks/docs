@@ -52,7 +52,7 @@ Reactivity applies to all sequences of nodes until code execution nodes are reac
 
 ---
 
-### Flow Functions
+## Flow Functions
 
 There are several "Flow Functions" available in Rulebricks, which are special operations that can be used in your Rule Flows to perform various actions that may prove valuable integrating Rulebricks into your existing processes.
 
@@ -60,7 +60,62 @@ There are several "Flow Functions" available in Rulebricks, which are special op
 
 We'll cover each of these functions in more detail below.
 
-#### **For Each**
+### **Continue If**
+
+![If/Else](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/integrating-rules/continue-if.png)
+
+The Continue If node allows you to proceed based on one of four selectable conditions:
+
+ - If a specific property is "truthy" (not empty, non-zero, non-null)
+ - If a specific property is `true` (exactly a boolean that equals true)
+ - If a specific property is `false` (exactly a boolean that equals false)
+ - If a specific property is "falsy" (an empty list, a number that equals zero, null, or otherwise false).
+
+ If the condition is met, the flow will continue along the edges exiting the node. This flow function is useful if you would like to only execute specific branches of rules/actions. Simply use two "Continue If" nodes to model if/else logic. __Note that all data you would like to proceed with in your flow after this node must be wired in as inputs.__
+
+### **Result Object**
+
+![Result](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/integrating-rules/result.png)
+
+The Result Object node is the final output of your flow. It collects the results of all the nodes that precede it in the flow and returns the final output of your flow. You may use multiple Result Object nodes in your flow, as long as they contain unique keys in which to store the results.
+
+ __You must use a Result Object node at the end of your flow, as it is the only way to return results from your flow. If you do not use a Result Object node, your flow will not return any results.__
+
+### **Lookup Table**
+
+![Lookup Table](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/integrating-rules/lookup-table.png)
+
+The Lookup Table node allows you to look up a value in a table and return a corresponding value if an exact match is found. Lookup Tables can work well with If/Else nodes by returning true or false based on the lookup result.
+
+### **Run Code**
+
+![Code](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/integrating-rules/code.png)
+
+The Run Code node allows you to run custom Javascript code in your flow, using data from inside your flow. This is useful if you need to make calls to external services, perform complex calculations, or perform other custom operations that are not supported by the other flow functions.
+
+For ease of use, we offer certain standard libaries in this node, such as `fetch`, `moment`, `lodash`, and more.
+
+You can access values from connected nodes in the Run Code node by reading data in the `inputs` dictionary, and you can return arbitrary values from the Run Code node by updating the `outputs` dictionary. Global values and variables outside of the `outputs` dictionary will not be returned.
+
+### **Database Query**
+
+![DB Query](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/integrating-rules/db.png)
+
+The Database Query node allows you to query a PostgreSQL database table and return the results. This is useful if you need to retrieve data from a database table and use it in your flow, or if you need to update data in a database table based on the results of your flow. Variables from your flow can be used in the query, and the results of the query can be used in subsequent nodes in your flow.
+
+You can operate further on the `rows` returned from the query by using a For Each node (described below), or you can send the results directly to a Result Object node.
+
+This node comes with built-in support for 1-minute caching, so you can increase the performance of your flow endpoints. Expand the node settings panel to configure this.
+
+### **API Request**
+
+![API Request](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/integrating-rules/api.png)
+
+The API Request node allows you to make an HTTP request to an external API and return the results. This is useful if you need to retrieve data from an external API and use it in your flow, or if you need to update data in an external API based on the results of your flow. Variables from your flow can be used in the request URL, headers, and body, and the results of the request can be used in subsequent nodes in your flow.
+
+This node comes with built-in support for 1-minute caching, so you can increase the performance of your flow endpoints. Expand the node settings panel to configure this.
+
+### **For Each**
 
 ![For Each](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/integrating-rules/for-each.png)
 
@@ -72,42 +127,18 @@ For Each nodes must culminate in a Result Object node, which will collect the re
 
 **Note that because values in the For Each node are being iterated over and within a specific loop, they cannot connect to parts of your flow that are not within or downstream of that same loop.** This is intentional and indicated by a change in the color of connecting edges emitted from the For Each node.
 
-#### **Continue If**
-
-![If/Else](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/integrating-rules/continue-if.png)
-
-The Continue If node allows you to proceed based on one of three selectable conditions: if a property is "truthy" (not empty, non-zero, non-null), "true" (exactly a boolean that equals true), or "false" (exactly a boolean that equals false). If the condition is met, the flow will continue along the edges exiting the node. This flow function is useful if you would like to only execute specific branches of rules/actions. Simply use two "Continue If" nodes to model if/else logic. __Note that all data you would like to proceed with in your flow after this node must be wired in as inputs.__
-
-#### **Result Object**
-
-The Result Object node is the final output of your flow. It collects the results of all the nodes that precede it in the flow and returns the final output of your flow. You may use multiple Result Object nodes in your flow, as long as they contain unique keys in which to store the results.
-
-#### **Lookup Table**
-
-![Lookup Table](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/integrating-rules/lookup-table.png)
-
-The Lookup Table node allows you to look up a value in a table and return a corresponding value if an exact match is found. Lookup Tables can work well with If/Else nodes by returning true or false based on the lookup result.
-
-#### **Run Code**
-
-The Run Code node allows you to run custom Javascript code in your flow, using data from inside your flow. This is useful if you need to make calls to external services, perform complex calculations, or perform other custom operations that are not supported by the other flow functions. For ease of use, certain libraries, like `fetch` and `moment` are made available for you to use in your code.
-
-You can access values from connected nodes in the Run Code node by using the `inputs` dictionary, and you modify/return values from the Run Code node by updating values __in this same dictionary__. Global values and variables outside of the `inputs` dictionary will not be returned.
-
-#### **Database Query**
-
-![DB Query](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/integrating-rules/database-query.png)
-
-The Database Query node allows you to query a PostgreSQL database table and return the results. This is useful if you need to retrieve data from a database table and use it in your flow, or if you need to update data in a database table based on the results of your flow. Variables from your flow can be used in the query, and the results of the query can be used in subsequent nodes in your flow.
-
-#### **API Request**
-
-The API Request node allows you to make an HTTP request to an external API and return the results. This is useful if you need to retrieve data from an external API and use it in your flow, or if you need to update data in an external API based on the results of your flow. Variables from your flow can be used in the request URL, headers, and body, and the results of the request can be used in subsequent nodes in your flow.
-
-#### **AI Inference**
+### **AI Inference**
 
 ![AI Inference](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/integrating-rules/ai-inference.png)
 
 The AI Inference node allows you extract structured data to execute rules on from text using OpenAI's latest model. This is extremely useful if you'd like to extract specific information from things like emails and reports, and use that information in your flow, all natively within Rulebricks.
 
 To use the AI Inference node, just connect a text input into the node on the left, define the structured data you'd like to extract in the node UI by clicking "+ Add Target Label", and click "Run Inference".
+
+### **Vault**
+
+![Vault](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/integrating-rules/vault.png)
+
+The Vault node allows you to securely retrieve sensitive information, such as API keys, passwords, and other secrets from any major cloud secrets manager. This is useful if you need to use sensitive information in your flow without exposing it outside your workspace.
+
+Unless you explicitly surface the secrets output from Vault nodes in your flow (and there are safeguards that prevent you from doing so outside of the "Run Code" node) they will never appear or be stored in clear text in your flow, logged, or returned as part of the flow output.
