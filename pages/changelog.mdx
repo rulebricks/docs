@@ -5,6 +5,80 @@ metaDescription: Track the latest updates, improvements, and bug fixes to the Ru
 ![SDK Banner](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/changelog-banner-dark.png)
 
 
+## September 2-4, 2025 📊
+
+### New Features
+
+#### Rule Editor Enhancements
+- **Column Pinning**: Pin important columns in the rule editor table to keep them visible while scrolling through large datasets
+- **Advanced Paste Support**: Paste data from external sources like spreadsheets directly into the rule editor with full undo/redo support
+- **CSV Export**: Export your rules directly to CSV format for easy sharing and analysis in spreadsheet applications
+- **Improved Data Handling**: Enhanced paste operations with better formatting preservation and error recovery
+
+---
+
+## August 11-13, 2025 🔐
+
+### New Features
+
+#### Authentication & Security
+- **Enhanced Session Management**: Improved OAuth and magic link authentication with better session handling
+- **SSR Authentication**: Server-side rendering support for more secure and reliable authentication
+- **Auto-approval for Approvers**: Release approvers can now auto-approve releases in environments where they have permissions
+
+#### Form Enhancements
+- **Dynamic Forms**: Support for dynamic form questions that adapt based on user input
+- **Array Rendering**: Forms can now handle and display array data properly
+
+#### Navigation Improvements
+- **Dynamic Route Navigation**: Seamless navigation between flows and rules with improved URL handling
+
+### Bug Fixes
+- Fixed authentication race conditions during password reset flows
+- Improved OAuth redirect handling and session token management
+
+---
+
+## July 1-30, 2025 ⚡
+
+### New Features
+
+#### Performance & Stability
+- **Logging System Upgrade**: Increased log capacity to 10,000 entries with new ClickHouse backend for faster queries
+- **Improved Self-Hosted Support**: Better performance on self-hosted instances with optimized virtualization settings
+- **Dependency Updates**: Major security patches and library updates for improved stability
+
+#### Versioning System
+- **Major Versioning Upgrades**: Enhanced version management system for better tracking and rollback capabilities
+- **Remote Templates**: Switched to remote template system for faster deployments
+
+### Bug Fixes
+- Fixed column virtualization issues on self-hosted instances
+- Resolved environment scheme reverting issues
+- Fixed release visibility and asset targeting within folders
+- Improved nested request/response schema handling in code editor
+
+---
+
+## June 10-27, 2025 🎨
+
+### New Features
+
+#### Release Management
+- **Version Diff Preview**: See exactly what changed between rule versions before deploying
+- **Visual Version Comparison**: Clear UI improvements for comparing release versions
+
+#### Developer Experience
+- **Code Node Improvements**: Fixed initialization issues and improved flow reactivity
+- **Enhanced Error Handling**: Better error messages and handling across components
+
+#### Self-Hosted Improvements
+- **Admin Invitation System**: Streamlined admin setup for private deployments
+- **Database Migration Support**: Improved database migration process for privately deployed instances
+- **Docker Build Automation**: Automatic chart versioning during Docker builds
+
+---
+
 ## June 3-9, 2025 🚀
 
 ### New Features
@@ -261,4 +335,4 @@ metaDescription: Track the latest updates, improvements, and bug fixes to the Ru
 
 ---
 
-*Last updated: June 9, 2025*
+*Last updated: September 4, 2025*
