@@ -1,4 +1,12 @@
 {
   "getting-access": "Getting Access",
-  "rulebricks-on-aws": "Rulebricks on AWS EKS"
+  "quick-start": "Quick Start",
+  "configuration-reference": "Configuration Reference",
+  "initial-setup": "Initial Setup",
+  "deployment": "Deployment",
+  "monitoring-logging": "Observability",
+  "vector-logging": "Rule Log Draining",
+  "upgrades-maintenance": "Intalling Upgrades",
+  "status-troubleshooting": "Troubleshooting",
+  "developer-guide": "Developer Guide"
 }

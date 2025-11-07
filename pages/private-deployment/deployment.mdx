@@ -1,0 +1,402 @@
+---
+metaDescription: Learn how to deploy your Rulebricks cluster using the rulebricks deploy command. This guide covers the deployment process, options, and troubleshooting.
+---
+
+# Deployment Guide
+
+This guide walks you through deploying your Rulebricks cluster using the `rulebricks deploy` command.
+
+## Prerequisites
+
+Before deploying, ensure:
+
+1. **Configuration file exists**: Run `rulebricks init` or have a `rulebricks.yaml` file ready
+2. **Cloud credentials configured**: Authenticated with your chosen cloud provider
+3. **License key set**: Provided via environment variable or in config file
+4. **DNS configured** (optional): Domain DNS can be configured after deployment for TLS
+
+## Basic Deployment
+
+Deploy with default settings:
+
+```bash
+rulebricks deploy
+```
+
+This will:
+1. Validate your configuration
+2. Provision cloud infrastructure (VPC, subnets, security groups)
+3. Create a Kubernetes cluster
+4. Install core services (Traefik, cert-manager, KEDA)
+5. Deploy database (if self-hosted)
+6. Deploy Rulebricks application
+7. Configure ingress and TLS
+8. Initialize database with migrations
+
+## Deployment Options
+
+### Specify Configuration File
+
+Use a custom configuration file:
+
+```bash
+rulebricks deploy --config /path/to/rulebricks.yaml
+```
+
+Or use the short form:
+
+```bash
+rulebricks deploy -c custom-config.yaml
+```
+
+### Specify Chart Version
+
+Deploy a specific chart version:
+
+```bash
+rulebricks deploy --chart-version 1.2.3
+```
+
+If not specified, uses the version from your config file or the latest available.
+
+### Verbose Output
+
+Enable detailed logging:
+
+```bash
+rulebricks deploy --verbose
+```
+
+Or use the short form:
+
+```bash
+rulebricks deploy -v
+```
+
+This shows:
+- Terraform plan output
+- Kubernetes resource creation
+- Service health checks
+- Detailed error messages
+
+## Deployment Process
+
+### Phase 1: Infrastructure Provisioning
+
+The CLI uses Terraform to provision cloud infrastructure:
+
+**AWS:**
+- VPC with public and private subnets
+- Internet Gateway and NAT Gateway
+- Security groups
+- EKS cluster with node groups
+- IAM roles and policies
+
+**Azure:**
+- Resource group
+- Virtual network and subnets
+- Network security groups
+- AKS cluster
+- Managed identities
+
+**GCP:**
+- VPC network and subnets
+- Cloud Router and NAT
+- Firewall rules
+- GKE cluster
+- Service accounts
+
+This phase typically takes 10-15 minutes.
+
+### Phase 2: Kubernetes Setup
+
+Once the cluster is created:
+
+1. **kubectl context** is configured automatically
+2. **Core services** are installed:
+   - Traefik (ingress controller)
+   - cert-manager (TLS certificate management)
+   - KEDA (autoscaling operator)
+
+### Phase 3: Database Deployment
+
+If using self-hosted database:
+
+1. **Supabase stack** is deployed:
+   - PostgreSQL database
+   - Supabase services (Auth, Storage, Realtime, etc.)
+   - Admin UI (Studio)
+
+2. **Database migrations** are run automatically
+3. **Initial admin user** can be created (if configured)
+
+This phase takes 5-10 minutes.
+
+### Phase 4: Application Deployment
+
+The Rulebricks application is deployed:
+
+1. **Application pods** (API and frontend)
+2. **HPS service** (rule processing engine)
+3. **Worker pods** (background job processors)
+4. **Redis** (caching layer)
+5. **Kafka** (message queue)
+6. **Vector** (log aggregation, if enabled)
+
+### Phase 5: Ingress and TLS
+
+1. **Ingress routes** are configured
+2. **TLS certificates** are requested from Let's Encrypt
+3. **DNS verification** (if domain is configured)
+
+Certificate generation can take 5-10 minutes.
+
+## Monitoring Deployment Progress
+
+### Check Status
+
+During deployment, you can check status in another terminal:
+
+```bash
+rulebricks status
+```
+
+This shows:
+- Infrastructure provisioning status
+- Cluster connectivity
+- Pod status and health
+- Service endpoints
+
+### View Logs
+
+View deployment logs in real-time:
+
+```bash
+rulebricks logs app -f
+```
+
+Or check specific components:
+
+```bash
+rulebricks logs database -f
+rulebricks logs traefik -f
+```
+
+### Kubernetes Commands
+
+You can also use kubectl directly:
+
+```bash
+# Check all pods
+kubectl get pods --all-namespaces
+
+# Check specific namespace
+kubectl get pods -n <namespace>
+
+# Describe a pod for details
+kubectl describe pod <pod-name> -n <namespace>
+
+# View pod logs
+kubectl logs <pod-name> -n <namespace> -f
+```
+
+## Post-Deployment
+
+### Verify Deployment
+
+After deployment completes:
+
+1. **Check status**:
+   ```bash
+   rulebricks status
+   ```
+
+2. **Verify endpoints**:
+   - Main application: `https://your-domain.com`
+   - Grafana (if enabled): `https://grafana.your-domain.com`
+   - Supabase Studio (if self-hosted): `https://supabase.your-domain.com`
+
+3. **Test application**:
+   - Access the web UI
+   - Create a test rule
+   - Verify rule execution
+
+### Configure DNS
+
+If you haven't configured DNS yet:
+
+1. **Get load balancer address**:
+   ```bash
+   rulebricks status
+   ```
+   Look for "Load Balancer" or "Ingress" address.
+
+2. **Create DNS records**:
+   - **A record** or **CNAME** pointing to the load balancer
+   - **Wildcard record** (optional): `*.your-domain.com` → load balancer
+
+3. **Wait for DNS propagation** (5-30 minutes)
+
+4. **TLS certificates** will be automatically generated once DNS is configured
+
+### Set Up Logging (Optional)
+
+If you configured logging with cloud storage sinks, set up IAM:
+
+**AWS S3:**
+```bash
+rulebricks vector setup-s3
+```
+
+**GCP Cloud Storage:**
+```bash
+rulebricks vector setup-gcs
+```
+
+**Azure Blob Storage:**
+```bash
+rulebricks vector setup-azure
+```
+
+See [Vector Logging Setup](./vector-logging) for details.
+
+## Common Deployment Scenarios
+
+### Development Environment
+
+For a development deployment:
+
+```yaml
+performance:
+  volume_level: small
+
+kubernetes:
+  node_count: 3
+  enable_autoscale: false
+
+monitoring:
+  enabled: true
+  mode: local
+```
+
+### Production Environment
+
+For production:
+
+```yaml
+performance:
+  volume_level: medium  # or large
+
+kubernetes:
+  node_count: 3
+  enable_autoscale: true
+  min_nodes: 3
+  max_nodes: 10
+
+monitoring:
+  enabled: true
+  mode: remote  # Forward to external monitoring
+
+database:
+  type: managed  # Or self-hosted with backups
+```
+
+### High-Performance Deployment
+
+For high throughput:
+
+```yaml
+performance:
+  volume_level: large
+  hps_replicas: 2
+  hps_worker_max_replicas: 40
+  kafka_partitions: 20
+
+kubernetes:
+  node_count: 5
+  enable_autoscale: true
+  min_nodes: 5
+  max_nodes: 16
+```
+
+## Troubleshooting Deployment
+
+### Infrastructure Provisioning Fails
+
+**Terraform errors:**
+- Check cloud provider quotas
+- Verify credentials and permissions
+- Check for existing resources with conflicting names
+- Review Terraform logs in verbose mode
+
+**Common issues:**
+- **AWS**: Insufficient service quotas, IAM permissions
+- **GCP**: Billing not enabled, insufficient quotas
+- **Azure**: Subscription limits, resource group conflicts
+
+### Cluster Creation Fails
+
+**Timeout errors:**
+- Increase timeout in configuration (if supported)
+- Check cloud provider status
+- Verify network connectivity
+
+**Authentication errors:**
+- Re-authenticate: `aws configure`, `gcloud auth login`, `az login`
+- Check service account permissions
+
+### Application Deployment Fails
+
+**Pod startup errors:**
+- Check pod logs: `rulebricks logs <component>`
+- Verify configuration values
+- Check resource limits and node capacity
+- Review Kubernetes events: `kubectl get events --all-namespaces`
+
+**Database connection errors:**
+- Verify database is running: `rulebricks status`
+- Check database credentials in secrets
+- Review database logs: `rulebricks logs database`
+
+### Certificate Generation Fails
+
+**ACME/Let's Encrypt errors:**
+- Verify DNS is configured correctly
+- Check domain points to load balancer
+- Ensure ports 80 and 443 are accessible
+- Review cert-manager logs: `kubectl logs -n cert-manager -l app=cert-manager`
+
+**DNS propagation:**
+- Wait 5-30 minutes after DNS changes
+- Verify with: `dig your-domain.com` or `nslookup your-domain.com`
+
+### Resource Constraints
+
+**Out of resources:**
+- Check node capacity: `kubectl top nodes`
+- Scale up cluster: Increase `node_count` or enable autoscaling
+- Review resource requests in configuration
+
+**Pod pending:**
+- Check node resources: `kubectl describe nodes`
+- Review pod events: `kubectl describe pod <pod-name>`
+- Consider increasing node count or instance size
+
+## Deployment Best Practices
+
+1. **Start small**: Begin with a small deployment and scale up
+2. **Use managed database**: For production, consider managed database for reliability
+3. **Enable monitoring**: Always enable monitoring for production
+4. **Configure backups**: Set up automated backups for self-hosted databases
+5. **Test upgrades**: Test upgrades in a development environment first
+6. **Document customizations**: Keep notes on any manual changes made outside the CLI
+
+## Next Steps
+
+After successful deployment:
+
+- **Configure monitoring**: See [Monitoring & Logging](./monitoring-logging)
+- **Set up logging**: See [Vector Logging Setup](./vector-logging)
+- **Plan upgrades**: See [Upgrades & Maintenance](./upgrades-maintenance)
+- **Monitor health**: See [Status & Troubleshooting](./status-troubleshooting)
+

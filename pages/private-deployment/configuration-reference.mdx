@@ -1,0 +1,540 @@
+---
+metaDescription: Complete reference for the rulebricks.yaml configuration file. Learn about all available configuration options for your Rulebricks deployment.
+---
+
+# Configuration Reference
+
+This document provides a complete reference for the `rulebricks.yaml` configuration file schema.
+
+## Configuration File Structure
+
+The configuration file is a YAML file that defines all aspects of your Rulebricks deployment. Here's the complete schema:
+
+```yaml
+version: "1.0"                    # Configuration version
+
+project:                         # Project settings
+  name: string                   # Required: Kubernetes-compatible name
+  domain: string                 # Required: Application domain
+  email: string                  # Required: Admin email
+  license: string                # Required: License key or env:VAR
+  version: string                # Optional: Project version
+  namespace: string              # Optional: Override namespace
+
+cloud:                           # Cloud provider settings
+  provider: string               # Required: aws, azure, or gcp
+  region: string                 # Required: Cloud region
+  aws:                           # Optional: AWS-specific
+  azure:                         # Optional: Azure-specific
+  gcp:                           # Optional: GCP-specific
+
+kubernetes:                      # Kubernetes cluster settings
+  cluster_name: string           # Optional: Cluster name
+  node_count: int                # Required: Initial node count
+  enable_autoscale: bool         # Optional: Enable autoscaling
+  min_nodes: int                 # Optional: Min nodes (if autoscaling)
+  max_nodes: int                 # Optional: Max nodes (if autoscaling)
+
+database:                        # Database configuration
+  type: string                   # Required: self-hosted, managed, external
+  provider: string               # Optional: Database provider
+  supabase:                      # Optional: Supabase settings
+  pooling:                       # Optional: Connection pooling
+
+email:                           # Email configuration
+  provider: string               # Optional: smtp, sendgrid, etc.
+  from: string                   # Required: From email address
+  from_name: string              # Optional: From display name
+  smtp:                          # Optional: SMTP settings
+  templates:                     # Optional: Custom email templates
+
+security:                        # Security settings
+  tls:                           # Optional: TLS configuration
+  secrets:                       # Optional: Secrets management
+  network:                       # Optional: Network security
+
+monitoring:                      # Monitoring configuration
+  enabled: bool                  # Required: Enable monitoring
+  mode: string                   # Optional: local or remote
+  local:                         # Optional: Local monitoring settings
+  remote:                        # Optional: Remote monitoring settings
+  metrics:                       # Optional: Metrics configuration
+  logs:                          # Optional: Logs configuration
+
+logging:                         # Logging configuration
+  enabled: bool                  # Required: Enable logging
+  vector:                        # Optional: Vector settings
+
+performance:                     # Performance tuning
+  volume_level: string           # Optional: small, medium, large
+  hps_replicas: int              # Optional: HPS replicas
+  hps_worker_replicas: int       # Optional: Worker replicas
+  hps_worker_max_replicas: int  # Optional: Max worker replicas
+  kafka_partitions: int          # Optional: Kafka partitions
+  # ... more performance settings
+
+ai:                              # AI integration
+  enabled: bool                  # Required: Enable AI features
+  openai_api_key_from: string   # Optional: OpenAI API key source
+
+advanced:                        # Advanced settings
+  terraform:                     # Optional: Terraform backend
+  backup:                        # Optional: Backup configuration
+  docker_registry:               # Optional: Custom Docker registry
+  custom_values:                 # Optional: Custom Helm values
+```
+
+## Detailed Field Reference
+
+### `version`
+
+Configuration file version. Currently `"1.0"`.
+
+```yaml
+version: "1.0"
+```
+
+### `project`
+
+Project metadata and naming.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | string | Yes | Kubernetes-compatible name (lowercase, alphanumeric, hyphens) |
+| `domain` | string | Yes | Primary application domain |
+| `email` | string | Yes | Admin email for notifications |
+| `license` | string | Yes | License key or `env:VAR_NAME` |
+| `version` | string | No | Project version string |
+| `namespace` | string | No | Override default namespace naming |
+
+**Example:**
+```yaml
+project:
+  name: my-rulebricks-app
+  domain: app.example.com
+  email: admin@example.com
+  license: env:RULEBRICKS_LICENSE_KEY
+  version: "1.0.0"
+```
+
+### `cloud`
+
+Cloud provider configuration.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `provider` | string | Yes | `aws`, `azure`, or `gcp` |
+| `region` | string | Yes | Cloud provider region |
+| `aws` | object | No | AWS-specific settings (see below) |
+| `azure` | object | No | Azure-specific settings (see below) |
+| `gcp` | object | No | GCP-specific settings (see below) |
+
+#### AWS Configuration (`cloud.aws`)
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `account_id` | string | No | AWS account ID (auto-detected if not set) |
+| `vpc_cidr` | string | No | VPC CIDR block (default: `10.0.0.0/16`) |
+| `instance_type` | string | No | EC2 instance type (default: `c8g.large`) |
+
+**Example:**
+```yaml
+cloud:
+  provider: aws
+  region: us-east-1
+  aws:
+    instance_type: c8g.large
+    vpc_cidr: "10.0.0.0/16"
+```
+
+#### Azure Configuration (`cloud.azure`)
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `subscription_id` | string | No | Azure subscription ID |
+| `resource_group` | string | No | Resource group name |
+| `vm_size` | string | No | VM size (default: `Standard_D4ps_v5`) |
+
+**Example:**
+```yaml
+cloud:
+  provider: azure
+  region: eastus
+  azure:
+    subscription_id: "xxxxx-xxxxx-xxxxx"
+    resource_group: "my-rg"
+    vm_size: "Standard_D4ps_v5"
+```
+
+#### GCP Configuration (`cloud.gcp`)
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `project_id` | string | Yes | GCP project ID |
+| `zone` | string | No | GCP zone (auto-derived from region) |
+| `machine_type` | string | No | Machine type (default: `t2a-standard-4`) |
+
+**Example:**
+```yaml
+cloud:
+  provider: gcp
+  region: us-central1
+  gcp:
+    project_id: "my-gcp-project"
+    machine_type: "t2a-standard-4"
+```
+
+### `kubernetes`
+
+Kubernetes cluster configuration.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `cluster_name` | string | No | Cluster name (auto-generated if not set) |
+| `node_count` | int | Yes | Initial number of nodes (minimum: 1) |
+| `enable_autoscale` | bool | No | Enable cluster autoscaling |
+| `min_nodes` | int | No | Minimum nodes (required if autoscaling) |
+| `max_nodes` | int | No | Maximum nodes (required if autoscaling) |
+
+**Example:**
+```yaml
+kubernetes:
+  cluster_name: my-rulebricks-cluster
+  node_count: 3
+  enable_autoscale: true
+  min_nodes: 3
+  max_nodes: 10
+```
+
+### `database`
+
+Database deployment configuration.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `type` | string | Yes | `self-hosted`, `managed`, or `external` |
+| `provider` | string | No | Database provider (for managed) |
+| `supabase` | object | No | Supabase settings (see below) |
+| `pooling` | object | No | Connection pooling (see below) |
+
+#### Supabase Configuration (`database.supabase`)
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `project_name` | string | No | Supabase project name |
+| `region` | string | No | Supabase region |
+| `org_id` | string | No | Organization ID |
+
+**Example:**
+```yaml
+database:
+  type: managed
+  supabase:
+    project_name: my-project
+    region: us-east-1
+```
+
+#### Connection Pooling (`database.pooling`)
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `enabled` | bool | No | Enable connection pooling |
+| `min_size` | int | No | Minimum pool size |
+| `max_size` | int | No | Maximum pool size |
+
+### `email`
+
+Email provider configuration.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `provider` | string | No | Provider name (smtp, sendgrid, etc.) |
+| `from` | string | Yes | From email address |
+| `from_name` | string | No | From display name |
+| `smtp` | object | No | SMTP settings (see below) |
+| `templates` | object | No | Custom email templates (see below) |
+
+#### SMTP Configuration (`email.smtp`)
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `host` | string | Yes | SMTP hostname |
+| `port` | int | Yes | SMTP port |
+| `username` | string | Yes | SMTP username |
+| `password_from` | string | Yes | Password source (e.g., `env:VAR`) |
+| `encryption` | string | No | `tls`, `ssl`, or `none` |
+| `admin_email` | string | No | Admin email for notifications |
+
+**Example:**
+```yaml
+email:
+  provider: smtp
+  from: noreply@example.com
+  from_name: "Rulebricks"
+  smtp:
+    host: smtp.example.com
+    port: 587
+    username: smtp-user
+    password_from: env:SMTP_PASSWORD
+    encryption: tls
+```
+
+### `security`
+
+Security and network configuration.
+
+#### TLS Configuration (`security.tls`)
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `enabled` | bool | No | Enable TLS/SSL |
+| `provider` | string | No | `cert-manager` or `custom` |
+| `custom_cert` | string | No | Path to custom certificate |
+| `custom_key` | string | No | Path to custom key |
+| `acme_email` | string | No | Email for Let's Encrypt |
+| `domains` | array | No | Additional domains for certificates |
+
+**Example:**
+```yaml
+security:
+  tls:
+    enabled: true
+    provider: cert-manager
+    acme_email: admin@example.com
+    domains:
+      - api.example.com
+      - admin.example.com
+```
+
+#### Network Security (`security.network`)
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `allowed_ips` | array | No | IP whitelist (empty = allow all) |
+| `rate_limiting` | bool | No | Enable rate limiting |
+
+### `monitoring`
+
+Monitoring stack configuration.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `enabled` | bool | Yes | Enable monitoring |
+| `mode` | string | No | `local` or `remote` |
+| `local` | object | No | Local monitoring settings |
+| `remote` | object | No | Remote monitoring settings |
+| `metrics` | object | No | Metrics configuration (not fully implemented - see note below) |
+| `logs` | object | No | Logs configuration (not fully implemented) |
+
+#### Local Monitoring (`monitoring.local`)
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `prometheus_enabled` | bool | No | Enable Prometheus |
+| `grafana_enabled` | bool | No | Enable Grafana |
+| `retention` | string | No | Retention period (e.g., `30d`) |
+| `storage_size` | string | No | Storage size (e.g., `50Gi`) |
+
+#### Remote Monitoring (`monitoring.remote`)
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `provider` | string | Yes | `prometheus`, `grafana-cloud`, `newrelic`, `custom` |
+| `prometheus_write` | object | No | Prometheus remote write config |
+| `newrelic` | object | No | New Relic configuration |
+
+**Example (Grafana Cloud):**
+```yaml
+monitoring:
+  enabled: true
+  mode: remote
+  remote:
+    provider: grafana-cloud
+    prometheus_write:
+      url: https://prometheus-us-central1.grafana.net/api/prom/push
+      username: "123456"
+      password_from: env:MONITORING_PASSWORD
+```
+
+#### Metrics Configuration (`monitoring.metrics`)
+
+import { Callout } from 'nextra/components'
+
+<Callout>
+  This configuration section exists in the schema but is not fully implemented. Use `monitoring.local.retention` for local mode retention instead.
+</Callout>
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `retention` | string | No | Metrics retention period (not implemented - use `monitoring.local.retention`) |
+| `interval` | string | No | Scrape interval (not implemented - Prometheus uses defaults) |
+
+#### Logs Configuration (`monitoring.logs`)
+
+<Callout>
+  This configuration section exists in the schema but is not currently implemented.
+</Callout>
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `level` | string | No | Log level (not implemented) |
+| `retention` | string | No | Log retention period (not implemented) |
+
+### `logging`
+
+Centralized logging configuration.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `enabled` | bool | Yes | Enable logging |
+| `vector` | object | No | Vector configuration |
+
+#### Vector Sink (`logging.vector.sink`)
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `type` | string | Yes | Sink type (see below) |
+| `endpoint` | string | No | Endpoint URL |
+| `api_key` | string | No | API key or `env:VAR` |
+| `config` | object | No | Sink-specific configuration |
+
+**Sink Types:**
+- `console` - Output to stdout
+- `elasticsearch` - Elasticsearch endpoint
+- `datadog_logs` - Datadog logs
+- `splunk_hec` - Splunk HEC
+- `aws_s3` - AWS S3 bucket
+- `gcp_cloud_storage` - Google Cloud Storage
+- `azure_blob` - Azure Blob Storage
+- `loki` - Loki endpoint
+- `http` - Generic HTTP endpoint
+- `new_relic_logs` - New Relic logs
+
+See [Vector Logging Setup](./vector-logging) for detailed examples.
+
+### `performance`
+
+Performance tuning and resource configuration.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `volume_level` | string | No | `small`, `medium`, or `large` |
+| `hps_replicas` | int | No | Initial HPS replicas |
+| `hps_worker_replicas` | int | No | Initial worker replicas |
+| `hps_worker_max_replicas` | int | No | Maximum worker replicas |
+| `kafka_partitions` | int | No | Kafka partitions |
+| `kafka_lag_threshold` | int | No | Lag threshold for autoscaling |
+| `kafka_retention_hours` | int | No | Message retention (hours) |
+| `kafka_storage_size` | string | No | Kafka storage size |
+| `kafka_replication_factor` | int | No | Replication factor |
+| `hps_resources` | object | No | HPS resource limits |
+| `worker_resources` | object | No | Worker resource limits |
+
+**Example:**
+```yaml
+performance:
+  volume_level: medium
+  hps_replicas: 2
+  hps_worker_max_replicas: 20
+  kafka_partitions: 10
+  hps_resources:
+    requests:
+      cpu: "500m"
+      memory: "1Gi"
+    limits:
+      cpu: "2000m"
+      memory: "4Gi"
+```
+
+### `ai`
+
+AI integration settings.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `enabled` | bool | Yes | Enable AI features |
+| `openai_api_key_from` | string | No | OpenAI API key source |
+
+### `advanced`
+
+Advanced configuration options.
+
+#### Terraform Backend (`advanced.terraform`)
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `backend` | string | No | Backend type: `local`, `s3`, `gcs`, `azurerm` |
+| `backend_config` | object | No | Backend-specific configuration |
+| `variables` | object | No | Custom Terraform variables |
+
+#### Backup Configuration (`advanced.backup`)
+
+<Callout>
+  Backup functionality is planned but not yet implemented. This configuration exists in the schema for future use but is not currently processed during deployment.
+</Callout>
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `enabled` | bool | No | Enable automated backups (not yet implemented) |
+| `schedule` | string | No | Cron schedule (not yet implemented) |
+| `retention` | string | No | Retention period (not yet implemented) |
+| `provider` | string | No | Backup provider: `s3`, `gcs`, `azure` (not yet implemented) |
+| `provider_config` | object | No | Provider-specific config (not yet implemented) |
+
+For now, you'll need to set up database backups manually. See [Upgrades & Maintenance](./upgrades-maintenance#backup-database) for manual backup options.
+
+#### Docker Registry (`advanced.docker_registry`)
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `url` | string | No | Registry URL |
+| `app_image` | string | No | Custom app image |
+| `hps_image` | string | No | Custom HPS image |
+
+## Environment Variables
+
+Secrets can be sourced from environment variables using the `env:VAR_NAME` syntax:
+
+```yaml
+project:
+  license: env:RULEBRICKS_LICENSE_KEY
+
+email:
+  smtp:
+    password_from: env:SMTP_PASSWORD
+
+monitoring:
+  remote:
+    prometheus_write:
+      password_from: env:MONITORING_PASSWORD
+```
+
+## Configuration Validation
+
+The CLI validates your configuration before deployment. Common validation errors:
+
+- **Missing required fields**: Ensure all required fields are present
+- **Invalid project name**: Must be Kubernetes-compatible
+- **Invalid email format**: Must be a valid email address
+- **Invalid cloud provider**: Must be `aws`, `azure`, or `gcp`
+- **Invalid database type**: Must be `self-hosted`, `managed`, or `external`
+- **Invalid node count**: Must be at least 1
+
+## Default Values
+
+Many fields have sensible defaults. See the [example configuration file](../cli/examples/rulebricks-example.yaml) for all default values.
+
+## Best Practices
+
+1. **Use environment variables for secrets** - Never commit secrets to version control
+2. **Start with defaults** - Only override what you need to change
+3. **Document customizations** - Add comments explaining non-standard choices
+4. **Version control your config** - Commit `rulebricks.yaml` (without secrets) to version control
+5. **Test changes** - Validate configuration before deploying
+
+## See Also
+
+- [Initial Setup](./initial-setup) - Using the init wizard
+- [Deployment Guide](./deployment) - Deploying your cluster
+- [Example Configuration](../cli/examples/rulebricks-example.yaml) - Complete example with comments
+

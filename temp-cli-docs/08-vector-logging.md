@@ -1,0 +1,364 @@
+# Vector Logging Setup
+
+This guide covers setting up Vector logging with cloud storage sinks that require IAM configuration (AWS S3, Google Cloud Storage, Azure Blob Storage).
+
+## Overview
+
+Vector collects logs from all Rulebricks components and forwards them to your chosen destination. For cloud storage sinks (S3, GCS, Azure Blob), you need to configure IAM permissions so Vector can write logs.
+
+The CLI provides automatic IAM setup commands that handle the complexity of cloud provider authentication.
+
+## Prerequisites
+
+Before setting up cloud storage logging:
+
+1. **Deploy your cluster** - IAM setup requires an existing deployment
+2. **Configure logging in config** - Set up the sink in `rulebricks.yaml`
+3. **Install cloud CLI tools** - Required for IAM setup:
+   - **AWS**: `aws` CLI and `eksctl`
+   - **GCP**: `gcloud` CLI
+   - **Azure**: `az` CLI
+
+## AWS S3 Setup
+
+### Configuration
+
+Configure S3 logging in your `rulebricks.yaml`:
+
+```yaml
+logging:
+  enabled: true
+  vector:
+    sink:
+      type: aws_s3
+      config:
+        bucket: "my-logs-bucket"
+        region: "us-east-1"
+        setup_iam: true  # Enable automatic IAM setup prompt
+```
+
+### Automatic Setup
+
+After deployment, run the automatic setup:
+
+```bash
+rulebricks vector setup-s3
+```
+
+This command:
+1. Creates OIDC provider for your EKS cluster (if needed)
+2. Creates IAM policy with S3 permissions
+3. Creates IRSA (IAM Roles for Service Accounts) service account
+4. Updates Vector deployment to use the service account
+5. Verifies S3 access
+
+### Manual Setup
+
+If you prefer manual setup or need custom configuration:
+
+```bash
+rulebricks vector generate-iam-config --sink aws_s3 --bucket my-logs-bucket
+```
+
+This generates:
+- IAM policy document
+- Step-by-step setup instructions
+- CLI commands to execute
+
+### Command Options
+
+```bash
+rulebricks vector setup-s3 [flags]
+
+Flags:
+  --bucket string    S3 bucket name (uses config value if not specified)
+  --region string    AWS region (uses config value if not specified)
+  --cluster string   EKS cluster name (uses config value if not specified)
+```
+
+### What Gets Created
+
+- **OIDC Provider**: For EKS cluster (if not exists)
+- **IAM Policy**: Grants S3 write permissions
+- **IAM Role**: Assumed by Vector pods
+- **Service Account**: Annotated with IAM role ARN
+- **Vector Deployment**: Updated to use service account
+
+### Verification
+
+After setup, verify logs are being written:
+
+```bash
+# Check Vector logs
+rulebricks logs vector
+
+# Check S3 bucket
+aws s3 ls s3://my-logs-bucket/
+```
+
+## Google Cloud Storage Setup
+
+### Configuration
+
+Configure GCS logging in your `rulebricks.yaml`:
+
+```yaml
+logging:
+  enabled: true
+  vector:
+    sink:
+      type: gcp_cloud_storage
+      config:
+        bucket: "my-gcs-bucket"
+        use_workload_identity: true
+        setup_iam: true
+```
+
+### Automatic Setup
+
+After deployment, run the automatic setup:
+
+```bash
+rulebricks vector setup-gcs
+```
+
+This command:
+1. Enables Workload Identity on your GKE cluster (if needed)
+2. Creates GCP service account
+3. Grants storage permissions to service account
+4. Binds Workload Identity
+5. Updates Vector deployment
+6. Verifies GCS access
+
+### Manual Setup
+
+Generate manual setup instructions:
+
+```bash
+rulebricks vector generate-iam-config --sink gcp_cloud_storage --bucket my-gcs-bucket
+```
+
+### Command Options
+
+```bash
+rulebricks vector setup-gcs [flags]
+
+Flags:
+  --bucket string    GCS bucket name (uses config value if not specified)
+  --project string   GCP project ID (uses config value if not specified)
+  --cluster string   GKE cluster name (uses config value if not specified)
+```
+
+### What Gets Created
+
+- **Workload Identity**: Enabled on GKE cluster
+- **GCP Service Account**: For Vector logging
+- **IAM Binding**: Links Kubernetes service account to GCP service account
+- **Storage Permissions**: Grants object write permissions
+- **Vector Deployment**: Updated to use Workload Identity
+
+### Verification
+
+After setup, verify logs are being written:
+
+```bash
+# Check Vector logs
+rulebricks logs vector
+
+# Check GCS bucket
+gsutil ls gs://my-gcs-bucket/
+```
+
+## Azure Blob Storage Setup
+
+### Configuration
+
+Configure Azure Blob logging in your `rulebricks.yaml`:
+
+```yaml
+logging:
+  enabled: true
+  vector:
+    sink:
+      type: azure_blob
+      config:
+        container_name: "logs"
+        storage_account: "mylogs"
+        use_managed_identity: true
+        setup_iam: true
+```
+
+### Automatic Setup
+
+After deployment, run the automatic setup:
+
+```bash
+rulebricks vector setup-azure
+```
+
+This command:
+1. Creates managed identity
+2. Assigns storage permissions to managed identity
+3. Configures pod identity
+4. Updates Vector deployment
+5. Verifies Azure access
+
+### Manual Setup
+
+Generate manual setup instructions:
+
+```bash
+rulebricks vector generate-iam-config --sink azure_blob --bucket my-container
+```
+
+### Command Options
+
+```bash
+rulebricks vector setup-azure [flags]
+
+Flags:
+  --storage-account string   Azure storage account name
+  --container string         Blob container name (uses config value if not specified)
+  --resource-group string    Azure resource group (uses config value if not specified)
+  --cluster string           AKS cluster name (uses config value if not specified)
+```
+
+### What Gets Created
+
+- **Managed Identity**: For Vector logging
+- **Role Assignment**: Grants storage permissions
+- **Pod Identity**: Links pods to managed identity
+- **Vector Deployment**: Updated to use managed identity
+
+### Verification
+
+After setup, verify logs are being written:
+
+```bash
+# Check Vector logs
+rulebricks logs vector
+
+# Check Azure container
+az storage blob list --account-name mylogs --container-name logs
+```
+
+## Generate IAM Configuration
+
+Generate IAM configuration and setup instructions for any sink:
+
+```bash
+rulebricks vector generate-iam-config [flags]
+
+Flags:
+  --sink string    Sink type (aws_s3, gcp_cloud_storage, azure_blob)
+  --bucket string  Bucket/container name
+```
+
+**Output includes:**
+- IAM policy documents
+- Step-by-step manual setup instructions
+- CLI commands to execute
+- Verification steps
+
+## Troubleshooting
+
+### Setup Command Fails
+
+**Common issues:**
+
+1. **Missing cloud CLI tools**:
+   - Install required CLI tools
+   - Verify they're in your PATH
+   - Authenticate with cloud provider
+
+2. **Insufficient permissions**:
+   - Verify your cloud account has admin/IAM permissions
+   - Check service account permissions (GCP)
+   - Verify subscription access (Azure)
+
+3. **Cluster not found**:
+   - Verify cluster name is correct
+   - Check kubectl context is set
+   - Ensure cluster is accessible
+
+### Logs Not Appearing in Storage
+
+**Check Vector status:**
+
+```bash
+# Check Vector pods
+kubectl get pods -n <logging-namespace>
+
+# Check Vector logs
+rulebricks logs vector
+
+# Check for errors
+kubectl logs <vector-pod> -n <logging-namespace>
+```
+
+**Verify IAM configuration:**
+
+1. **AWS**: Check service account annotation:
+   ```bash
+   kubectl get sa vector -n <logging-namespace> -o yaml
+   ```
+   Should have `eks.amazonaws.com/role-arn` annotation.
+
+2. **GCP**: Check Workload Identity binding:
+   ```bash
+   kubectl get sa vector -n <logging-namespace> -o yaml
+   ```
+   Should have `iam.gke.io/gcp-service-account` annotation.
+
+3. **Azure**: Check pod identity:
+   ```bash
+   kubectl get podidentity <name> -n <logging-namespace>
+   ```
+
+**Test access manually:**
+
+1. **AWS**: Test S3 access from a pod
+2. **GCP**: Test GCS access from a pod
+3. **Azure**: Test blob access from a pod
+
+### Permission Errors
+
+If you see permission errors:
+
+1. **Verify IAM policy** - Check policy grants correct permissions
+2. **Check role binding** - Verify service account is bound correctly
+3. **Review cloud provider logs** - Check cloud provider audit logs
+4. **Re-run setup** - Try running setup command again
+
+### Bucket/Container Not Found
+
+Ensure:
+- Bucket/container exists
+- Bucket/container name is correct
+- You have access to the bucket/container
+- Region/location matches configuration
+
+## Best Practices
+
+1. **Use automatic setup** - Simplifies IAM configuration
+2. **Separate buckets** - Use different buckets for different environments
+3. **Set up lifecycle policies** - Automatically archive or delete old logs
+4. **Monitor log volume** - Track storage costs
+5. **Secure access** - Use least-privilege IAM policies
+6. **Test after setup** - Verify logs are being written
+
+## Security Considerations
+
+1. **IAM Policies**: Use least-privilege principles
+2. **Bucket Policies**: Restrict access to necessary services only
+3. **Encryption**: Enable encryption at rest
+4. **Access Logging**: Enable access logging for audit
+5. **Network Policies**: Restrict network access if possible
+
+## Next Steps
+
+- **Monitor log volume**: Track storage usage and costs
+- **Set up log analysis**: Configure log analysis tools
+- **Configure retention**: Set up lifecycle policies
+- **Review logs**: Regularly review logs for issues
+
