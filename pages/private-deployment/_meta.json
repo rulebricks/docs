@@ -6,7 +6,7 @@
   "deployment": "Deployment",
   "monitoring-logging": "Observability",
   "vector-logging": "Rule Log Draining",
-  "upgrades-maintenance": "Intalling Upgrades",
+  "upgrades-maintenance": "Installing Upgrades",
   "status-troubleshooting": "Troubleshooting",
   "developer-guide": "Developer Guide"
 }
