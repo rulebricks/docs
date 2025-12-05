@@ -83,11 +83,11 @@ const config: DocsThemeConfig = {
   primarySaturation: 60,
   docsRepositoryBase: 'https://github.com/rulebricks/docs/tree/main',
   banner: {
-    key: 'flows-release',
+    key: 'ai-release',
     text: () => {
       return (
         <a
-          href="https://www.rulebricks.com/blog/reactive-rule-flows"
+          href="https://www.rulebricks.com/blog/ai-business-rules"
           target="_blank"
           className="flex flex-row justify-center items-center text-center align-middle group duration-100 transition-all hover:text-lime-200"
         >
@@ -96,7 +96,7 @@ const config: DocsThemeConfig = {
             className="size-3 group-hover:fill-lime-300/50 group-hover:rotate-[120deg] transition-all duration-150 sm:size-4 inline-block mr-2"
           />
           <span className="text-xs sm:text-base align-middle self-center">
-            New in Rulebricks: Reactive Rule Flows. More →
+            Tired of reading documentation? Try our new AI suite. More →
           </span>
         </a>
       )
