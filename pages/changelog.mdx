@@ -4,31 +4,72 @@ metaDescription: Track the latest updates, improvements, and bug fixes to the Ru
 
 ![SDK Banner](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/changelog-banner-dark.png)
 
+## November 13 - December 8, 2025 🎄
+
+### New Features
+
+#### AI & Automation
+
+- **AI Command Palette**: Edit rules using natural language with a new AI-powered command palette
+- **Smarter Rule Creation**: The AI wizard now accepts context and data files for more informed and accurate rule generation
+- **Expanded Model Support**: Access a wider range of AI models in Flow inference steps
+
+#### Organization & Logs
+
+- **Nested Folders**: Create nested folders to better organize complex projects and rule structures
+- **Extended Log Retention**: Log retention increased to 90 days, with support for structured data capture
+- **Advanced Log Filtering**: New server-side filtering, debounced search, and improved CSV export capabilities
+- **Decision Data Querying**: Support for Decision Data Query language to analyze structured log data
+
+#### Platform Enhancements
+
+- **Email Customization**: Full templating support for email customizations in Helm chart deployments
+- **Company Email Validation**: Enhanced security and verification with company email validation during signup
+- **Enriched Logging**: Logs now capture location information for better context
+- **Enhanced Error Tracking**: Upgraded Sentry integration with better component annotation and user feedback capture
+
+### Bug Fixes
+
+- Fixed an issue with the create endpoint for Zapier integrations
+- Improved error handling for Vector script loading to prevent crashes
+- Fixed timezone handling in RuleLogs filters to correctly display local time
+- Resolved various UI consistency issues in the dashboard and rule editor
+
+_Now available in `rulebricks/app:1.2.8`_
+
+---
 
 ## October 31 - November 12, 2025 🎯
 
 ### New Features
 
 #### Version Comparison & Diff Tool
+
 - **Rule & Flow Diff View**: Compare different versions of rules and flows side-by-side with a new diff tool accessible directly from editor navbars
 - **Enhanced Version Comparison**: Improved viewport syncing and navigation when comparing versions, with smoother transitions and better keyboard navigation
 - **Version Preview**: Preview rule and flow versions before deploying to see exactly what changed
 
 #### Organization & Management
+
 - **Folder Support**: Organize rules and flows into folders with drag-and-drop support for better project organization
 - **Tenancy Handling**: Improved folder support with proper tenancy-aware access group management when moving or organizing rules and flows
 - **Drag-and-Drop**: Move rules and flows between folders using intuitive drag-and-drop functionality
 
 #### Performance Improvements
+
 - **Flow Structure Compression**: Significantly reduced storage size for flow structures using JSON compression, improving performance and reducing data transfer
 
 #### Private Deployment Enhancements
+
 - **Simplified Experience**: Streamlined application experience for private deployments with improved configuration and setup
 - **Enhanced Authentication**: Improved invite acceptance flow with PKCE support for more secure authentication
 
 ### Security Improvements
+
 - **Code Evaluation Security**: Upgraded to a higher security alternative for sandboxed code evaluation
 - **Authentication Enhancements**: Improved JWT handling with size reduction and better security measures
+
+_Now available in `rulebricks/app:1.1.29`_
 
 ---
 
@@ -37,28 +78,35 @@ metaDescription: Track the latest updates, improvements, and bug fixes to the Ru
 ### New Features
 
 #### AI Rule Generation Enhancements
+
 - **Improved Error Handling**: AI rule wizard now provides better error messages and recovery when generation fails
 - **Markdown Support**: Rich text editing with markdown support for rule descriptions and documentation
 - **Smarter Schema Detection**: Enhanced AI model for detecting and suggesting rule structures
 
 #### Rule Editor Improvements
+
 - **Cell Hover Tooltips**: Long text in cells now shows tooltips on hover, making it easier to read truncated content
 - **Search Clear Button**: Quickly clear search filters with a dedicated clear button in the rule editor
 - **Enhanced Visual Feedback**: Subtle shadow effects when hovering over cells for better visual clarity
 
 #### Form Performance
+
 - **Optimized Rendering**: Significantly improved form rendering performance for rules with complex input/output schemas
 - **Faster Load Times**: Forms now load and respond more quickly, especially with large datasets
 
 ### Platform Improvements
 
 #### Security & Stability
+
 - **Enhanced Code Execution**: Upgraded code evaluation engine with improved security measures
 - **Better Authentication**: Refined authentication flow with improved state management and session handling
 - **Password Reset Flow**: Fixed and improved password reset email functionality
 
 #### Developer Experience
+
 - **Performance Optimizations**: Various under-the-hood improvements for faster page loads and smoother interactions
+
+_Now available in `rulebricks/app:1.1.5`_
 
 ---
 
@@ -67,10 +115,13 @@ metaDescription: Track the latest updates, improvements, and bug fixes to the Ru
 ### New Features
 
 #### Rule Editor Enhancements
+
 - **Column Pinning**: Pin important columns in the rule editor table to keep them visible while scrolling through large datasets
 - **Advanced Paste Support**: Paste data from external sources like spreadsheets directly into the rule editor with full undo/redo support
 - **CSV Export**: Export your rules directly to CSV format for easy sharing and analysis in spreadsheet applications
 - **Improved Data Handling**: Enhanced paste operations with better formatting preservation and error recovery
+
+_Now available in `rulebricks/app:1.1.5`_
 
 ---
 
@@ -79,20 +130,26 @@ metaDescription: Track the latest updates, improvements, and bug fixes to the Ru
 ### New Features
 
 #### Authentication & Security
+
 - **Enhanced Session Management**: Improved OAuth and magic link authentication with better session handling
 - **SSR Authentication**: Server-side rendering support for more secure and reliable authentication
 - **Auto-approval for Approvers**: Release approvers can now auto-approve releases in environments where they have permissions
 
 #### Form Enhancements
+
 - **Dynamic Forms**: Support for dynamic form questions that adapt based on user input
 - **Array Rendering**: Forms can now handle and display array data properly
 
 #### Navigation Improvements
+
 - **Dynamic Route Navigation**: Seamless navigation between flows and rules with improved URL handling
 
 ### Bug Fixes
+
 - Fixed authentication race conditions during password reset flows
 - Improved OAuth redirect handling and session token management
+
+_Now available in `rulebricks/app:1.1.5`_
 
 ---
 
@@ -101,19 +158,24 @@ metaDescription: Track the latest updates, improvements, and bug fixes to the Ru
 ### New Features
 
 #### Performance & Stability
+
 - **Logging System Upgrade**: Increased log capacity to 10,000 entries with new ClickHouse backend for faster queries
 - **Improved Self-Hosted Support**: Better performance on self-hosted instances with optimized virtualization settings
 - **Dependency Updates**: Major security patches and library updates for improved stability
 
 #### Versioning System
+
 - **Major Versioning Upgrades**: Enhanced version management system for better tracking and rollback capabilities
 - **Remote Templates**: Switched to remote template system for faster deployments
 
 ### Bug Fixes
+
 - Fixed column virtualization issues on self-hosted instances
 - Resolved environment scheme reverting issues
 - Fixed release visibility and asset targeting within folders
 - Improved nested request/response schema handling in code editor
+
+_Now available in `rulebricks/app:1.1.3`_
 
 ---
 
@@ -122,17 +184,22 @@ metaDescription: Track the latest updates, improvements, and bug fixes to the Ru
 ### New Features
 
 #### Release Management
+
 - **Version Diff Preview**: See exactly what changed between rule versions before deploying
 - **Visual Version Comparison**: Clear UI improvements for comparing release versions
 
 #### Developer Experience
+
 - **Code Node Improvements**: Fixed initialization issues and improved flow reactivity
 - **Enhanced Error Handling**: Better error messages and handling across components
 
 #### Self-Hosted Improvements
+
 - **Admin Invitation System**: Streamlined admin setup for private deployments
 - **Database Migration Support**: Improved database migration process for privately deployed instances
 - **Docker Build Automation**: Automatic chart versioning during Docker builds
+
+_Now available in `rulebricks/app:0.0.11`_
 
 ---
 
@@ -141,28 +208,34 @@ metaDescription: Track the latest updates, improvements, and bug fixes to the Ru
 ### New Features
 
 #### Enhanced Collaboration
+
 - **Rich Text Comments**: Comments now support formatted text, including bold, italic, lists, and @mentions for team collaboration
 - **Email Notifications**: Get notified via email when releases are created, approved, or commented on
 - **Notification Preferences**: Configure notification settings per environment to control what updates you receive
 
 #### Improved Flow Management
+
 - **Smart Flow Import**: Import flows without creating duplicate rules - the system now intelligently detects and reuses existing rules
 - **Conflict Detection**: Clear warnings when importing flows that contain conflicting rule definitions
 
 #### Database Connectivity
+
 - **Template Support**: Use dynamic templates in database queries with variable substitution
 - **Consistent Date Handling**: All database dates now use standardized ISO 8601 format across PostgreSQL, MySQL, and MSSQL
 
 #### Security & Integration
+
 - **Vault Nodes**: New secure secret management for flows - integrate with AWS Secrets Manager, Azure Key Vault, Google Cloud Secret Manager, and HashiCorp Vault without exposing credentials
 - **Team Invitations**: Streamlined team member onboarding with proper invitation flows and organization details
 
 #### Code Node Improvements
+
 - **Better Output Management**: Code nodes now use a cleaner outputs object pattern with built-in help documentation
 - **Type Validation**: Automatic data type tracking and validation when connecting code nodes to other nodes
 - **Enhanced UI**: Collapsible help sections and improved placeholder text for better developer experience
 
 ### Bug Fixes
+
 - Fixed notification settings not saving when notifications were disabled
 - Improved stability of conditional (if/else) nodes with better undefined value handling
 - Fixed asset filtering in release creation to show only relevant options
@@ -176,10 +249,12 @@ metaDescription: Track the latest updates, improvements, and bug fixes to the Ru
 ### New Features
 
 #### Testing Improvements
+
 - **Visual Test Diffs**: See exactly what changed when tests fail with side-by-side JSON comparison
 - **Organized Test Suites**: Better organization of test cases for rules and flows
 
 ### Bug Fixes
+
 - Fixed handling of falsy values in conditional logic
 - Improved error messages for undefined values in flows
 
@@ -190,11 +265,13 @@ metaDescription: Track the latest updates, improvements, and bug fixes to the Ru
 ### New Features
 
 #### Enhanced Content Creation
+
 - **Mermaid Diagrams**: Support for creating flowcharts and diagrams in documentation
 - **Improved Rich Text Editor**: Added support for numbered lists, code blocks, underline, and strikethrough
 - **Image Enhancements**: Add alt text and captions to images in rich text content
 
 #### Better Navigation
+
 - **Active Section Highlighting**: Table of contents now highlights the section you're currently viewing
 - **Smooth Scrolling**: Improved navigation experience when jumping between sections
 
@@ -205,11 +282,13 @@ metaDescription: Track the latest updates, improvements, and bug fixes to the Ru
 ### New Features
 
 #### Rule Editor Improvements
+
 - **Clearer UI Labels**: More intuitive labeling throughout the rule editor
 - **Schema Change Warnings**: Get warned before making changes that could affect existing data
 - **Field Name Validation**: Automatic validation and formatting of field names
 
 #### JSON Editor Enhancements
+
 - **Function Support**: Write and use custom functions directly in JSON values
 - **Syntax Highlighting**: Better code highlighting for improved readability
 
@@ -220,6 +299,7 @@ metaDescription: Track the latest updates, improvements, and bug fixes to the Ru
 ### New Features
 
 #### Performance & Security
+
 - **Owner Validation**: Enhanced security with stricter validation of resource ownership
 - **Improved Logging**: Better visibility into system operations for debugging
 
@@ -230,11 +310,13 @@ metaDescription: Track the latest updates, improvements, and bug fixes to the Ru
 ### New Features
 
 #### Value Management
+
 - **Bulk Value Import**: Import multiple values at once from JSON files
 - **Value Collections**: Organize related values into hierarchical collections
 - **Usage Tracking**: See which rules are using specific values
 
 ### Bug Fixes
+
 - Fixed display issues with table headers
 - Improved handling of null values across all data types
 
@@ -245,16 +327,19 @@ metaDescription: Track the latest updates, improvements, and bug fixes to the Ru
 ### New Features
 
 #### Advanced Operators
+
 - **Semantic Version Comparison**: Compare version numbers with operators like "greater than version" or "satisfies range"
 - **Null Checks**: New "is null" operator available for all data types
 - **Minute-Based Date Comparisons**: More granular date comparison options
 
 #### Flow Editor Enhancements
+
 - **Node Zooming**: Zoom in on complex nodes for better visibility
 - **Grid Snapping**: Nodes now snap to grid for cleaner layouts
 - **Improved Transitions**: Smoother animations when nodes update
 
 #### API & Database Nodes
+
 - **Response Caching**: Cache API and database responses with configurable expiration
 - **JSON Path Extraction**: Extract specific data from responses using JSON path syntax
 - **Standard Libraries**: Access to common libraries like axios and lodash in custom code
@@ -266,16 +351,19 @@ metaDescription: Track the latest updates, improvements, and bug fixes to the Ru
 ### New Features
 
 #### Visual JSON Editor
+
 - **Drag-and-Drop Fields**: Reorder JSON fields by dragging them
 - **Visual Type Selection**: Choose field types from a dropdown with icons
 - **Nested Object Support**: Full support for complex nested structures
 - **Toggle Views**: Switch between visual and code views seamlessly
 
 #### Mathematical Functions
+
 - **Pre-built Functions**: Access common mathematical operations without writing code
 - **Function Templates**: Start with templates for common calculations
 
 #### Code Editor Enhancements
+
 - **Expanded View**: Maximize the code editor for complex logic
 - **Format Button**: Auto-format your code with one click
 - **JetBrains Mono Font**: Professional coding font for better readability
@@ -287,6 +375,7 @@ metaDescription: Track the latest updates, improvements, and bug fixes to the Ru
 ### New Features
 
 #### UI Polish
+
 - **Improved Loading States**: Smoother loading animations throughout the app
 - **Better Visual Feedback**: Clearer indicators for user actions
 - **Consistent Styling**: Updated UI elements for better consistency
@@ -298,10 +387,12 @@ metaDescription: Track the latest updates, improvements, and bug fixes to the Ru
 ### New Features
 
 #### Performance Optimizations
+
 - **Faster Rule Evaluation**: Significant performance improvements in rule processing
 - **Node.js 22 Upgrade**: Updated to latest Node.js for better performance
 
 #### Platform Improvements
+
 - **Self-Hosted Enhancements**: Better support for private deployments
 - **Environment Variable Management**: Improved configuration options
 
@@ -312,11 +403,13 @@ metaDescription: Track the latest updates, improvements, and bug fixes to the Ru
 ### New Features
 
 #### Enterprise Features
+
 - **Entitlements System**: Fine-grained control over feature access
 - **Tenant Values**: Separate value spaces for multi-tenant deployments
 - **Collections**: Organize rules and flows into logical groupings
 
 ### Bug Fixes
+
 - Fixed values disappearing in certain edge cases
 - Improved error handling in API responses
 - Better type safety throughout the platform
@@ -328,10 +421,12 @@ metaDescription: Track the latest updates, improvements, and bug fixes to the Ru
 ### New Features
 
 #### User Management
+
 - **Enhanced User Groups**: Improved user group management with full division support for better organization of team members
 - **API Improvements**: Migrated user group operations to use query parameters for better REST compliance
 
 ### UI Improvements
+
 - **Better Form Layouts**: Improved select component heights for better usability
 - **Login Experience**: Enhanced login page branding consistency
 
@@ -342,11 +437,13 @@ metaDescription: Track the latest updates, improvements, and bug fixes to the Ru
 ### Platform Updates
 
 #### Brand Refresh
+
 - **New Visual Identity**: Updated branding across the entire platform with a fresh, modern look
 - **Improved Navigation**: Redesigned landing page for better user onboarding
 - **Consistent UI Elements**: Updated select components and form elements to match new brand guidelines
 
 #### Editor Enhancements
+
 - **Better UX**: Improved editor user experience with more intuitive controls and visual feedback
 
 ---
@@ -356,6 +453,7 @@ metaDescription: Track the latest updates, improvements, and bug fixes to the Ru
 ### New Features
 
 #### Release Management
+
 - **Performance Improvements**: Release data is now cached for faster access and better performance
 - **Enhanced Release Workflow**: Improved the overall release creation and management process
 
@@ -366,15 +464,18 @@ metaDescription: Track the latest updates, improvements, and bug fixes to the Ru
 ### New Features
 
 #### Flow Enhancements
+
 - **Bulk Flow Processing**: Execute multiple flows at once for batch operations
 - **Improved Flow Lists**: Better performance when processing lists of data through flows
 - **Direct List Execution**: Fixed and optimized direct execution of flows on list data
 
 #### Performance Optimizations
+
 - **Smart Caching**: Improved caching mechanisms for better performance
 - **Dynamic Value Rendering**: Fixed rendering issues for dynamic values in team contexts
 
 ### Bug Fixes
+
 - Fixed import functionality for flows and rules
 - Resolved caching issues that were affecting flow execution
 
@@ -385,11 +486,13 @@ metaDescription: Track the latest updates, improvements, and bug fixes to the Ru
 ### New Features
 
 #### Flow Creation
+
 - **Published Rules Only**: Flow creation now shows only published rules, reducing clutter and preventing use of draft rules in production flows
 
 ### Bug Fixes
+
 - **Regex Operator Fix**: Fixed issues with regular expression operators in rule conditions
 
 ---
 
-*Last updated: November 12, 2025*
+_Last updated: December 8, 2025_

@@ -1,9 +1,3 @@
----
-metaDescription: Deploy Rulebricks to your Kubernetes cluster using our official Helm charts.
----
-
-import { Callout } from 'nextra/components'
-
 # Getting Started with Rulebricks
 
 Deploy Rulebricks to your Kubernetes cluster using our official Helm charts.
@@ -19,11 +13,7 @@ Our unified Helm chart deploys Rulebricks and all its dependencies in a single c
 - **kubectl** configured for your cluster
 - A **domain name** you control
 
-<Callout type="info">
-  The chart handles all service dependencies, configurations, and migrations
-  automatically. You provide a values file with your settings, and Helm
-  coordinates the rest.
-</Callout>
+> **Note:** The chart handles all service dependencies, configurations, and migrations automatically. You provide a values file with your settings, and Helm coordinates the rest.
 
 ### Quick Start
 
@@ -64,28 +54,28 @@ DNS records are created automatically—no manual configuration needed.
 ```yaml
 # your-values.yaml
 global:
-  domain: 'rulebricks.yourdomain.com'
-  email: 'admin@yourdomain.com'
-  licenseKey: 'your-license-key'
+  domain: "rulebricks.yourdomain.com"
+  email: "admin@yourdomain.com"
+  licenseKey: "your-license-key"
 
   smtp:
-    host: 'smtp.yourdomain.com'
+    host: "smtp.yourdomain.com"
     port: 587
-    user: 'smtp-user'
-    pass: 'smtp-password'
-    from: 'no-reply@yourdomain.com'
-    fromName: 'Rulebricks'
+    user: "smtp-user"
+    pass: "smtp-password"
+    from: "no-reply@yourdomain.com"
+    fromName: "Rulebricks"
 
 # Change these for production!
 supabase:
   secret:
     db:
-      password: 'secure-db-password'
+      password: "secure-db-password"
     dashboard:
-      password: 'secure-dashboard-password'
+      password: "secure-dashboard-password"
 ```
 
-See [Configuration Reference](/private-deployment/configuration-reference) for all available options.
+See [Configuration Reference](./configuration-reference.md) for all available options.
 
 ---
 
@@ -146,17 +136,17 @@ flowchart TD
 
 ### Components Deployed
 
-| Component        | Purpose                                      | Enabled by Default |
-| :--------------- | :------------------------------------------- | :----------------: |
-| **Rulebricks**   | Core application and high-performance solver |         ✓          |
-| **Supabase**     | PostgreSQL database and authentication       |         ✓          |
-| **Kafka**        | Message queue for async rule execution       |         ✓          |
-| **Traefik**      | Ingress controller with automatic TLS        |         ✓          |
-| **cert-manager** | Let's Encrypt certificate provisioning       |         ✓          |
-| **KEDA**         | Event-driven autoscaling for workers         |         ✓          |
-| **Vector**       | Log aggregation and forwarding               |         ✓          |
-| **external-dns** | Automatic DNS record management              |         ✗          |
-| **Prometheus**   | Metrics collection and alerting              |         ✗          |
+| Component         | Purpose                                    | Enabled by Default |
+| ----------------- | ------------------------------------------ | :----------------: |
+| **Rulebricks**    | Core application and high-performance solver |         ✓          |
+| **Supabase**      | PostgreSQL database and authentication     |         ✓          |
+| **Kafka**         | Message queue for async rule execution     |         ✓          |
+| **Traefik**       | Ingress controller with automatic TLS      |         ✓          |
+| **cert-manager**  | Let's Encrypt certificate provisioning     |         ✓          |
+| **KEDA**          | Event-driven autoscaling for workers       |         ✓          |
+| **Vector**        | Log aggregation and forwarding             |         ✓          |
+| **external-dns**  | Automatic DNS record management            |         ✗          |
+| **Prometheus**    | Metrics collection and alerting            |         ✗          |
 
 ### Database Options
 
@@ -188,18 +178,15 @@ kubectl logs job/rulebricks-db-migrate-1 -n rulebricks
 ### Common Issues
 
 **Pods stuck in Pending:**
-
 - Check node resources: `kubectl describe nodes`
 - Verify StorageClass exists: `kubectl get storageclass`
 
 **Certificate not issuing:**
-
 - Verify DNS resolves to your LoadBalancer
 - Check cert-manager logs: `kubectl logs -n cert-manager -l app=cert-manager`
 - View certificate status: `kubectl describe certificate -n rulebricks`
 
 **Database connection errors:**
-
 - Wait for PostgreSQL to be ready (can take 2-3 minutes)
 - Check database pod: `kubectl logs -n rulebricks -l app.kubernetes.io/name=supabase-db`
 
@@ -222,7 +209,7 @@ helm install rulebricks oci://ghcr.io/rulebricks/charts/stack \
 
 ### 1. Requests vs. Executions
 
-There's a key distinction: whether Rulebricks handles high volumes of rule _requests_ or rule _executions_.
+There's a key distinction: whether Rulebricks handles high volumes of rule *requests* or rule *executions*.
 
 By default, Rulebricks handles very large volumes of the latter, but managing network overhead requires extra resources. This is easy to overlook since we often talk about "rule executions per second"—it can be unclear if this means QPS or actual solution counts.
 
@@ -235,18 +222,18 @@ The Helm chart deploys to your **existing** Kubernetes cluster. You're responsib
 - Storage provisioner (e.g., AWS EBS CSI driver)
 - Network policies and security
 
-See [example-min-cluster.yaml](https://github.com/rulebricks/helm/blob/main/example-min-cluster.yaml) for minimum EKS cluster specifications.
+See [example-min-cluster.yaml](../example-min-cluster.yaml) for minimum EKS cluster specifications.
 
 ### 3. Air-Gapped Deployments
 
 Rulebricks can run nearly air-gapped with these exceptions:
 
-| Feature          | External Dependency       | Can Disable?                       |
-| :--------------- | :------------------------ | :--------------------------------- |
-| Managed Supabase | Supabase Cloud API        | Yes—use self-hosted                |
-| AI Features      | OpenAI API                | Yes—set `global.ai.enabled: false` |
-| Log Forwarding   | External sinks (S3, etc.) | Yes—use console sink only          |
-| TLS Certificates | Let's Encrypt             | Yes—bring your own certs           |
+| Feature              | External Dependency       | Can Disable?                   |
+| -------------------- | ------------------------- | ------------------------------ |
+| Managed Supabase     | Supabase Cloud API        | Yes—use self-hosted            |
+| AI Features          | OpenAI API                | Yes—set `global.ai.enabled: false` |
+| Log Forwarding       | External sinks (S3, etc.) | Yes—use console sink only      |
+| TLS Certificates     | Let's Encrypt             | Yes—bring your own certs       |
 
 ### 4. Updates Are Manual
 
@@ -275,6 +262,7 @@ The chart source is available and documented for infrastructure engineers needin
 
 ## Next Steps
 
-- **[Configuration Reference](/private-deployment/configuration-reference)** — Complete values.yaml documentation
-- **[Architecture & Operations](/private-deployment/architecture)** — System internals and migration flows
-- **[Deployment Guide](/private-deployment/deployment)** — Production patterns and cloud-specific configs
+- **[Configuration Reference](./configuration-reference.md)** — Complete values.yaml documentation
+- **[Architecture & Operations](./architecture-and-operations.md)** — System internals and migration flows
+- **[Deployment Guide](./deployment-guide.md)** — Production patterns and cloud-specific configs
+

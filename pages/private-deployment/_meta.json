@@ -1,12 +1,6 @@
 {
-  "getting-access": "Getting Access",
-  "quick-start": "Quick Start",
+  "quick-start": "Getting Started",
+  "deployment": "Deployment Guide",
   "configuration-reference": "Configuration Reference",
-  "initial-setup": "Initial Setup",
-  "deployment": "Deployment",
-  "monitoring-logging": "Observability",
-  "vector-logging": "Rule Log Draining",
-  "upgrades-maintenance": "Installing Upgrades",
-  "status-troubleshooting": "Troubleshooting",
-  "developer-guide": "Developer Guide"
+  "architecture": "Architecture & Operations"
 }

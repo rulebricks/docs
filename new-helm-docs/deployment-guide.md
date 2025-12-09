@@ -1,9 +1,3 @@
----
-metaDescription: This guide covers common deployment patterns and the essential values you need to configure for production.
----
-
-import { Callout } from 'nextra/components'
-
 # Deployment Guide
 
 This guide covers common deployment patterns and the essential values you need to configure for production.
@@ -21,13 +15,10 @@ This guide covers common deployment patterns and the essential values you need t
 
 ### Must Change Before Production
 
-<Callout type="error">
-  These values **must** be changed from defaults for any production deployment
-  to avoid critical security risks.
-</Callout>
+These values **must** be changed from defaults for any production deployment:
 
 | Value                                | Why                       | Risk if Unchanged                   |
-| :----------------------------------- | :------------------------ | :---------------------------------- |
+| ------------------------------------ | ------------------------- | ----------------------------------- |
 | `global.domain`                      | Your actual domain        | Application won't be accessible     |
 | `global.email`                       | Certificate notifications | Let's Encrypt issues                |
 | `global.licenseKey`                  | Enterprise features       | Evaluation mode limits              |
@@ -39,7 +30,7 @@ This guide covers common deployment patterns and the essential values you need t
 ### Should Review
 
 | Value                                         | Default  | Consider Changing When      |
-| :-------------------------------------------- | :------- | :-------------------------- |
+| --------------------------------------------- | -------- | --------------------------- |
 | `global.supabase.anonKey`                     | Demo key | Always for production       |
 | `global.supabase.serviceKey`                  | Demo key | Always for production       |
 | `kafka.controller.replicaCount`               | 1        | High availability needed    |
@@ -57,8 +48,8 @@ Minimal configuration for evaluation:
 ```yaml
 # dev-values.yaml
 global:
-  domain: 'rulebricks.dev.example.com'
-  email: 'dev@example.com'
+  domain: "rulebricks.dev.example.com"
+  email: "dev@example.com"
   tlsEnabled: false # Enable after DNS setup
 
 # Everything else uses defaults
@@ -78,38 +69,38 @@ Full control over all components:
 ```yaml
 # production-selfhosted.yaml
 global:
-  domain: 'rulebricks.acme.com'
-  email: 'devops@acme.com'
-  licenseKey: 'your-license-key'
+  domain: "rulebricks.acme.com"
+  email: "devops@acme.com"
+  licenseKey: "your-license-key"
   tlsEnabled: true
   externalDnsEnabled: true # If using external-dns
 
   smtp:
-    host: 'email-smtp.us-east-1.amazonaws.com'
+    host: "email-smtp.us-east-1.amazonaws.com"
     port: 587
-    user: '${SMTP_USER}' # Set via --set or CI/CD
-    pass: '${SMTP_PASS}'
-    from: 'no-reply@acme.com'
-    fromName: 'Acme - Rulebricks'
+    user: "${SMTP_USER}" # Set via --set or CI/CD
+    pass: "${SMTP_PASS}"
+    from: "no-reply@acme.com"
+    fromName: "Acme - Rulebricks"
 
   supabase:
     # Generate new keys for production!
-    anonKey: 'your-production-anon-key'
-    serviceKey: 'your-production-service-key'
-    jwtSecret: 'your-production-jwt-secret-at-least-32-chars'
+    anonKey: "your-production-anon-key"
+    serviceKey: "your-production-service-key"
+    jwtSecret: "your-production-jwt-secret-at-least-32-chars"
 
 supabase:
   enabled: true
   secret:
     db:
-      password: '${DB_PASSWORD}' # Strong password
+      password: "${DB_PASSWORD}" # Strong password
     dashboard:
-      password: '${DASHBOARD_PASSWORD}'
+      password: "${DASHBOARD_PASSWORD}"
   db:
     resources:
       requests:
-        cpu: '1000m'
-        memory: '2Gi'
+        cpu: "1000m"
+        memory: "2Gi"
     persistence:
       size: 50Gi
 
@@ -139,25 +130,25 @@ Simplified operations with managed database:
 ```yaml
 # production-managed.yaml
 global:
-  domain: 'rulebricks.acme.com'
-  email: 'devops@acme.com'
-  licenseKey: 'your-license-key'
+  domain: "rulebricks.acme.com"
+  email: "devops@acme.com"
+  licenseKey: "your-license-key"
   tlsEnabled: true
   externalDnsEnabled: true
 
   smtp:
-    host: 'email-smtp.us-east-1.amazonaws.com'
+    host: "email-smtp.us-east-1.amazonaws.com"
     port: 587
-    user: '${SMTP_USER}'
-    pass: '${SMTP_PASS}'
-    from: 'no-reply@acme.com'
-    fromName: 'Acme - Rulebricks'
+    user: "${SMTP_USER}"
+    pass: "${SMTP_PASS}"
+    from: "no-reply@acme.com"
+    fromName: "Acme - Rulebricks"
 
   supabase:
-    url: 'https://abcd1234.supabase.co'
-    anonKey: 'from-supabase-dashboard'
-    serviceKey: 'from-supabase-dashboard'
-    accessToken: '${SUPABASE_ACCESS_TOKEN}'
+    url: "https://abcd1234.supabase.co"
+    anonKey: "from-supabase-dashboard"
+    serviceKey: "from-supabase-dashboard"
+    accessToken: "${SUPABASE_ACCESS_TOKEN}"
 
 supabase:
   enabled: false # Don't deploy self-hosted
@@ -182,8 +173,8 @@ No external dependencies:
 ```yaml
 # airgapped.yaml
 global:
-  domain: 'rulebricks.internal.acme.com'
-  email: 'devops@acme.com'
+  domain: "rulebricks.internal.acme.com"
+  email: "devops@acme.com"
   tlsEnabled: false # Use internal CA or skip TLS
 
   ai:
@@ -199,7 +190,7 @@ external-dns:
 rulebricks:
   app:
     image:
-      repository: 'registry.internal.acme.com/rulebricks/app'
+      repository: "registry.internal.acme.com/rulebricks/app"
 ```
 
 ---
@@ -215,30 +206,30 @@ rulebricks:
   redis:
     resources:
       requests:
-        cpu: '500m'
-        memory: '1Gi'
+        cpu: "500m"
+        memory: "1Gi"
       limits:
-        cpu: '1000m'
-        memory: '4Gi'
+        cpu: "1000m"
+        memory: "4Gi"
 
 traefik:
   resources:
     requests:
-      cpu: '500m'
-      memory: '512Mi'
+      cpu: "500m"
+      memory: "512Mi"
     limits:
-      cpu: '2000m'
-      memory: '2Gi'
+      cpu: "2000m"
+      memory: "2Gi"
 
 kafka:
   controller:
     resources:
       requests:
-        cpu: '1000m'
-        memory: '4Gi'
+        cpu: "1000m"
+        memory: "4Gi"
       limits:
-        cpu: '4000m'
-        memory: '8Gi'
+        cpu: "4000m"
+        memory: "8Gi"
 ```
 
 ### High Availability
@@ -250,8 +241,8 @@ kafka:
   controller:
     replicaCount: 3
   overrideConfiguration:
-    default.replication.factor: '3'
-    min.insync.replicas: '2'
+    default.replication.factor: "3"
+    min.insync.replicas: "2"
 
 traefik:
   autoscaling:
@@ -278,12 +269,12 @@ Ensure persistent volumes are backed up:
 supabase:
   db:
     persistence:
-      storageClassName: 'gp3-backup' # StorageClass with snapshots
+      storageClassName: "gp3-backup" # StorageClass with snapshots
 
 kafka:
   controller:
     persistence:
-      storageClassName: 'gp3-backup'
+      storageClassName: "gp3-backup"
 ```
 
 ### Network Policies
@@ -351,7 +342,7 @@ external-dns:
   enabled: true
   provider: google
   google:
-    project: 'your-gcp-project'
+    project: "your-gcp-project"
 # GKE uses Workload Identity
 # Annotate service accounts accordingly
 ```
@@ -368,8 +359,8 @@ external-dns:
   enabled: true
   provider: azure
   azure:
-    resourceGroup: 'your-resource-group'
-    subscriptionId: 'your-subscription-id'
+    resourceGroup: "your-resource-group"
+    subscriptionId: "your-subscription-id"
 ```
 
 ### On-Premises / Generic Kubernetes
@@ -377,7 +368,7 @@ external-dns:
 ```yaml
 storageClass:
   create: false # Use existing StorageClass
-  name: 'your-storage-class'
+  name: "your-storage-class"
 
 external-dns:
   enabled: false # Manual DNS management
