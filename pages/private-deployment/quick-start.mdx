@@ -4,15 +4,9 @@ metaDescription: Deploy Rulebricks to your Kubernetes cluster using our official
 
 import { Callout } from 'nextra/components'
 
-# Getting Started with Rulebricks
+# Installing Rulebricks
 
-Deploy Rulebricks to your Kubernetes cluster using our official Helm charts.
-
----
-
-## How to Deploy Rulebricks
-
-Our unified Helm chart deploys Rulebricks and all its dependencies in a single command. You'll need:
+Our unified Helm chart deploys Rulebricks and all its dependencies to your Kubernetes cluster in a single command. You'll need:
 
 - **Kubernetes 1.19+** (EKS, GKE, AKS, or self-managed)
 - **Helm 3.2.0+**
@@ -24,6 +18,8 @@ Our unified Helm chart deploys Rulebricks and all its dependencies in a single c
   automatically. You provide a values file with your settings, and Helm
   coordinates the rest.
 </Callout>
+
+<small>
 
 ### Quick Start
 
@@ -57,39 +53,11 @@ helm install rulebricks oci://ghcr.io/rulebricks/charts/stack \
   --set global.tlsEnabled=true
 ```
 
-DNS records are created automatically—no manual configuration needed.
-
-### Minimum Configuration
-
-```yaml
-# your-values.yaml
-global:
-  domain: 'rulebricks.yourdomain.com'
-  email: 'admin@yourdomain.com'
-  licenseKey: 'your-license-key'
-
-  smtp:
-    host: 'smtp.yourdomain.com'
-    port: 587
-    user: 'smtp-user'
-    pass: 'smtp-password'
-    from: 'no-reply@yourdomain.com'
-    fromName: 'Rulebricks'
-
-# Change these for production!
-supabase:
-  secret:
-    db:
-      password: 'secure-db-password'
-    dashboard:
-      password: 'secure-dashboard-password'
-```
-
-See [Configuration Reference](/private-deployment/configuration-reference) for all available options.
+See [Deployment Modes](/private-deployment/deployment) for minimal configurations required for different deployment scenarios, and visit [Configuration Reference](/private-deployment/configuration-reference) for a complete breakdown of all available options in `values.yaml`.
 
 ---
 
-## What Am I Deploying?
+## What am I deploying?
 
 You're deploying a complete Rulebricks stack to your existing Kubernetes cluster. The chart installs multiple integrated services, pre-configured for production workloads.
 
@@ -166,9 +134,7 @@ flowchart TD
 
 ---
 
-## I'm Having Trouble Deploying
-
-### Standard Troubleshooting
+## Troubleshooting
 
 ```bash
 # Check pod status
@@ -220,13 +186,7 @@ helm install rulebricks oci://ghcr.io/rulebricks/charts/stack \
 
 ## Caveats & Limits
 
-### 1. Requests vs. Executions
-
-There's a key distinction: whether Rulebricks handles high volumes of rule _requests_ or rule _executions_.
-
-By default, Rulebricks handles very large volumes of the latter, but managing network overhead requires extra resources. This is easy to overlook since we often talk about "rule executions per second"—it can be unclear if this means QPS or actual solution counts.
-
-### 2. Cluster Requirements
+### Cluster Requirements
 
 The Helm chart deploys to your **existing** Kubernetes cluster. You're responsible for:
 
@@ -237,7 +197,7 @@ The Helm chart deploys to your **existing** Kubernetes cluster. You're responsib
 
 See [example-min-cluster.yaml](https://github.com/rulebricks/helm/blob/main/example-min-cluster.yaml) for minimum EKS cluster specifications.
 
-### 3. Air-Gapped Deployments
+### Air-Gapped Deployments
 
 Rulebricks can run nearly air-gapped with these exceptions:
 
@@ -247,10 +207,18 @@ Rulebricks can run nearly air-gapped with these exceptions:
 | AI Features      | OpenAI API                | Yes—set `global.ai.enabled: false` |
 | Log Forwarding   | External sinks (S3, etc.) | Yes—use console sink only          |
 | TLS Certificates | Let's Encrypt             | Yes—bring your own certs           |
+| Fonts            | Google Fonts              | Requires customization             |
+| Analytics        | Sentry                    | Requires customization             |
 
-### 4. Updates Are Manual
+### Installing Updates
 
 Rule engines usually take critical roles, so we don't release updates continuously. We make upgrades easy with zero downtime, but you control when they happen:
+
+First, visit our [Changelog](/changelog), and find the `rulebricks/app` tag containing the fixes/features you need in your upgrade.
+
+Then, edit `rulebricks.app.image.tag` in your `values.yaml` file accordingly.
+
+Finally, run:
 
 ```bash
 # Upgrade to latest version
@@ -259,22 +227,4 @@ helm upgrade rulebricks oci://ghcr.io/rulebricks/charts/stack \
   -f your-values.yaml
 ```
 
-This is by design—ensures consistent execution API behavior across your deployments.
-
-### 5. Customization
-
-The Helm chart exposes extensive configuration through `values.yaml`, but we can't provide 100% flexibility. For deep customizations:
-
-- Fork the chart repository
-- Modify templates directly
-- Use Helm post-renderers
-
-The chart source is available and documented for infrastructure engineers needing extensive modifications.
-
----
-
-## Next Steps
-
-- **[Configuration Reference](/private-deployment/configuration-reference)** — Complete values.yaml documentation
-- **[Architecture & Operations](/private-deployment/architecture)** — System internals and migration flows
-- **[Deployment Guide](/private-deployment/deployment)** — Production patterns and cloud-specific configs
+</small>

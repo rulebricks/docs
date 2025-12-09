@@ -1,41 +1,23 @@
 ---
 metaDescription: Comprehensive reference for all configuration values in the Rulebricks Helm chart.
 ---
+
 import { Callout } from 'nextra/components'
 
 # Configuration Reference
 
 This document provides a comprehensive reference for all configuration values in the Rulebricks Helm chart. Values are organized by component with detailed explanations of their purpose, defaults, and recommendations.
 
-## Table of Contents
-
-- [Global Settings](#global-settings)
-- [Rulebricks Application](#rulebricks-application)
-- [Database (Supabase)](#database-supabase)
-- [Message Queue (Kafka)](#message-queue-kafka)
-- [Ingress (Traefik)](#ingress-traefik)
-- [Autoscaling (KEDA)](#autoscaling-keda)
-- [Certificates (cert-manager)](#certificates-cert-manager)
-- [Logging (Vector)](#logging-vector)
-- [DNS (external-dns)](#dns-external-dns)
-- [Monitoring (Prometheus)](#monitoring-prometheus)
-- [Storage](#storage)
-
----
-
-## Global Settings
-
-Global settings are shared across all components and subcharts. These are the most important values to configure for your deployment.
-
+<small>
 ### Core Configuration
 
-| Parameter | Type | Default | Required | Description |
-| :--- | :--- | :--- | :--- | :--- |
-| `global.domain` | string | `""` | **Yes** | The domain name for your Rulebricks instance. Must be a domain you control. |
-| `global.email` | string | `"support@rulebricks.com"` | **Yes** | Email address for Let's Encrypt certificate registration. |
-| `global.licenseKey` | string | `"evaluation"` | **Yes** | Your Rulebricks Enterprise license key. |
-| `global.tlsEnabled` | boolean | `false` | No | Enable HTTPS. Set to `true` after DNS is configured or when using external-dns. |
-| `global.externalDnsEnabled` | boolean | `false` | No | Enable external-dns annotations on ingresses for automatic DNS management. |
+| Parameter                   | Type    | Default                    | Required | Description                                                                     |
+| :-------------------------- | :------ | :------------------------- | :------- | :------------------------------------------------------------------------------ |
+| `global.domain`             | string  | `""`                       | **Yes**  | The domain name for your Rulebricks instance. Must be a domain you control.     |
+| `global.email`              | string  | `"support@rulebricks.com"` | **Yes**  | Email address for Let's Encrypt certificate registration.                       |
+| `global.licenseKey`         | string  | `"evaluation"`             | **Yes**  | Your Rulebricks Enterprise license key.                                         |
+| `global.tlsEnabled`         | boolean | `false`                    | No       | Enable HTTPS. Set to `true` after DNS is configured or when using external-dns. |
+| `global.externalDnsEnabled` | boolean | `false`                    | No       | Enable external-dns annotations on ingresses for automatic DNS management.      |
 
 #### Domain Configuration
 
@@ -45,78 +27,81 @@ When self-hosting Supabase, an additional subdomain is created: `supabase.rulebr
 
 ```yaml
 global:
-  domain: "rulebricks.acme.com"
-  email: "devops@acme.com"
+  domain: 'rulebricks.acme.com'
+  email: 'devops@acme.com'
 ```
 
 <Callout type="warning">
-  **Important:** The domain must resolve to your cluster's load balancer before enabling TLS. See [DNS Configuration](#dns-external-dns) for automatic setup.
+  **Important:** The domain must resolve to your cluster's load balancer before
+  enabling TLS. See [DNS Configuration](#dns-external-dns) for automatic setup.
 </Callout>
 
 ### SMTP Configuration
 
 SMTP is **required** for user authentication flows (invitations, password resets, email verification).
 
-| Parameter | Type | Default | Description |
-| :--- | :--- | :--- | :--- |
-| `global.smtp.host` | string | `"smtp.mailtrap.io"` | SMTP server hostname |
-| `global.smtp.port` | integer | `2525` | SMTP server port (typically 25, 465, 587, or 2525) |
-| `global.smtp.user` | string | `"demo-user"` | SMTP authentication username |
-| `global.smtp.pass` | string | `"demo-password"` | SMTP authentication password |
-| `global.smtp.from` | string | `"no-reply@rulebricks.com"` | Sender email address |
-| `global.smtp.fromName` | string | `"Rulebricks"` | Sender display name |
+| Parameter              | Type    | Default                     | Description                                        |
+| :--------------------- | :------ | :-------------------------- | :------------------------------------------------- |
+| `global.smtp.host`     | string  | `"smtp.mailtrap.io"`        | SMTP server hostname                               |
+| `global.smtp.port`     | integer | `2525`                      | SMTP server port (typically 25, 465, 587, or 2525) |
+| `global.smtp.user`     | string  | `"demo-user"`               | SMTP authentication username                       |
+| `global.smtp.pass`     | string  | `"demo-password"`           | SMTP authentication password                       |
+| `global.smtp.from`     | string  | `"no-reply@rulebricks.com"` | Sender email address                               |
+| `global.smtp.fromName` | string  | `"Rulebricks"`              | Sender display name                                |
 
 #### Production SMTP Providers
 
-| Provider | Host | Port | Notes |
-| :--- | :--- | :--- | :--- |
-| AWS SES | `email-smtp.<region>.amazonaws.com` | 587 | Requires verified domain |
-| SendGrid | `smtp.sendgrid.net` | 587 | API key as password |
-| Mailgun | `smtp.mailgun.org` | 587 | Domain verification required |
-| Postmark | `smtp.postmarkapp.com` | 587 | Server token as password |
+| Provider | Host                                | Port | Notes                        |
+| :------- | :---------------------------------- | :--- | :--------------------------- |
+| AWS SES  | `email-smtp.<region>.amazonaws.com` | 587  | Requires verified domain     |
+| SendGrid | `smtp.sendgrid.net`                 | 587  | API key as password          |
+| Mailgun  | `smtp.mailgun.org`                  | 587  | Domain verification required |
+| Postmark | `smtp.postmarkapp.com`              | 587  | Server token as password     |
 
 ```yaml
 global:
   smtp:
-    host: "email-smtp.us-east-1.amazonaws.com"
+    host: 'email-smtp.us-east-1.amazonaws.com'
     port: 587
-    user: "AKIAIOSFODNN7EXAMPLE"
-    pass: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
-    from: "no-reply@yourdomain.com"
-    fromName: "Your Company - Rulebricks"
+    user: 'AKIAIOSFODNN7EXAMPLE'
+    pass: 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY'
+    from: 'no-reply@yourdomain.com'
+    fromName: 'Your Company - Rulebricks'
 ```
 
 ### Supabase Keys
 
 These JWT keys are used for authentication between components.
 
-| Parameter | Type | Description |
-| :--- | :--- | :--- |
-| `global.supabase.anonKey` | string | Public/anonymous key for client-side auth |
+| Parameter                    | Type   | Description                                 |
+| :--------------------------- | :----- | :------------------------------------------ |
+| `global.supabase.anonKey`    | string | Public/anonymous key for client-side auth   |
 | `global.supabase.serviceKey` | string | Service role key for server-side operations |
-| `global.supabase.jwtSecret` | string | JWT signing secret (self-hosted only) |
+| `global.supabase.jwtSecret`  | string | JWT signing secret (self-hosted only)       |
 
 <Callout type="info">
-  **Security:** For production, generate new keys using Supabase's key generator or a secure random string generator. The default keys are for demo purposes only.
+  **Security:** For production, generate new keys using Supabase's key generator
+  or a secure random string generator. The default keys are for demo purposes
+  only.
 </Callout>
 
 #### Managed Supabase (Cloud)
 
 When using Supabase Cloud instead of self-hosting:
 
-| Parameter | Type | Description |
-| :--- | :--- | :--- |
-| `global.supabase.url` | string | Project URL (e.g., `https://abcd1234.supabase.co`) |
-| `global.supabase.projectRef` | string | Project reference ID (derived from URL if empty) |
-| `global.supabase.accessToken` | string | Personal access token for Supabase CLI |
+| Parameter                     | Type   | Description                                        |
+| :---------------------------- | :----- | :------------------------------------------------- |
+| `global.supabase.url`         | string | Project URL (e.g., `https://abcd1234.supabase.co`) |
+| `global.supabase.projectRef`  | string | Project reference ID (derived from URL if empty)   |
+| `global.supabase.accessToken` | string | Personal access token for Supabase CLI             |
 
 ```yaml
 global:
   supabase:
-    url: "https://abcd1234.supabase.co"
-    anonKey: "<from-supabase-dashboard>"
-    serviceKey: "<from-supabase-dashboard>"
-    accessToken: "<personal-access-token>"
+    url: 'https://abcd1234.supabase.co'
+    anonKey: '<from-supabase-dashboard>'
+    serviceKey: '<from-supabase-dashboard>'
+    accessToken: '<personal-access-token>'
 
 supabase:
   enabled: false # Disable self-hosted Supabase
@@ -131,57 +116,55 @@ global:
   supabase:
     emails:
       subjects:
-        invite: "Join your team on Rulebricks"
-        confirmation: "Confirm Your Email"
-        recovery: "Reset Your Password"
-        emailChange: "Confirm Email Change"
+        invite: 'Join your team on Rulebricks'
+        confirmation: 'Confirm Your Email'
+        recovery: 'Reset Your Password'
+        emailChange: 'Confirm Email Change'
       templates:
-        invite: "https://your-cdn.com/templates/invite.html"
-        confirmation: "https://your-cdn.com/templates/verify.html"
-        recovery: "https://your-cdn.com/templates/password_change.html"
-        emailChange: "https://your-cdn.com/templates/email_change.html"
+        invite: 'https://your-cdn.com/templates/invite.html'
+        confirmation: 'https://your-cdn.com/templates/verify.html'
+        recovery: 'https://your-cdn.com/templates/password_change.html'
+        emailChange: 'https://your-cdn.com/templates/email_change.html'
 ```
 
 ### AI Features
 
 Enable AI-powered rule generation (optional):
 
-| Parameter | Type | Default | Description |
-| :--- | :--- | :--- | :--- |
-| `global.ai.enabled` | boolean | `false` | Enable AI features |
-| `global.ai.openaiApiKey` | string | `""` | OpenAI API key |
+| Parameter                | Type    | Default | Description        |
+| :----------------------- | :------ | :------ | :----------------- |
+| `global.ai.enabled`      | boolean | `false` | Enable AI features |
+| `global.ai.openaiApiKey` | string  | `""`    | OpenAI API key     |
 
 ```yaml
 global:
   ai:
     enabled: true
-    openaiApiKey: "sk-..."
+    openaiApiKey: 'sk-...'
 ```
 
 ### External Secrets
 
 For enterprise deployments using external secret management:
 
-| Parameter | Type | Description |
-| :--- | :--- | :--- |
-| `global.secrets.secretRef` | string | Name of existing Kubernetes secret |
-| `global.secrets.secretRefKeys.*` | object | Key name mappings |
+| Parameter                        | Type   | Description                        |
+| :------------------------------- | :----- | :--------------------------------- |
+| `global.secrets.secretRef`       | string | Name of existing Kubernetes secret |
+| `global.secrets.secretRefKeys.*` | object | Key name mappings                  |
 
 ```yaml
 global:
   secrets:
-    secretRef: "rulebricks-external-secrets"
+    secretRef: 'rulebricks-external-secrets'
     secretRefKeys:
-      licenseKey: "RULEBRICKS_LICENSE"
-      smtpUser: "SMTP_USERNAME"
-      smtpPass: "SMTP_PASSWORD"
-      supabaseAnonKey: "SUPABASE_ANON"
-      supabaseServiceKey: "SUPABASE_SERVICE"
-      supabaseAccessToken: "SUPABASE_TOKEN"
-      openaiApiKey: "OPENAI_KEY"
+      licenseKey: 'RULEBRICKS_LICENSE'
+      smtpUser: 'SMTP_USERNAME'
+      smtpPass: 'SMTP_PASSWORD'
+      supabaseAnonKey: 'SUPABASE_ANON'
+      supabaseServiceKey: 'SUPABASE_SERVICE'
+      supabaseAccessToken: 'SUPABASE_TOKEN'
+      openaiApiKey: 'OPENAI_KEY'
 ```
-
----
 
 ## Rulebricks Application
 
@@ -189,64 +172,64 @@ The core application and high-performance solver (HPS).
 
 ### Application Image
 
-| Parameter | Type | Default | Description |
-| :--- | :--- | :--- | :--- |
+| Parameter                         | Type   | Default                            | Description             |
+| :-------------------------------- | :----- | :--------------------------------- | :---------------------- |
 | `rulebricks.app.image.repository` | string | `"index.docker.io/rulebricks/app"` | Docker image repository |
-| `rulebricks.app.image.tag` | string | `"1.2.8"` | Image version tag |
-| `rulebricks.app.image.pullPolicy` | string | `"IfNotPresent"` | Image pull policy |
+| `rulebricks.app.image.tag`        | string | `"1.2.8"`                          | Image version tag       |
+| `rulebricks.app.image.pullPolicy` | string | `"IfNotPresent"`                   | Image pull policy       |
 
 ### Logging Configuration
 
-| Parameter | Type | Default | Description |
-| :--- | :--- | :--- | :--- |
-| `rulebricks.app.logging.enabled` | boolean | `true` | Enable decision logging |
-| `rulebricks.app.logging.kafkaBrokers` | string | `""` | Kafka brokers (auto-discovered if empty) |
-| `rulebricks.app.logging.kafkaTopic` | string | `"logs"` | Kafka topic for logs |
-| `rulebricks.app.logging.loggingDestination` | string | `"Console (stdout)"` | Display label in UI |
+| Parameter                                   | Type    | Default              | Description                              |
+| :------------------------------------------ | :------ | :------------------- | :--------------------------------------- |
+| `rulebricks.app.logging.enabled`            | boolean | `true`               | Enable decision logging                  |
+| `rulebricks.app.logging.kafkaBrokers`       | string  | `""`                 | Kafka brokers (auto-discovered if empty) |
+| `rulebricks.app.logging.kafkaTopic`         | string  | `"logs"`             | Kafka topic for logs                     |
+| `rulebricks.app.logging.loggingDestination` | string  | `"Console (stdout)"` | Display label in UI                      |
 
 ### Ingress
 
-| Parameter | Type | Default | Description |
-| :--- | :--- | :--- | :--- |
-| `rulebricks.ingress.enabled` | boolean | `true` | Enable ingress |
-| `rulebricks.ingress.className` | string | `"traefik"` | Ingress class name |
+| Parameter                      | Type    | Default     | Description        |
+| :----------------------------- | :------ | :---------- | :----------------- |
+| `rulebricks.ingress.enabled`   | boolean | `true`      | Enable ingress     |
+| `rulebricks.ingress.className` | string  | `"traefik"` | Ingress class name |
 
 ### Redis
 
 Redis is used for caching and session management.
 
-| Parameter | Type | Default | Recommendation |
-| :--- | :--- | :--- | :--- |
-| `rulebricks.redis.resources.requests.cpu` | string | `"200m"` | Increase for high traffic |
-| `rulebricks.redis.resources.requests.memory` | string | `"256Mi"` | — |
-| `rulebricks.redis.resources.limits.cpu` | string | `"500m"` | — |
-| `rulebricks.redis.resources.limits.memory` | string | `"4Gi"` | Increase for large rule sets |
-| `rulebricks.redis.persistence.enabled` | boolean | `true` | Keep enabled for production |
-| `rulebricks.redis.persistence.size` | string | `"4Gi"` | — |
-| `rulebricks.redis.persistence.storageClass` | string | `"gp3"` | Match your storage class |
+| Parameter                                    | Type    | Default   | Recommendation               |
+| :------------------------------------------- | :------ | :-------- | :--------------------------- |
+| `rulebricks.redis.resources.requests.cpu`    | string  | `"200m"`  | Increase for high traffic    |
+| `rulebricks.redis.resources.requests.memory` | string  | `"256Mi"` | —                            |
+| `rulebricks.redis.resources.limits.cpu`      | string  | `"500m"`  | —                            |
+| `rulebricks.redis.resources.limits.memory`   | string  | `"4Gi"`   | Increase for large rule sets |
+| `rulebricks.redis.persistence.enabled`       | boolean | `true`    | Keep enabled for production  |
+| `rulebricks.redis.persistence.size`          | string  | `"4Gi"`   | —                            |
+| `rulebricks.redis.persistence.storageClass`  | string  | `"gp3"`   | Match your storage class     |
 
 ### High Performance Server (HPS)
 
 HPS handles rule execution with horizontal scaling.
 
-| Parameter | Type | Default | Description |
-| :--- | :--- | :--- | :--- |
-| `rulebricks.hps.enabled` | boolean | `true` | Enable HPS |
-| `rulebricks.hps.replicas` | integer | `2` | Number of HPS gateway replicas |
-| `rulebricks.hps.workers.enabled` | boolean | `true` | Enable worker pods |
-| `rulebricks.hps.workers.replicas` | integer | `4` | Base worker replica count |
+| Parameter                         | Type    | Default | Description                    |
+| :-------------------------------- | :------ | :------ | :----------------------------- |
+| `rulebricks.hps.enabled`          | boolean | `true`  | Enable HPS                     |
+| `rulebricks.hps.replicas`         | integer | `2`     | Number of HPS gateway replicas |
+| `rulebricks.hps.workers.enabled`  | boolean | `true`  | Enable worker pods             |
+| `rulebricks.hps.workers.replicas` | integer | `4`     | Base worker replica count      |
 
 #### KEDA Autoscaling for HPS Workers
 
-| Parameter | Type | Default | Description |
-| :--- | :--- | :--- | :--- |
-| `rulebricks.hps.workers.keda.enabled` | boolean | `true` | Enable KEDA autoscaling |
-| `rulebricks.hps.workers.keda.minReplicaCount` | integer | `4` | Minimum workers |
-| `rulebricks.hps.workers.keda.maxReplicaCount` | integer | `8` | Maximum workers |
-| `rulebricks.hps.workers.keda.pollingInterval` | integer | `10` | Seconds between metric checks |
-| `rulebricks.hps.workers.keda.cooldownPeriod` | integer | `300` | Seconds before scale-down |
-| `rulebricks.hps.workers.keda.lagThreshold` | integer | `8` | Kafka lag threshold |
-| `rulebricks.hps.workers.keda.cpuThreshold` | integer | `25` | CPU percentage threshold |
+| Parameter                                     | Type    | Default | Description                   |
+| :-------------------------------------------- | :------ | :------ | :---------------------------- |
+| `rulebricks.hps.workers.keda.enabled`         | boolean | `true`  | Enable KEDA autoscaling       |
+| `rulebricks.hps.workers.keda.minReplicaCount` | integer | `4`     | Minimum workers               |
+| `rulebricks.hps.workers.keda.maxReplicaCount` | integer | `8`     | Maximum workers               |
+| `rulebricks.hps.workers.keda.pollingInterval` | integer | `10`    | Seconds between metric checks |
+| `rulebricks.hps.workers.keda.cooldownPeriod`  | integer | `300`   | Seconds before scale-down     |
+| `rulebricks.hps.workers.keda.lagThreshold`    | integer | `8`     | Kafka lag threshold           |
+| `rulebricks.hps.workers.keda.cpuThreshold`    | integer | `25`    | CPU percentage threshold      |
 
 **Tuning Recommendations:**
 
@@ -264,46 +247,42 @@ rulebricks:
         cpuThreshold: 20
 ```
 
----
-
 ## Database (Supabase)
 
 ### Self-Hosted vs. Managed
 
-| Mode | `supabase.enabled` | Use Case |
-| :--- | :--- | :--- |
-| Self-hosted | `true` | Full control, air-gapped environments |
-| Managed (Cloud) | `false` | Simplified operations, managed backups |
+| Mode            | `supabase.enabled` | Use Case                               |
+| :-------------- | :----------------- | :------------------------------------- |
+| Self-hosted     | `true`             | Full control, air-gapped environments  |
+| Managed (Cloud) | `false`            | Simplified operations, managed backups |
 
 ### Self-Hosted Configuration
 
-| Parameter | Type | Default | Description |
-| :--- | :--- | :--- | :--- |
-| `supabase.enabled` | boolean | `true` | Deploy self-hosted Supabase |
-| `supabase.secret.db.username` | string | `"postgres"` | Database username |
-| `supabase.secret.db.password` | string | `"postgres-password-change-me"` | **Change this!** |
-| `supabase.secret.db.database` | string | `"postgres"` | Database name |
-| `supabase.secret.dashboard.username` | string | `"supabase"` | Studio dashboard username |
-| `supabase.secret.dashboard.password` | string | `"dashboard-password-change-me"` | **Change this!** |
+| Parameter                            | Type    | Default                          | Description                 |
+| :----------------------------------- | :------ | :------------------------------- | :-------------------------- |
+| `supabase.enabled`                   | boolean | `true`                           | Deploy self-hosted Supabase |
+| `supabase.secret.db.username`        | string  | `"postgres"`                     | Database username           |
+| `supabase.secret.db.password`        | string  | `"postgres-password-change-me"`  | **Change this!**            |
+| `supabase.secret.db.database`        | string  | `"postgres"`                     | Database name               |
+| `supabase.secret.dashboard.username` | string  | `"supabase"`                     | Studio dashboard username   |
+| `supabase.secret.dashboard.password` | string  | `"dashboard-password-change-me"` | **Change this!**            |
 
 #### Database Resources
 
-| Parameter | Type | Default | Production Recommendation |
-| :--- | :--- | :--- | :--- |
-| `supabase.db.resources.requests.cpu` | string | `"500m"` | `"1000m"` or higher |
-| `supabase.db.resources.requests.memory` | string | `"1Gi"` | `"2Gi"` or higher |
-| `supabase.db.persistence.enabled` | boolean | `true` | Always `true` for production |
-| `supabase.db.persistence.size` | string | `"10Gi"` | Based on data volume |
-| `supabase.db.persistence.storageClassName` | string | `"gp3"` | Use fast storage |
+| Parameter                                  | Type    | Default  | Production Recommendation    |
+| :----------------------------------------- | :------ | :------- | :--------------------------- |
+| `supabase.db.resources.requests.cpu`       | string  | `"500m"` | `"1000m"` or higher          |
+| `supabase.db.resources.requests.memory`    | string  | `"1Gi"`  | `"2Gi"` or higher            |
+| `supabase.db.persistence.enabled`          | boolean | `true`   | Always `true` for production |
+| `supabase.db.persistence.size`             | string  | `"10Gi"` | Based on data volume         |
+| `supabase.db.persistence.storageClassName` | string  | `"gp3"`  | Use fast storage             |
 
 ### Kong Ingress
 
-| Parameter | Type | Default | Description |
-| :--- | :--- | :--- | :--- |
-| `supabase.kong.ingress.enabled` | boolean | `true` | Enable Supabase API ingress |
-| `supabase.kong.ingress.className` | string | `"traefik"` | Must match Traefik class |
-
----
+| Parameter                         | Type    | Default     | Description                 |
+| :-------------------------------- | :------ | :---------- | :-------------------------- |
+| `supabase.kong.ingress.enabled`   | boolean | `true`      | Enable Supabase API ingress |
+| `supabase.kong.ingress.className` | string  | `"traefik"` | Must match Traefik class    |
 
 ## Message Queue (Kafka)
 
@@ -311,23 +290,23 @@ Kafka handles async rule execution and logging.
 
 ### Basic Settings
 
-| Parameter | Type | Default | Description |
-| :--- | :--- | :--- | :--- |
-| `kafka.enabled` | boolean | `true` | Deploy Kafka |
-| `kafka.kraft.enabled` | boolean | `true` | Use KRaft mode (no Zookeeper) |
-| `kafka.zookeeper.enabled` | boolean | `false` | Disable Zookeeper |
+| Parameter                 | Type    | Default | Description                   |
+| :------------------------ | :------ | :------ | :---------------------------- |
+| `kafka.enabled`           | boolean | `true`  | Deploy Kafka                  |
+| `kafka.kraft.enabled`     | boolean | `true`  | Use KRaft mode (no Zookeeper) |
+| `kafka.zookeeper.enabled` | boolean | `false` | Disable Zookeeper             |
 
 ### Controller/Broker Configuration
 
-| Parameter | Type | Default | Description |
-| :--- | :--- | :--- | :--- |
-| `kafka.controller.replicaCount` | integer | `1` | Number of Kafka nodes |
-| `kafka.controller.resources.requests.cpu` | string | `"500m"` | CPU request |
-| `kafka.controller.resources.requests.memory` | string | `"2Gi"` | Memory request |
-| `kafka.controller.resources.limits.cpu` | string | `"2000m"` | CPU limit |
-| `kafka.controller.resources.limits.memory` | string | `"3Gi"` | Memory limit |
-| `kafka.controller.persistence.size` | string | `"10Gi"` | Storage size |
-| `kafka.controller.heapOpts` | string | `"-Xmx1g -Xms1g..."` | JVM heap settings |
+| Parameter                                    | Type    | Default              | Description           |
+| :------------------------------------------- | :------ | :------------------- | :-------------------- |
+| `kafka.controller.replicaCount`              | integer | `1`                  | Number of Kafka nodes |
+| `kafka.controller.resources.requests.cpu`    | string  | `"500m"`             | CPU request           |
+| `kafka.controller.resources.requests.memory` | string  | `"2Gi"`              | Memory request        |
+| `kafka.controller.resources.limits.cpu`      | string  | `"2000m"`            | CPU limit             |
+| `kafka.controller.resources.limits.memory`   | string  | `"3Gi"`              | Memory limit          |
+| `kafka.controller.persistence.size`          | string  | `"10Gi"`             | Storage size          |
+| `kafka.controller.heapOpts`                  | string  | `"-Xmx1g -Xms1g..."` | JVM heap settings     |
 
 ### Kafka Tuning
 
@@ -336,16 +315,16 @@ The default configuration includes extensive JVM and Kafka tuning:
 ```yaml
 kafka:
   overrideConfiguration:
-    auto.create.topics.enable: "true"
-    log.retention.hours: "24" # Adjust based on log volume
-    default.replication.factor: "1" # Increase for HA
-    num.partitions: "3" # Increase for parallelism
+    auto.create.topics.enable: 'true'
+    log.retention.hours: '24' # Adjust based on log volume
+    default.replication.factor: '1' # Increase for HA
+    num.partitions: '3' # Increase for parallelism
   controller:
     extraEnvVars:
       - name: KAFKA_CFG_NUM_NETWORK_THREADS
-        value: "8"
+        value: '8'
       - name: KAFKA_CFG_NUM_IO_THREADS
-        value: "8"
+        value: '8'
       # ... additional tuning parameters
 ```
 
@@ -356,66 +335,61 @@ kafka:
   controller:
     replicaCount: 3
   overrideConfiguration:
-    default.replication.factor: "3"
-    min.insync.replicas: "2"
+    default.replication.factor: '3'
+    min.insync.replicas: '2'
 ```
-
----
 
 ## Ingress (Traefik)
 
 Traefik handles all incoming traffic and TLS termination.
 
-| Parameter | Type | Default | Description |
-| :--- | :--- | :--- | :--- |
-| `traefik.enabled` | boolean | `true` | Deploy Traefik |
-| `traefik.ingressClass.name` | string | `"traefik"` | Ingress class name |
-| `traefik.autoscaling.enabled` | boolean | `true` | Enable HPA |
-| `traefik.autoscaling.minReplicas` | integer | `1` | Minimum replicas |
-| `traefik.autoscaling.maxReplicas` | integer | `2` | Maximum replicas |
+| Parameter                         | Type    | Default     | Description        |
+| :-------------------------------- | :------ | :---------- | :----------------- |
+| `traefik.enabled`                 | boolean | `true`      | Deploy Traefik     |
+| `traefik.ingressClass.name`       | string  | `"traefik"` | Ingress class name |
+| `traefik.autoscaling.enabled`     | boolean | `true`      | Enable HPA         |
+| `traefik.autoscaling.minReplicas` | integer | `1`         | Minimum replicas   |
+| `traefik.autoscaling.maxReplicas` | integer | `2`         | Maximum replicas   |
 
 ### Resources
 
-| Parameter | Type | Default | High-Traffic |
-| :--- | :--- | :--- | :--- |
-| `traefik.resources.requests.cpu` | string | `"100m"` | `"500m"` |
-| `traefik.resources.requests.memory` | string | `"256Mi"` | `"512Mi"` |
-| `traefik.resources.limits.cpu` | string | `"1000m"` | `"2000m"` |
-| `traefik.resources.limits.memory` | string | `"2Gi"` | `"4Gi"` |
+| Parameter                           | Type   | Default   | High-Traffic |
+| :---------------------------------- | :----- | :-------- | :----------- |
+| `traefik.resources.requests.cpu`    | string | `"100m"`  | `"500m"`     |
+| `traefik.resources.requests.memory` | string | `"256Mi"` | `"512Mi"`    |
+| `traefik.resources.limits.cpu`      | string | `"1000m"` | `"2000m"`    |
+| `traefik.resources.limits.memory`   | string | `"2Gi"`   | `"4Gi"`      |
 
 ### Ports
 
-| Parameter | Default | Description |
-| :--- | :--- | :--- |
-| `traefik.ports.web.port` | `8000` | Internal HTTP port |
-| `traefik.ports.web.exposedPort` | `80` | External HTTP port |
-| `traefik.ports.websecure.port` | `8443` | Internal HTTPS port |
-| `traefik.ports.websecure.exposedPort` | `443` | External HTTPS port |
-
----
+| Parameter                             | Default | Description         |
+| :------------------------------------ | :------ | :------------------ |
+| `traefik.ports.web.port`              | `8000`  | Internal HTTP port  |
+| `traefik.ports.web.exposedPort`       | `80`    | External HTTP port  |
+| `traefik.ports.websecure.port`        | `8443`  | Internal HTTPS port |
+| `traefik.ports.websecure.exposedPort` | `443`   | External HTTPS port |
 
 ## Autoscaling (KEDA)
 
 KEDA provides event-driven autoscaling for HPS workers.
 
-| Parameter | Type | Default | Description |
-| :--- | :--- | :--- | :--- |
-| `keda.enabled` | boolean | `true` | Deploy KEDA |
+| Parameter           | Type    | Default | Description                  |
+| :------------------ | :------ | :------ | :--------------------------- |
+| `keda.enabled`      | boolean | `true`  | Deploy KEDA                  |
 | `keda.crds.install` | boolean | `false` | CRDs managed by parent chart |
 
 <Callout type="info">
-  **Note:** KEDA CRDs are included in the `crds/` directory and installed automatically.
+  **Note:** KEDA CRDs are included in the `crds/` directory and installed
+  automatically.
 </Callout>
-
----
 
 ## Certificates (cert-manager)
 
 cert-manager provisions TLS certificates from Let's Encrypt.
 
-| Parameter | Type | Default | Description |
-| :--- | :--- | :--- | :--- |
-| `cert-manager.enabled` | boolean | `true` | Deploy cert-manager |
+| Parameter                  | Type    | Default | Description                  |
+| :------------------------- | :------ | :------ | :--------------------------- |
+| `cert-manager.enabled`     | boolean | `true`  | Deploy cert-manager          |
 | `cert-manager.installCRDs` | boolean | `false` | CRDs managed by parent chart |
 
 The chart creates:
@@ -423,26 +397,24 @@ The chart creates:
 - A `ClusterIssuer` for Let's Encrypt production
 - `Certificate` resources for your domain(s)
 
----
-
 ## Logging (Vector)
 
 Vector aggregates logs from Kafka and forwards them to configured sinks.
 
-| Parameter | Type | Default | Description |
-| :--- | :--- | :--- | :--- |
-| `vector.enabled` | boolean | `true` | Deploy Vector |
-| `vector.role` | string | `"Stateless-Aggregator"` | Vector role |
-| `vector.replicas` | integer | `2` | Number of replicas |
+| Parameter         | Type    | Default                  | Description        |
+| :---------------- | :------ | :----------------------- | :----------------- |
+| `vector.enabled`  | boolean | `true`                   | Deploy Vector      |
+| `vector.role`     | string  | `"Stateless-Aggregator"` | Vector role        |
+| `vector.replicas` | integer | `2`                      | Number of replicas |
 
 ### Resources
 
-| Parameter | Type | Default |
-| :--- | :--- | :--- |
-| `vector.resources.requests.cpu` | string | `"5m"` |
+| Parameter                          | Type   | Default   |
+| :--------------------------------- | :----- | :-------- |
+| `vector.resources.requests.cpu`    | string | `"5m"`    |
 | `vector.resources.requests.memory` | string | `"128Mi"` |
-| `vector.resources.limits.cpu` | string | `"200m"` |
-| `vector.resources.limits.memory` | string | `"256Mi"` |
+| `vector.resources.limits.cpu`      | string | `"200m"`  |
+| `vector.resources.limits.memory`   | string | `"256Mi"` |
 
 ### Custom Sinks
 
@@ -463,27 +435,25 @@ vector:
       s3:
         type: aws_s3
         inputs: [kafka]
-        bucket: "your-logs-bucket"
-        region: "us-east-1"
-        key_prefix: "rulebricks/logs/%Y/%m/%d/"
+        bucket: 'your-logs-bucket'
+        region: 'us-east-1'
+        key_prefix: 'rulebricks/logs/%Y/%m/%d/'
         compression: gzip
         encoding:
           codec: json
 ```
 
----
-
 ## DNS (external-dns)
 
 external-dns automatically creates DNS records for your ingresses.
 
-| Parameter | Type | Default | Description |
-| :--- | :--- | :--- | :--- |
-| `external-dns.enabled` | boolean | `false` | Deploy external-dns |
-| `external-dns.provider` | string | `"route53"` | DNS provider |
-| `external-dns.sources` | list | `["ingress"]` | Resource types to watch |
-| `external-dns.domainFilters` | list | `[]` | Restrict to specific domains |
-| `external-dns.policy` | string | `"upsert-only"` | Record management policy |
+| Parameter                    | Type    | Default         | Description                  |
+| :--------------------------- | :------ | :-------------- | :--------------------------- |
+| `external-dns.enabled`       | boolean | `false`         | Deploy external-dns          |
+| `external-dns.provider`      | string  | `"route53"`     | DNS provider                 |
+| `external-dns.sources`       | list    | `["ingress"]`   | Resource types to watch      |
+| `external-dns.domainFilters` | list    | `[]`            | Restrict to specific domains |
+| `external-dns.policy`        | string  | `"upsert-only"` | Record management policy     |
 
 ### Provider Configuration
 
@@ -517,7 +487,7 @@ external-dns:
   enabled: true
   provider: google
   google:
-    project: "your-gcp-project"
+    project: 'your-gcp-project'
 ```
 
 #### Azure DNS
@@ -527,21 +497,19 @@ external-dns:
   enabled: true
   provider: azure
   azure:
-    resourceGroup: "your-resource-group"
-    subscriptionId: "your-subscription-id"
+    resourceGroup: 'your-resource-group'
+    subscriptionId: 'your-subscription-id'
 ```
-
----
 
 ## Monitoring (Prometheus)
 
 Optional Prometheus stack for metrics collection.
 
-| Parameter | Type | Default | Description |
-| :--- | :--- | :--- | :--- |
-| `monitoring.enabled` | boolean | `false` | Enable monitoring |
+| Parameter                                    | Type    | Default | Description         |
+| :------------------------------------------- | :------ | :------ | :------------------ |
+| `monitoring.enabled`                         | boolean | `false` | Enable monitoring   |
 | `kube-prometheus-stack.alertmanager.enabled` | boolean | `false` | Deploy Alertmanager |
-| `kube-prometheus-stack.grafana.enabled` | boolean | `false` | Deploy Grafana |
+| `kube-prometheus-stack.grafana.enabled`      | boolean | `false` | Deploy Grafana      |
 
 ### Prometheus Storage
 
@@ -559,21 +527,21 @@ kube-prometheus-stack:
                 storage: 50Gi
 ```
 
----
-
 ## Storage
 
 ### StorageClass
 
 The chart can create a gp3 StorageClass for AWS EBS:
 
-| Parameter | Type | Default | Description |
-| :--- | :--- | :--- | :--- |
-| `storageClass.create` | boolean | `true` | Create StorageClass |
-| `storageClass.name` | string | `"gp3"` | StorageClass name |
-| `storageClass.provisioner` | string | `"ebs.csi.aws.com"` | CSI provisioner |
-| `storageClass.type` | string | `"gp3"` | EBS volume type |
-| `storageClass.reclaimPolicy` | string | `"Delete"` | Reclaim policy |
-| `storageClass.allowVolumeExpansion` | boolean | `true` | Allow expansion |
+| Parameter                           | Type    | Default             | Description         |
+| :---------------------------------- | :------ | :------------------ | :------------------ |
+| `storageClass.create`               | boolean | `true`              | Create StorageClass |
+| `storageClass.name`                 | string  | `"gp3"`             | StorageClass name   |
+| `storageClass.provisioner`          | string  | `"ebs.csi.aws.com"` | CSI provisioner     |
+| `storageClass.type`                 | string  | `"gp3"`             | EBS volume type     |
+| `storageClass.reclaimPolicy`        | string  | `"Delete"`          | Reclaim policy      |
+| `storageClass.allowVolumeExpansion` | boolean | `true`              | Allow expansion     |
 
 For non-AWS clusters, set `storageClass.create: false` and ensure a compatible StorageClass exists.
+
+</small>

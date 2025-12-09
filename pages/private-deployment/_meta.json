@@ -1,6 +1,6 @@
 {
   "quick-start": "Getting Started",
-  "deployment": "Deployment Guide",
+  "deployment": "Deployment Modes",
   "configuration-reference": "Configuration Reference",
-  "architecture": "Architecture & Operations"
+  "architecture": "Architecture"
 }

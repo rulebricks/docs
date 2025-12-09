@@ -259,3 +259,7 @@ html.dark .scalar-api-reference {
 .nextra-banner-container > div {
   cursor: pointer !important;
 }
+
+[role='tab'] {
+  border-radius: 0 !important;
+}
