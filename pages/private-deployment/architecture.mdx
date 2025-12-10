@@ -109,7 +109,7 @@ sequenceDiagram
 
 | Component       | Purpose                             | Scaling                         |
 | :-------------- | :---------------------------------- | :------------------------------ |
-| **Traefik**     | Ingress, TLS termination, routing   | HPA (1-2 replicas default)      |
+| **Traefik**     | Ingress, TLS termination, routing   | HPA (2-3 replicas default)      |
 | **App**         | Web UI, rule editor, management API | Single replica                  |
 | **HPS Gateway** | API gateway for rule execution      | Static replicas                 |
 | **HPS Workers** | Rule execution engines              | KEDA autoscaling                |
@@ -345,5 +345,3 @@ kubectl logs -n rulebricks -l app.kubernetes.io/instance=rulebricks --all-contai
 # Specific component with follow
 kubectl logs -n rulebricks -l app.kubernetes.io/component=hps-worker -f
 ```
-
-

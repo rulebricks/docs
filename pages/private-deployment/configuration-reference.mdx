@@ -175,7 +175,7 @@ The core application and high-performance solver (HPS).
 | Parameter                         | Type   | Default                            | Description             |
 | :-------------------------------- | :----- | :--------------------------------- | :---------------------- |
 | `rulebricks.app.image.repository` | string | `"index.docker.io/rulebricks/app"` | Docker image repository |
-| `rulebricks.app.image.tag`        | string | `"1.2.8"`                          | Image version tag       |
+| `rulebricks.app.image.tag`        | string | `"1.2.9"`                          | Image version tag       |
 | `rulebricks.app.image.pullPolicy` | string | `"IfNotPresent"`                   | Image pull policy       |
 
 ### Logging Configuration
@@ -215,7 +215,7 @@ HPS handles rule execution with horizontal scaling.
 | Parameter                         | Type    | Default | Description                    |
 | :-------------------------------- | :------ | :------ | :----------------------------- |
 | `rulebricks.hps.enabled`          | boolean | `true`  | Enable HPS                     |
-| `rulebricks.hps.replicas`         | integer | `2`     | Number of HPS gateway replicas |
+| `rulebricks.hps.replicas`         | integer | `3`     | Number of HPS gateway replicas |
 | `rulebricks.hps.workers.enabled`  | boolean | `true`  | Enable worker pods             |
 | `rulebricks.hps.workers.replicas` | integer | `4`     | Base worker replica count      |
 
@@ -225,23 +225,24 @@ HPS handles rule execution with horizontal scaling.
 | :-------------------------------------------- | :------ | :------ | :---------------------------- |
 | `rulebricks.hps.workers.keda.enabled`         | boolean | `true`  | Enable KEDA autoscaling       |
 | `rulebricks.hps.workers.keda.minReplicaCount` | integer | `4`     | Minimum workers               |
-| `rulebricks.hps.workers.keda.maxReplicaCount` | integer | `8`     | Maximum workers               |
+| `rulebricks.hps.workers.keda.maxReplicaCount` | integer | `12`    | Maximum workers               |
 | `rulebricks.hps.workers.keda.pollingInterval` | integer | `10`    | Seconds between metric checks |
 | `rulebricks.hps.workers.keda.cooldownPeriod`  | integer | `300`   | Seconds before scale-down     |
-| `rulebricks.hps.workers.keda.lagThreshold`    | integer | `8`     | Kafka lag threshold           |
+| `rulebricks.hps.workers.keda.lagThreshold`    | integer | `50`    | Kafka lag threshold           |
 | `rulebricks.hps.workers.keda.cpuThreshold`    | integer | `25`    | CPU percentage threshold      |
 
 **Tuning Recommendations:**
 
 ```yaml
 # High-throughput configuration
+# Replicas should match partitions
 rulebricks:
   hps:
     replicas: 4
     workers:
       replicas: 8
       keda:
-        minReplicaCount: 8
+        minReplicaCount: 12
         maxReplicaCount: 32
         lagThreshold: 5
         cpuThreshold: 20
@@ -318,7 +319,7 @@ kafka:
     auto.create.topics.enable: 'true'
     log.retention.hours: '24' # Adjust based on log volume
     default.replication.factor: '1' # Increase for HA
-    num.partitions: '3' # Increase for parallelism
+    num.partitions: '12' # Increase for parallelism
   controller:
     extraEnvVars:
       - name: KAFKA_CFG_NUM_NETWORK_THREADS
@@ -411,7 +412,7 @@ Vector aggregates logs from Kafka and forwards them to configured sinks.
 
 | Parameter                          | Type   | Default   |
 | :--------------------------------- | :----- | :-------- |
-| `vector.resources.requests.cpu`    | string | `"5m"`    |
+| `vector.resources.requests.cpu`    | string | `"50m"`   |
 | `vector.resources.requests.memory` | string | `"128Mi"` |
 | `vector.resources.limits.cpu`      | string | `"200m"`  |
 | `vector.resources.limits.memory`   | string | `"256Mi"` |
