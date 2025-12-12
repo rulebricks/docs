@@ -73,11 +73,11 @@ global:
 
 These JWT keys are used for authentication between components.
 
-| Parameter                      | Type   | Description                                 |
-| :----------------------------- | :----- | :------------------------------------------ |
-| `global.supabase.anonKey`      | string | Public/anonymous key for client-side auth   |
-| `global.supabase.serviceKey`   | string | Service role key for server-side operations |
-| `global.supabase.jwtSecret`    | string | JWT signing secret (self-hosted only)       |
+| Parameter                    | Type   | Description                                 |
+| :--------------------------- | :----- | :------------------------------------------ |
+| `global.supabase.anonKey`    | string | Public/anonymous key for client-side auth   |
+| `global.supabase.serviceKey` | string | Service role key for server-side operations |
+| `global.supabase.jwtSecret`  | string | JWT signing secret (self-hosted only)       |
 
 <Callout type="info">
   **Security:** For production, generate new keys using Supabase's key generator
@@ -145,25 +145,34 @@ global:
 
 ### SSO Configuration
 
-Enable Single Sign-On (SSO) via OIDC (Optional):
+Enable Single Sign-On (SSO) via OpenID Connect (OIDC).
 
-| Parameter              | Type    | Default | Description                                                     |
-| :--------------------- | :------ | :------ | :-------------------------------------------------------------- |
-| `global.sso.enabled`   | boolean | `false` | Enable SSO                                                      |
-| `global.sso.provider`  | string  | `""`    | Provider name (azure, google, okta, keycloak, ory, other)       |
-| `global.sso.url`       | string  | `""`    | Provider URL (required for all except Google)                   |
-| `global.sso.clientId`  | string  | `""`    | OAuth client ID                                                 |
-| `global.sso.clientSecret` | string | `""` | OAuth client secret                                             |
+| Parameter                 | Type    | Default | Description                                               |
+| :------------------------ | :------ | :------ | :-------------------------------------------------------- |
+| `global.sso.enabled`      | boolean | `false` | Enable SSO                                                |
+| `global.sso.provider`     | string  | `""`    | Provider name (azure, google, okta, keycloak, ory, other) |
+| `global.sso.url`          | string  | `""`    | Provider URL (required for all except Google)             |
+| `global.sso.clientId`     | string  | `""`    | OAuth client ID                                           |
+| `global.sso.clientSecret` | string  | `""`    | OAuth client secret                                       |
 
-```yaml
-global:
-  sso:
-    enabled: true
-    provider: "azure"
-    url: "https://login.microsoftonline.com/{tenant-id}"
-    clientId: "..."
-    clientSecret: "..."
-```
+#### Provider Types
+
+You will need to go to your Supabase dashboard, and configure your provider in the Authentication tab. If you don't see your provider, use _Keycloak_ – our proxy uses it as a bridge.
+
+- **Native Providers** (`azure`, `google`, `okta`, `keycloak`): Supabase handles authentication directly.
+- **Custom Providers** (`ory`, `other`): The app uses a built-in OIDC proxy we manage to translate paths for your IdP.
+
+#### Identity Provider Setup
+
+You must configure your Identity Provider (IdP) with the following settings:
+
+- **Scopes**: `openid`, `email`, `profile`
+- **Response Type**: `code`
+- **Grant Types**: `authorization_code`, `refresh_token`
+- **Auth Method**: `http body`
+- **Redirect URIs**:
+  1. `https://<your-domain>/api/sso-proxy/callback`
+  2. `<your-supabase-url>/auth/v1/callback`
 
 ### External Secrets
 
@@ -566,4 +575,5 @@ The chart can create a gp3 StorageClass for AWS EBS:
 | `storageClass.allowVolumeExpansion` | boolean | `true`              | Allow expansion     |
 
 For non-AWS clusters, set `storageClass.create: false` and ensure a compatible StorageClass exists.
+
 </small>
