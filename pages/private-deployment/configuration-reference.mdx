@@ -73,11 +73,11 @@ global:
 
 These JWT keys are used for authentication between components.
 
-| Parameter                    | Type   | Description                                 |
-| :--------------------------- | :----- | :------------------------------------------ |
-| `global.supabase.anonKey`    | string | Public/anonymous key for client-side auth   |
-| `global.supabase.serviceKey` | string | Service role key for server-side operations |
-| `global.supabase.jwtSecret`  | string | JWT signing secret (self-hosted only)       |
+| Parameter                      | Type   | Description                                 |
+| :----------------------------- | :----- | :------------------------------------------ |
+| `global.supabase.anonKey`      | string | Public/anonymous key for client-side auth   |
+| `global.supabase.serviceKey`   | string | Service role key for server-side operations |
+| `global.supabase.jwtSecret`    | string | JWT signing secret (self-hosted only)       |
 
 <Callout type="info">
   **Security:** For production, generate new keys using Supabase's key generator
@@ -143,6 +143,28 @@ global:
     openaiApiKey: 'sk-...'
 ```
 
+### SSO Configuration
+
+Enable Single Sign-On (SSO) via OIDC (Optional):
+
+| Parameter              | Type    | Default | Description                                                     |
+| :--------------------- | :------ | :------ | :-------------------------------------------------------------- |
+| `global.sso.enabled`   | boolean | `false` | Enable SSO                                                      |
+| `global.sso.provider`  | string  | `""`    | Provider name (azure, google, okta, keycloak, ory, other)       |
+| `global.sso.url`       | string  | `""`    | Provider URL (required for all except Google)                   |
+| `global.sso.clientId`  | string  | `""`    | OAuth client ID                                                 |
+| `global.sso.clientSecret` | string | `""` | OAuth client secret                                             |
+
+```yaml
+global:
+  sso:
+    enabled: true
+    provider: "azure"
+    url: "https://login.microsoftonline.com/{tenant-id}"
+    clientId: "..."
+    clientSecret: "..."
+```
+
 ### External Secrets
 
 For enterprise deployments using external secret management:
@@ -175,7 +197,7 @@ The core application and high-performance solver (HPS).
 | Parameter                         | Type   | Default                            | Description             |
 | :-------------------------------- | :----- | :--------------------------------- | :---------------------- |
 | `rulebricks.app.image.repository` | string | `"index.docker.io/rulebricks/app"` | Docker image repository |
-| `rulebricks.app.image.tag`        | string | `"1.2.9"`                          | Image version tag       |
+| `rulebricks.app.image.tag`        | string | `"1.2.17"`                         | Image version tag       |
 | `rulebricks.app.image.pullPolicy` | string | `"IfNotPresent"`                   | Image pull policy       |
 
 ### Logging Configuration
@@ -544,5 +566,4 @@ The chart can create a gp3 StorageClass for AWS EBS:
 | `storageClass.allowVolumeExpansion` | boolean | `true`              | Allow expansion     |
 
 For non-AWS clusters, set `storageClass.create: false` and ensure a compatible StorageClass exists.
-
 </small>
