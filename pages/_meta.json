@@ -1,30 +1,31 @@
 {
-	"index": "Introduction",
-	"api-reference": "API/SDK Reference",
-	"video-introduction": "Video Introduction",
-	"getting-started": "Getting Started",
-	"advanced-features": "Advanced Features",
-	"managing-rules": "Managing Rules",
-	"integrating-rules": "Integrating Rules",
-	"building-forms": "Building Forms",
-	"workspace-management": "Workspace Management",
-	"---": {
-		"type": "separator"
-	},
-	"private-deployment": "Private Deployment",
-	"security": "Security",
-	"changelog": "Changelog",
-	"product-updates": "Product Updates",
-	"Book a Demo": {
-		"title": "Get a Demo ↗",
-		"type": "page",
-		"href": "https://calendly.com/prefix-software/rulebricks",
-		"newWindow": true
-	},
-	"Dashboard": {
-		"title": "Dashboard ↗",
-		"type": "page",
-		"href": "https://rulebricks.com/dashboard",
-		"newWindow": true
-	}
+  "index": "Introduction",
+  "api-reference": "API/SDK Reference",
+  "video-introduction": "Video Introduction",
+  "getting-started": "Getting Started",
+  "advanced-features": "Advanced Features",
+  "managing-rules": "Managing Rules",
+  "integrating-rules": "Integrating Rules",
+  "building-forms": "Building Forms",
+  "workspace-management": "Workspace Management",
+  "---": {
+    "type": "separator"
+  },
+  "private-deployment": "Private Deployment",
+  "embedding-rulebricks": "Embedding Rulebricks",
+  "security": "Security",
+  "changelog": "Changelog",
+  "product-updates": "Product Updates",
+  "Book a Demo": {
+    "title": "Get a Demo ↗",
+    "type": "page",
+    "href": "https://calendly.com/prefix-software/rulebricks",
+    "newWindow": true
+  },
+  "Dashboard": {
+    "title": "Dashboard ↗",
+    "type": "page",
+    "href": "https://rulebricks.com/dashboard",
+    "newWindow": true
+  }
 }

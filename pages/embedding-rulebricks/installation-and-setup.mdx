@@ -1,0 +1,72 @@
+# Installation & Setup
+
+Install the package using your preferred package manager:
+
+```bash
+npm install @rulebricks/embedded
+# or
+yarn add @rulebricks/embedded
+# or
+pnpm add @rulebricks/embedded
+```
+
+> **Note**: Requires React 18+.
+
+## Quick Start
+
+Getting up and running involves two steps: generating a secure token on your backend, and rendering the component on your frontend.
+
+### 1. Server-Side: Generate an Embed Token
+
+You must generate an access token on your server to keep your API key secure.
+
+```javascript
+// Node.js / Next.js API Route
+import { createEmbedToken } from '@rulebricks/embedded/server'
+
+export async function POST(request) {
+  // 1. Authenticate your user
+  const user = await getCurrentUser()
+
+  // 2. Generate the token
+  const { token } = await createEmbedToken({
+    apiKey: process.env.RULEBRICKS_API_KEY, // Your secret key
+    ruleId: 'rule_abc123', // The rule to load
+    baseUrl: 'https://rulebricks.com', // Optional: for self-hosted
+    expiresIn: 3600, // Token validity in seconds
+  })
+
+  return Response.json({ token })
+}
+```
+
+### 2. Client-Side: Render the Component
+
+Fetch the token and pass it to the `<Rule>` component. Don't forget the CSS import!
+
+```jsx
+import { useState, useEffect } from 'react'
+import { Rule } from '@rulebricks/embedded'
+import '@rulebricks/embedded/styles.css' // Required!
+
+export default function RuleEditor({ ruleId }) {
+  const [token, setToken] = useState(null)
+
+  useEffect(() => {
+    fetch('/api/generate-token', { method: 'POST' })
+      .then((res) => res.json())
+      .then((data) => setToken(data.token))
+  }, [])
+
+  if (!token) return <div>Loading...</div>
+
+  return (
+    <Rule
+      embedToken={token}
+      height={600}
+      onSave={(e) => console.log('Saved:', e.rule)}
+      onError={(e) => console.error('Error:', e)}
+    />
+  )
+}
+```

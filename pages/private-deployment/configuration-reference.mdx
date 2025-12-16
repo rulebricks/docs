@@ -206,7 +206,7 @@ The core application and high-performance solver (HPS).
 | Parameter                         | Type   | Default                            | Description             |
 | :-------------------------------- | :----- | :--------------------------------- | :---------------------- |
 | `rulebricks.app.image.repository` | string | `"index.docker.io/rulebricks/app"` | Docker image repository |
-| `rulebricks.app.image.tag`        | string | `"1.2.17"`                         | Image version tag       |
+| `rulebricks.app.image.tag`        | string | `"1.X.X"`                          | Image version tag       |
 | `rulebricks.app.image.pullPolicy` | string | `"IfNotPresent"`                   | Image pull policy       |
 
 ### Logging Configuration
@@ -220,10 +220,11 @@ The core application and high-performance solver (HPS).
 
 ### Ingress
 
-| Parameter                      | Type    | Default     | Description        |
-| :----------------------------- | :------ | :---------- | :----------------- |
-| `rulebricks.ingress.enabled`   | boolean | `true`      | Enable ingress     |
-| `rulebricks.ingress.className` | string  | `"traefik"` | Ingress class name |
+| Parameter                      | Type    | Default     | Description            |
+| :----------------------------- | :------ | :---------- | :--------------------- |
+| `rulebricks.ingress.enabled`   | boolean | `true`      | Enable ingress         |
+| `rulebricks.ingress.className` | string  | `"traefik"` | Ingress class name     |
+| `rulebricks.ingress.paths`     | list    | `[{...}]`   | List of paths to route |
 
 ### Redis
 
@@ -249,6 +250,23 @@ HPS handles rule execution with horizontal scaling.
 | `rulebricks.hps.replicas`         | integer | `3`     | Number of HPS gateway replicas |
 | `rulebricks.hps.workers.enabled`  | boolean | `true`  | Enable worker pods             |
 | `rulebricks.hps.workers.replicas` | integer | `4`     | Base worker replica count      |
+
+#### HPS Image
+
+| Parameter                         | Type   | Default                            | Description             |
+| :-------------------------------- | :----- | :--------------------------------- | :---------------------- |
+| `rulebricks.hps.image.repository` | string | `"index.docker.io/rulebricks/hps"` | Docker image repository |
+| `rulebricks.hps.image.tag`        | string | `"1.X.X"`                          | Image version tag       |
+| `rulebricks.hps.image.pullPolicy` | string | `"Always"`                         | Image pull policy       |
+
+#### HPS Resources
+
+| Parameter                                  | Type   | Default   |
+| :----------------------------------------- | :----- | :-------- |
+| `rulebricks.hps.resources.requests.cpu`    | string | `"1000m"` |
+| `rulebricks.hps.resources.requests.memory` | string | `"1Gi"`   |
+| `rulebricks.hps.resources.limits.cpu`      | string | `"2000m"` |
+| `rulebricks.hps.resources.limits.memory`   | string | `"2Gi"`   |
 
 #### KEDA Autoscaling for HPS Workers
 
@@ -350,14 +368,45 @@ kafka:
     auto.create.topics.enable: 'true'
     log.retention.hours: '24' # Adjust based on log volume
     default.replication.factor: '1' # Increase for HA
+    offsets.topic.replication.factor: '1'
     num.partitions: '12' # Increase for parallelism
   controller:
     extraEnvVars:
+      - name: KAFKA_JVM_PERFORMANCE_OPTS
+        value: '-XX:MaxDirectMemorySize=256M -Djdk.nio.maxCachedBufferSize=262144'
+      - name: KAFKA_CFG_QUEUED_MAX_REQUESTS
+        value: '10000'
       - name: KAFKA_CFG_NUM_NETWORK_THREADS
         value: '8'
       - name: KAFKA_CFG_NUM_IO_THREADS
         value: '8'
-      # ... additional tuning parameters
+      - name: KAFKA_CFG_SOCKET_SEND_BUFFER_BYTES
+        value: '1048576'
+      - name: KAFKA_CFG_SOCKET_RECEIVE_BUFFER_BYTES
+        value: '1048576'
+      - name: KAFKA_CFG_SOCKET_REQUEST_MAX_BYTES
+        value: '209715200'
+      - name: KAFKA_CFG_LOG_RETENTION_BYTES
+        value: '4294967296'
+      - name: KAFKA_CFG_LOG_SEGMENT_BYTES
+        value: '1073741824'
+      - name: KAFKA_CFG_NUM_REPLICA_FETCHERS
+        value: '4'
+      - name: KAFKA_CFG_REPLICA_SOCKET_RECEIVE_BUFFER_BYTES
+        value: '1048576'
+      - name: KAFKA_CFG_LOG_CLEANER_DEDUPE_BUFFER_SIZE
+        value: '268435456'
+      - name: KAFKA_CFG_LOG_CLEANER_IO_BUFFER_SIZE
+        value: '1048576'
+      - name: KAFKA_CFG_MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION
+        value: '10'
+  listeners:
+    client:
+      protocol: PLAINTEXT
+    controller:
+      protocol: PLAINTEXT
+    interbroker:
+      protocol: PLAINTEXT
 ```
 
 **High-Availability Configuration:**
@@ -400,6 +449,12 @@ Traefik handles all incoming traffic and TLS termination.
 | `traefik.ports.web.exposedPort`       | `80`    | External HTTP port  |
 | `traefik.ports.websecure.port`        | `8443`  | Internal HTTPS port |
 | `traefik.ports.websecure.exposedPort` | `443`   | External HTTPS port |
+
+### Persistence
+
+| Parameter                     | Type    | Default | Description        |
+| :---------------------------- | :------ | :------ | :----------------- |
+| `traefik.persistence.enabled` | boolean | `false` | Enable persistence |
 
 ## Autoscaling (KEDA)
 
@@ -448,6 +503,19 @@ Vector aggregates logs from Kafka and forwards them to configured sinks.
 | `vector.resources.limits.cpu`      | string | `"200m"`  |
 | `vector.resources.limits.memory`   | string | `"256Mi"` |
 
+### Service
+
+| Parameter                | Type    | Default   | Description           |
+| :----------------------- | :------ | :-------- | :-------------------- |
+| `vector.service.enabled` | boolean | `true`    | Enable Vector service |
+| `vector.service.ports`   | list    | `[{...}]` | Service ports         |
+
+### Environment Variables
+
+| Parameter    | Type | Default   | Description                                           |
+| :----------- | :--- | :-------- | :---------------------------------------------------- |
+| `vector.env` | list | `[{...}]` | Environment variables (e.g., KAFKA_BOOTSTRAP_SERVERS) |
+
 ### Custom Sinks
 
 Configure log destinations in `vector.customConfig.sinks`:
@@ -455,6 +523,14 @@ Configure log destinations in `vector.customConfig.sinks`:
 ```yaml
 vector:
   customConfig:
+    sources:
+      kafka:
+        type: kafka
+        bootstrap_servers: '${KAFKA_BOOTSTRAP_SERVERS:-rulebricks-kafka:9092}'
+        topics:
+          - logs
+        group_id: vector-consumers
+        auto_offset_reset: latest
     sinks:
       # Console output (default)
       console:
@@ -565,14 +641,16 @@ kube-prometheus-stack:
 
 The chart can create a gp3 StorageClass for AWS EBS:
 
-| Parameter                           | Type    | Default             | Description         |
-| :---------------------------------- | :------ | :------------------ | :------------------ |
-| `storageClass.create`               | boolean | `true`              | Create StorageClass |
-| `storageClass.name`                 | string  | `"gp3"`             | StorageClass name   |
-| `storageClass.provisioner`          | string  | `"ebs.csi.aws.com"` | CSI provisioner     |
-| `storageClass.type`                 | string  | `"gp3"`             | EBS volume type     |
-| `storageClass.reclaimPolicy`        | string  | `"Delete"`          | Reclaim policy      |
-| `storageClass.allowVolumeExpansion` | boolean | `true`              | Allow expansion     |
+| Parameter                           | Type    | Default                  | Description         |
+| :---------------------------------- | :------ | :----------------------- | :------------------ |
+| `storageClass.create`               | boolean | `true`                   | Create StorageClass |
+| `storageClass.name`                 | string  | `"gp3"`                  | StorageClass name   |
+| `storageClass.provisioner`          | string  | `"ebs.csi.aws.com"`      | CSI provisioner     |
+| `storageClass.type`                 | string  | `"gp3"`                  | EBS volume type     |
+| `storageClass.fsType`               | string  | `"ext4"`                 | File system type    |
+| `storageClass.reclaimPolicy`        | string  | `"Delete"`               | Reclaim policy      |
+| `storageClass.volumeBindingMode`    | string  | `"WaitForFirstConsumer"` | Binding mode        |
+| `storageClass.allowVolumeExpansion` | boolean | `true`                   | Allow expansion     |
 
 For non-AWS clusters, set `storageClass.create: false` and ensure a compatible StorageClass exists.
 
