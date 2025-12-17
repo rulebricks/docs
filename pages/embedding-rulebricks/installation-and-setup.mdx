@@ -31,7 +31,8 @@ export async function POST(request) {
   // 2. Generate the token
   const { token } = await createEmbedToken({
     apiKey: process.env.RULEBRICKS_API_KEY, // Your secret key
-    ruleId: 'rule_abc123', // The rule to load
+    // Get this ID from the admin API, dashboard URL, or published URL slug
+    ruleId: 'abc123', // The rule to load
     baseUrl: 'https://rulebricks.com', // Optional: for self-hosted
     expiresIn: 3600, // Token validity in seconds
   })
@@ -64,7 +65,7 @@ export default function RuleEditor({ ruleId }) {
     <Rule
       embedToken={token}
       height={600}
-      onSave={(e) => console.log('Saved:', e.rule)}
+      onPublish={(e) => console.log('Just Published:', e.rule)}
       onError={(e) => console.error('Error:', e)}
     />
   )

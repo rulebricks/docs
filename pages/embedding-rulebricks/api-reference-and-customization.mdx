@@ -9,7 +9,7 @@ This reference covers the `<Rule>` component props, the server-side helper, cust
 The main React component for the embedded editor.
 
 ```jsx
-import { Rule } from "@rulebricks/embedded";
+import { Rule } from '@rulebricks/embedded'
 ```
 
 | Prop              | Type      | Default      | Description                                      |
@@ -22,7 +22,6 @@ import { Rule } from "@rulebricks/embedded";
 | `showRowSettings` | `boolean` | `false`      | Show gear icon for row-level settings.           |
 | `requestLabel`    | `string`  | "Request"    | Custom label for the input columns section.      |
 | `responseLabel`   | `string`  | "Response"   | Custom label for the output columns section.     |
-| `onSave`          | `func`    | -            | Callback fired after auto-save `(e) => {}`.      |
 | `onPublish`       | `func`    | -            | Callback fired after publishing `(e) => {}`.     |
 | `onError`         | `func`    | -            | Callback fired on errors `(e) => {}`.            |
 
@@ -31,14 +30,14 @@ import { Rule } from "@rulebricks/embedded";
 Server-side helper to generate tokens.
 
 ```javascript
-import { createEmbedToken } from "@rulebricks/embedded/server";
+import { createEmbedToken } from '@rulebricks/embedded/server'
 
 const { token } = await createEmbedToken({
-  apiKey: "rb_live_...", // Required
-  ruleId: "rule_123", // Required
+  apiKey: 'rb_live_...', // Required
+  ruleId: 'rule_123', // Required
   expiresIn: 3600, // Optional (default: 1h)
-  baseUrl: "...", // Optional (for self-hosted)
-});
+  baseUrl: '...', // Optional (for self-hosted)
+})
 ```
 
 ## Programmatic Control (Refs)
@@ -46,18 +45,18 @@ const { token } = await createEmbedToken({
 You can interact with the component instance using a React Ref. This is useful for building external "Test" buttons or custom export flows.
 
 ```jsx
-const ruleRef = useRef(null);
+const ruleRef = useRef(null)
 // ...
-<Rule ref={ruleRef} embedToken={token} />;
+;<Rule ref={ruleRef} embedToken={token} />
 ```
 
 ### Methods
 
 - **`testRule(payload)`**: Runs a test against the current rule state. Highlights matching rows in the UI.
   ```javascript
-  const result = await ruleRef.current.testRule({ age: 25, type: "standard" });
-  console.log(result.response); // The rule output
-  console.log(result.successIdxs); // Indices of matching rows
+  const result = await ruleRef.current.testRule({ age: 25, type: 'standard' })
+  console.log(result.response) // The rule output
+  console.log(result.successIdxs) // Indices of matching rows
   ```
 - **`clearTestResults()`**: Clears the visual highlighting from a previous test.
 - **`getRule()`**: Returns the current JSON structure of the rule.
@@ -73,15 +72,15 @@ If you need to override styles manually or create a dark mode workaround, target
 
 ```css
 /* Override primary color */
-[data-embed-container="true"] {
+[data-embed-container='true'] {
   --rb-color-primary: #ff5733;
   --rb-color-accent: #33ff57;
-  --rb-font-family: "Inter", sans-serif;
+  --rb-font-family: 'Inter', sans-serif;
   --rb-border-radius: 8px;
 }
 
 /* Dark mode override example */
-[data-embed-container="true"] .bg-white {
+[data-embed-container='true'] .bg-white {
   background-color: #1e1e1e !important;
   color: #ffffff !important;
 }
@@ -104,4 +103,3 @@ Pass an `onError` handler to the component to catch and log issues:
 ```jsx
 <Rule onError={(e) => console.error("Rulebricks Error:", e)} ... />
 ```
-
