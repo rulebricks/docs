@@ -1,6 +1,6 @@
 {
   "quick-start": "Getting Started",
   "deployment": "Deployment Modes",
-  "configuration-reference": "Configuration Reference",
+  "configuration-reference": "YAML Reference",
   "architecture": "Architecture"
 }

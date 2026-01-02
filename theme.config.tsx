@@ -1,7 +1,12 @@
 import React from 'react'
 import { DocsThemeConfig, useConfig } from 'nextra-theme-docs'
 import NavbarLogo from './components/NavbarLogo'
-import { IconCube, IconCube3dSphere, IconHistory } from '@tabler/icons-react'
+import {
+  IconCube,
+  IconCube3dSphere,
+  IconHistory,
+  IconPencil,
+} from '@tabler/icons-react'
 import moment from 'moment'
 import { useRouter } from 'next/router'
 
@@ -74,7 +79,7 @@ const config: DocsThemeConfig = {
       },
       {
         rel: 'stylesheet',
-        href: 'https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&display=swap',
+        href: 'https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&display=swap',
       },
     ]
     return seoOptions
@@ -89,19 +94,20 @@ const config: DocsThemeConfig = {
         <a
           href="https://www.rulebricks.com/blog/ai-business-rules"
           target="_blank"
-          className="flex flex-row justify-center items-center text-center align-middle group duration-100 transition-all hover:text-lime-200"
+          className="flex flex-row justify-start -ml-4 sm:ml-0 sm:justify-center items-center text-center align-middle group duration-100 transition-all hover:text-lime-200"
         >
           <IconCube
             strokeWidth={3}
-            className="size-3 group-hover:fill-lime-300/50 group-hover:rotate-[120deg] transition-all duration-150 sm:size-4 inline-block mr-2"
+            className="size-3 flex-shrink-0 group-hover:fill-lime-300/50 group-hover:rotate-[120deg] transition-all duration-150 sm:size-4 inline-block mr-2 "
           />
-          <span className="text-xs sm:text-base align-middle self-center">
+          <span className="text-xs sm:text-base align-middle self-center truncate">
             Tired of reading documentation? Try our new AI suite. More →
           </span>
         </a>
       )
     },
   },
+  /*
   gitTimestamp: ({ timestamp }) => {
     return (
       <div className="text-sm text-neutral-700 opacity-80 align-middle inline-flex items-center invert-dark">
@@ -111,6 +117,14 @@ const config: DocsThemeConfig = {
         </span>
       </div>
     )
+  },
+  */
+  gitTimestamp: null,
+  feedback: {
+    content: null,
+  },
+  editLink: {
+    component: null,
   },
 }
 

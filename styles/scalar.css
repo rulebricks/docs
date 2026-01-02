@@ -278,7 +278,7 @@
   background: inherit;
 }
 .light-mode .modal[data-v-919178d1]:before {
-  background: #fff;
+  background: #fcfcf9;
 }
 .modal-content-history[data-v-919178d1] {
   background: var(--scalar-background-1);
@@ -3812,7 +3812,7 @@ a[data-v-faae4ad2] {
   background: #1a1a1a;
 }
 .light-mode .api-client-drawer[data-v-114fcf2a]:before {
-  background: #fff;
+  background: #fcfcf9;
 }
 @keyframes apiclientfadein-114fcf2a {
   0% {

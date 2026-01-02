@@ -9,6 +9,7 @@ module.exports = {
     './pages/_app.{js,jsx,ts,tsx,md,mdx}',
     './theme.config.tsx',
   ],
+  darkMode: 'class',
   theme: {
     extend: {},
   },

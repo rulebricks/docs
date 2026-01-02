@@ -1,13 +1,29 @@
 {
-  "index": "Introduction",
-  "api-reference": "API/SDK Reference",
+  "index": {
+    "title": "User Guide",
+    "theme": {
+      "sidebar": false,
+      "toc": false,
+      "pagination": false,
+      "breadcrumb": false
+    }
+  },
+  "api-reference": {
+    "title": "API/SDK Reference",
+    "theme": {
+      "sidebar": false,
+      "toc": false,
+      "pagination": false,
+      "breadcrumb": false
+    }
+  },
   "video-introduction": "Video Introduction",
   "getting-started": "Getting Started",
   "advanced-features": "Advanced Features",
   "managing-rules": "Managing Rules",
   "integrating-rules": "Integrating Rules",
   "building-forms": "Building Forms",
-  "workspace-management": "Workspace Management",
+  "workspace-management": "Team Management",
   "---": {
     "type": "separator"
   },

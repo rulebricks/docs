@@ -8,7 +8,6 @@ import { Callout } from 'nextra/components'
 
 This document provides a comprehensive reference for all configuration values in the Rulebricks Helm chart. Values are organized by component with detailed explanations of their purpose, defaults, and recommendations.
 
-<small>
 ### Core Configuration
 
 | Parameter                   | Type    | Default                    | Required | Description                                                                     |
@@ -653,5 +652,3 @@ The chart can create a gp3 StorageClass for AWS EBS:
 | `storageClass.allowVolumeExpansion` | boolean | `true`                   | Allow expansion     |
 
 For non-AWS clusters, set `storageClass.create: false` and ensure a compatible StorageClass exists.
-
-</small>

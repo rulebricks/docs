@@ -2,44 +2,66 @@
 metaDescription: Rulebricks is a decision automation platform that helps you model important decisions in your business visually as "rules", and then integrate them into an automated workflow. Learn how to get started with Rulebricks here.
 ---
 
+import FeatureCard from '../components/FeatureCard'
+import {
+  IconCube,
+  IconHammer,
+  IconCode,
+  IconPlug,
+  IconRoute2,
+  IconServer,
+} from '@tabler/icons-react'
+
+<div className="landing-page">
+
+<div className="landing-hero">
+
 # User Guide
 
-<img
-  className={'w-full mb-12 mt-6 object-cover opacity-95 invert-dark'}
-  src="https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/application/cover.png"
-  alt="Rulebricks Cover"
-/>
+<div className="hero-description text-xl font-light max-w-3xl sm:mb-0 mb-6">
+  Learn how our visual decision modeling approach can help your business make
+  complex, embedded logic surprisingly accessible.
+</div>
 
-Rulebricks helps you model important decisions in your business visually as "rules", and then integrate them into an automated workflow.
+</div>
 
-Decisions in Rulebricks are represented as "rules" that use [decision tables](https://en.wikipedia.org/wiki/Decision_table) to make your underlying business logic easy to understand and maintain.
-
-import { Cards, Card } from 'nextra/components'
-
-<Cards className="pt-6">
-  <Card
+<div className="feature-cards-grid shadow-sm">
+  <FeatureCard
+    icon={<IconCube size={64} strokeWidth={0.5} />}
     title="What is a rule?"
+    description="Understand the building blocks of decision automation."
     href="/getting-started/what-is-a-rule"
-    arrow="1"
-  ></Card>
-  <Card
-    title="Requests & Responses"
-    href="/getting-started/requests-and-responses"
-    arrow="1"
-  ></Card>
-  <Card
-    title="Start building your rule"
+  />
+  <FeatureCard
+    icon={<IconHammer size={64} strokeWidth={0.5} />}
+    title="Start building"
+    description="Create your first rule in under 5 minutes."
     href="/getting-started/start-building"
-    arrow="1"
-  ></Card>
-  <Card
+  />
+  <FeatureCard
+    icon={<IconCode size={64} strokeWidth={0.5} />}
+    title="API/SDK Reference"
+    description="Complete API docs and SDK examples."
+    href="/api-reference"
+  />
+  <FeatureCard
+    icon={<IconPlug size={64} strokeWidth={0.5} />}
     title="Integration guide"
+    description="Connect rules to any application."
     href="/getting-started/integration"
-    arrow="1"
-  ></Card>
-  <Card
+  />
+  <FeatureCard
+    icon={<IconRoute2 size={64} strokeWidth={0.5} />}
+    title="Rulebricks Flows"
+    description="Chain rules together for complex workflows."
+    href="/integrating-rules/rule-flows"
+  />
+  <FeatureCard
+    icon={<IconServer size={64} strokeWidth={0.5} />}
     title="Private deployments"
-    href="/private-deployment/getting-access"
-    arrow="1"
-  ></Card>
-</Cards>
+    description="Self-host with full control."
+    href="/private-deployment/quick-start"
+  />
+</div>
+
+</div>

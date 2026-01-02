@@ -49,7 +49,7 @@ function ApiReference() {
           },
         },
         darkMode: theme === 'dark',
-        layout: 'classic',
+        layout: 'modern',
       }}
     />
   )
