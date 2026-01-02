@@ -166,7 +166,7 @@ body {
 
 nav {
   font-family: 'Archivo', sans-serif;
-  font-weight: 400;
+  font-weight: 300;
 }
 
 .nextra-nav-container-blur {
@@ -1090,7 +1090,7 @@ html.dark .sdk-language-value {
   top: 100%;
   left: 0.875rem;
   right: 0.875rem;
-  margin-top: 4px;
+  margin-top: -4px;
   background: #fff;
   border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: 6px;
@@ -1168,6 +1168,13 @@ html.dark .sdk-language-option.selected {
   transition: color 0.1s;
 }
 
+.sdk-nav-item.sdk-nav-depth-1.sdk-nav-subresource {
+  text-transform: uppercase;
+  font-size: 14px;
+  font-weight: 400;
+  color: #808080;
+}
+
 .sdk-nav-item:hover {
   color: #333;
 }
@@ -1196,9 +1203,9 @@ html.dark .sdk-nav-item.active {
 }
 
 .sdk-nav-resource {
-  font-size: 11px;
-  font-weight: 500;
-  color: #999;
+  font-size: 13px;
+  font-weight: 400;
+  color: #828181;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   padding-top: 5px;
@@ -1211,6 +1218,7 @@ html.dark .sdk-nav-resource {
 
 .sdk-nav-subresource {
   font-size: 13px;
+  font-weight: 400;
   color: #888;
 }
 
@@ -1237,8 +1245,8 @@ html.dark .sdk-nav-subresource {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 12px;
-  color: #bbb;
+  width: 18px;
+  color: #898989;
   flex-shrink: 0;
 }
 

@@ -375,7 +375,7 @@ function SdkExamples({ initialLanguage, initialSection }: SdkExamplesProps) {
             isActive ? 'active' : ''
           } ${
             item.type === 'resource'
-              ? 'sdk-nav-resource !text-sm !font-medium !tracking-normal'
+              ? 'sdk-nav-resource !text-sm !tracking-normal'
               : ''
           } ${item.type === 'subresource' ? 'sdk-nav-subresource' : ''} ${
             item.type === 'method' ? 'sdk-nav-method' : ''
@@ -398,9 +398,9 @@ function SdkExamples({ initialLanguage, initialSection }: SdkExamplesProps) {
               item.type === 'subresource') && (
               <span className="sdk-nav-chevron">
                 {isExpanded ? (
-                  <IconChevronDown size={16} />
+                  <IconChevronDown size={22} strokeWidth={1} />
                 ) : (
-                  <IconChevronRight size={16} />
+                  <IconChevronRight size={22} strokeWidth={1} />
                 )}
               </span>
             )}
@@ -460,7 +460,8 @@ function SdkExamples({ initialLanguage, initialSection }: SdkExamplesProps) {
             <span className="sdk-language-value">
               {languageLabels[selectedLanguage]}
               <IconChevronDown
-                size={14}
+                size={22}
+                strokeWidth={1}
                 className={`sdk-dropdown-icon ${dropdownOpen ? 'open' : ''}`}
               />
             </span>
