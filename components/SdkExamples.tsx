@@ -507,8 +507,8 @@ function SdkExamples({ initialLanguage, initialSection }: SdkExamplesProps) {
           data-section="getting-started"
           className="sdk-content-section"
         >
-          <h1>Getting Started</h1>
-          <p className="sdk-section-intro">
+          <h1 className="!text-2xl">Getting Started</h1>
+          <p className="sdk-section-intro !text-lg !mb-12">
             Install the {languageLabels[selectedLanguage]} SDK and start
             integrating Rulebricks into your application.
           </p>

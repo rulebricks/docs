@@ -71,19 +71,23 @@ function ApiReferencePage() {
       {/* Top bar */}
       <div className="api-page-topbar">
         <Link href="/" className="back-link">
-          <IconArrowLeft size={18} strokeWidth={2} />
-          <span className="!text-base">User Guide</span>
+          <IconArrowLeft size={22} strokeWidth={1} />
+          <span className="!text-base !font-light">User Guide</span>
         </Link>
 
-        <div className="api-tabs">
+        <div className="api-tabs ">
           <button
-            className={`api-tab ${activeTab === 'api' ? 'active' : ''}`}
+            className={`api-tab ${
+              activeTab === 'api' ? 'active' : ''
+            } !font-light`}
             onClick={() => handleTabClick('api')}
           >
             API Reference
           </button>
           <button
-            className={`api-tab ${activeTab === 'sdk' ? 'active' : ''}`}
+            className={`api-tab ${
+              activeTab === 'sdk' ? 'active' : ''
+            } !font-light`}
             onClick={() => handleTabClick('sdk')}
           >
             SDK Examples

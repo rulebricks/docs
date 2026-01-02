@@ -1175,6 +1175,12 @@ html.dark .sdk-language-option.selected {
 .sdk-nav-item.active {
   color: #16a34a;
   background: #f0f0f0;
+  border-radius: 0px !important;
+}
+
+html.dark .sdk-nav-item.active {
+  background: #1a1a1a;
+  border-radius: 0px !important;
 }
 
 html.dark .sdk-nav-item {
