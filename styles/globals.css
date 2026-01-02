@@ -415,6 +415,10 @@ html.light .scalar-api-reference {
   min-height: auto !important;
 }
 
+.nx-max-w-\[90rem\] {
+  max-width: unset !important;
+}
+
 /* Animated grid background - spans full page */
 .landing-page::before {
   content: '';

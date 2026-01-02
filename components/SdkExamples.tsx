@@ -483,11 +483,11 @@ function SdkExamples({ initialLanguage, initialSection }: SdkExamplesProps) {
           )}
         </div>
 
-        <nav className="sdk-nav">
+        <nav className="sdk-nav shadow-inner sm:shadow-none">
           {navItems.map((item) => renderNavItem(item))}
         </nav>
 
-        <div className="sdk-sidebar-footer">
+        <div className="sdk-sidebar-footer hidden sm:block">
           <a
             href={githubUrls[selectedLanguage]}
             target="_blank"
