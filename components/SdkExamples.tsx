@@ -47,6 +47,7 @@ const prismLanguageMap: Record<string, string> = {
   ruby: 'ruby',
   bash: 'bash',
   xml: 'markup',
+  json: 'javascript',
 }
 
 function CodeBlock({
@@ -113,6 +114,7 @@ function CodeBlock({
 // Parameter display component - always renders to maintain layout
 function ParameterList({
   parameters,
+  returns,
 }: {
   parameters?: Array<{
     name: string
@@ -120,6 +122,10 @@ function ParameterList({
     required: boolean
     description: string
   }>
+  returns?: {
+    type: string
+    description: string
+  }
 }) {
   return (
     <div className="sdk-params-col">
@@ -143,6 +149,18 @@ function ParameterList({
         </>
       ) : (
         <div className="sdk-no-params">No parameters required</div>
+      )}
+
+      {returns && (
+        <div className="sdk-returns-section">
+          <h4 className="sdk-params-title">Returns</h4>
+          <div className="sdk-param">
+            <div className="sdk-param-meta">{returns.type}</div>
+            {returns.description && (
+              <div className="sdk-param-desc">{returns.description}</div>
+            )}
+          </div>
+        </div>
       )}
     </div>
   )
@@ -270,7 +288,7 @@ function SdkExamples({ initialLanguage, initialSection }: SdkExamplesProps) {
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id)
     if (element) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      element.scrollIntoView({ block: 'start' })
     }
     setActiveSection(id)
   }
@@ -398,9 +416,13 @@ function SdkExamples({ initialLanguage, initialSection }: SdkExamplesProps) {
               item.type === 'subresource') && (
               <span className="sdk-nav-chevron">
                 {isExpanded ? (
-                  <IconChevronDown size={22} strokeWidth={1} />
+                  <IconChevronDown size={22} strokeWidth={1.8} />
                 ) : (
-                  <IconChevronRight size={22} strokeWidth={1} />
+                  <IconChevronRight
+                    size={22}
+                    strokeWidth={1.8}
+                    className="text-neutral-500 dark:text-neutral-400"
+                  />
                 )}
               </span>
             )}
@@ -421,6 +443,9 @@ function SdkExamples({ initialLanguage, initialSection }: SdkExamplesProps) {
     const code =
       method.examples[selectedLanguage as keyof typeof method.examples] ||
       '// Example not available'
+    const exampleOutput = method.exampleOutput
+      ? JSON.stringify(method.exampleOutput, null, 2)
+      : null
 
     return (
       <div
@@ -434,13 +459,25 @@ function SdkExamples({ initialLanguage, initialSection }: SdkExamplesProps) {
           <p className="sdk-method-desc">{method.description}</p>
         </div>
         <div className="sdk-method-row">
-          <ParameterList parameters={method.parameters} />
-          <div className="sdk-code-col">
+          <ParameterList
+            parameters={method.parameters}
+            returns={method.returns}
+          />
+          <div className="sdk-code-col mt-1.5">
             <CodeBlock
               code={code}
               language={selectedLanguage}
               displayLang={languageLabels[selectedLanguage]}
             />
+            {exampleOutput && (
+              <div className="sdk-example-response mt-6">
+                <CodeBlock
+                  code={exampleOutput}
+                  language="json"
+                  displayLang="Example Response"
+                />
+              </div>
+            )}
           </div>
         </div>
       </div>

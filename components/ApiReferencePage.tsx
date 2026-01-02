@@ -1,6 +1,10 @@
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
-import { IconArrowLeft } from '@tabler/icons-react'
+import {
+  IconArrowLeft,
+  IconWorldLongitude,
+  IconCode,
+} from '@tabler/icons-react'
 import ApiReference from './ApiReference'
 import SdkExamples from './SdkExamples'
 
@@ -77,20 +81,22 @@ function ApiReferencePage() {
 
         <div className="api-tabs ">
           <button
-            className={`api-tab ${
+            className={`api-tab flex items-center gap-2 ${
               activeTab === 'api' ? 'active' : ''
             } !font-light`}
             onClick={() => handleTabClick('api')}
           >
-            API Reference
+            <IconWorldLongitude size={22} strokeWidth={1} />
+            <span>API Reference</span>
           </button>
           <button
-            className={`api-tab ${
+            className={`api-tab flex items-center gap-2 ${
               activeTab === 'sdk' ? 'active' : ''
             } !font-light`}
             onClick={() => handleTabClick('sdk')}
           >
-            SDK Examples
+            <IconCode size={22} strokeWidth={1} />
+            <span>SDK Examples</span>
           </button>
         </div>
       </div>

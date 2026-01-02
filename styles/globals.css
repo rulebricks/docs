@@ -778,7 +778,7 @@ html.dark .api-tabs {
 
 /* Individual tab buttons */
 .api-tab {
-  padding: 0.5rem 1.25rem;
+  padding: 0.5rem 0.75rem;
   font-family: 'Archivo', sans-serif;
   font-size: 0.875rem;
   font-weight: 500;
@@ -1000,8 +1000,8 @@ html.dark .sdk-examples-container {
 
 /* ========== SIDEBAR - Fixed, scrolls independently ========== */
 .sdk-sidebar {
-  width: 240px;
-  min-width: 240px;
+  width: 279px;
+  min-width: 279px;
   height: 100%;
   overflow-y: auto;
   border-right: 1px solid rgba(0, 0, 0, 0.05);
@@ -1148,7 +1148,7 @@ html.dark .sdk-language-option.selected {
 .sdk-nav {
   flex: 1;
   overflow-y: auto;
-  padding: 0.5rem 0;
+  padding: 0.5rem 0.5rem;
 }
 
 .sdk-nav-item-wrapper {
@@ -1159,11 +1159,11 @@ html.dark .sdk-language-option.selected {
 .sdk-nav-item {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
   width: 100%;
-  padding: 5px 14px;
+  padding: 2px 14px;
   text-align: left;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 400;
   color: #808080;
   background: transparent;
@@ -1174,9 +1174,10 @@ html.dark .sdk-language-option.selected {
 
 .sdk-nav-item.sdk-nav-depth-1.sdk-nav-subresource {
   text-transform: uppercase;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 400;
-  color: #808080;
+  color: #333;
+  font-family: 'Public Sans', sans-serif;
 }
 
 .sdk-nav-item:hover {
@@ -1184,14 +1185,17 @@ html.dark .sdk-language-option.selected {
 }
 
 .sdk-nav-item.active {
-  color: #16a34a;
+  color: #333;
   background: #f0f0f0;
-  border-radius: 0px !important;
+  border-radius: 3px !important;
+}
+
+html.dark .sdk-nav-item.active {
+  color: #ddd;
 }
 
 html.dark .sdk-nav-item.active {
   background: #1a1a1a;
-  border-radius: 0px !important;
 }
 
 html.dark .sdk-nav-item {
@@ -1209,11 +1213,12 @@ html.dark .sdk-nav-item.active {
 .sdk-nav-resource {
   font-size: 13px;
   font-weight: 400;
-  color: #828181;
+  color: #333;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   padding-top: 5px;
   padding-bottom: 5px;
+  font-family: 'Public Sans', sans-serif;
 }
 
 html.dark .sdk-nav-resource {
@@ -1223,7 +1228,7 @@ html.dark .sdk-nav-resource {
 .sdk-nav-subresource {
   font-size: 13px;
   font-weight: 400;
-  color: #888;
+  color: #333;
 }
 
 html.dark .sdk-nav-subresource {
@@ -1232,11 +1237,13 @@ html.dark .sdk-nav-subresource {
 
 .sdk-nav-depth-1 {
   padding-left: 30px;
+  min-height: 30px;
   font-size: 13px;
 }
 
 .sdk-nav-depth-2 {
   padding-left: 38px;
+  min-height: 30px;
   font-size: 13px;
 }
 
@@ -1249,8 +1256,8 @@ html.dark .sdk-nav-subresource {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 18px;
-  color: #898989;
+  width: 17px;
+  color: #333;
   flex-shrink: 0;
 }
 
@@ -1259,6 +1266,8 @@ html.dark .sdk-nav-subresource {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-size: 13px;
+  font-weight: 450;
 }
 
 .sdk-nav-children {
