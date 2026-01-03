@@ -721,6 +721,12 @@ html.dark .api-reference-page {
   background: #111;
 }
 
+table {
+  transform: scale(0.85);
+  transform-origin: left;
+  width: 120%;
+}
+
 /* Top bar - fixed header with back link and tabs */
 .api-page-topbar {
   flex-shrink: 0;
