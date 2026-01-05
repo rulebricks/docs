@@ -17,6 +17,7 @@ function ApiReference() {
       .then((response) => response.json())
       .then((data) => {
         setOpenapiSpec(data)
+        data.servers[0].url = '{server}api/v1'
         // if its different from the current one, reload the page
         if (
           window?.localStorage.getItem('openapiSpec') !== JSON.stringify(data)
@@ -50,6 +51,7 @@ function ApiReference() {
         },
         darkMode: theme === 'dark',
         layout: 'modern',
+        baseServerURL: 'https://rulebricks.com',
       }}
     />
   )
