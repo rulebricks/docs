@@ -13,20 +13,20 @@
     "go": "go get github.com/rulebricks/go-sdk",
     "csharp": "dotnet add package RulebricksApi",
     "java": "<dependency>\n  <groupId>com.rulebricks</groupId>\n  <artifactId>rulebricks-sdk-java</artifactId>\n  <version>1.5.0</version>\n</dependency>",
-    "ruby": "gem 'rulebricks_api_client'"
+    "ruby": "gem install rulebricks"
   },
   "initialization": {
     "python": "from rulebricks import Rulebricks\n\nclient = Rulebricks(\n    api_key=\"YOUR_API_KEY\",\n)",
     "typescript": "import { RulebricksClient } from \"@rulebricks/sdk\";\n\nconst client = new RulebricksClient({\n    apiKey: \"YOUR_API_KEY\",\n});",
-    "go": "import (\n    \"github.com/rulebricks/go-sdk/client\"\n    \"github.com/rulebricks/go-sdk/option\"\n)\n\nopts := option.WithAPIKey(\"YOUR_API_KEY\")\nclient := client.NewClient(opts)",
-    "csharp": "var client = new RulebricksApiClient(\"YOUR_API_KEY\");",
-    "java": "RulebricksApiClient client = RulebricksApiClient.builder()\n    .apiKey(\"YOUR_API_KEY\")\n    .build();",
-    "ruby": "require 'rulebricks_api_client'\n\nRulebricksApiClient.configure do |config|\n  config.api_key = 'YOUR_API_KEY'\nend"
+    "go": "import (\n    sdk \"github.com/rulebricks/go-sdk\"\n    \"github.com/rulebricks/go-sdk/client\"\n    \"github.com/rulebricks/go-sdk/option\"\n)\n\nopts := option.WithAPIKey(\"YOUR_API_KEY\")\nclient := client.NewClient(opts)",
+    "csharp": "using RulebricksApi;\n\nvar client = new RulebricksApiClient(\"YOUR_API_KEY\");",
+    "java": "import com.rulebricks.RulebricksApiClient;\n\nRulebricksApiClient client = RulebricksApiClient.builder()\n    .apiKey(\"YOUR_API_KEY\")\n    .build();",
+    "ruby": "require 'rulebricks'\n\nclient = Rulebricks::Client.new(api_key: 'YOUR_API_KEY')"
   },
   "resources": [
     {
       "name": "Rules",
-      "description": "Operations for executing individual rules in different formats",
+      "description": "Operations for efficiently executing individual rules in different formats",
       "methods": [
         {
           "name": "solve",
@@ -36,26 +36,26 @@
               "name": "slug",
               "type": "string",
               "required": true,
-              "description": "The unique identifier for the resource."
+              "description": "The unique identifier (slug) for the rule."
             },
             {
               "name": "request",
               "type": "object",
               "required": true,
-              "description": "Dynamic request payload for rule execution. Structure depends on rule configuration."
+              "description": "Dynamic request payload based on the rule's request schema."
             }
           ],
           "returns": {
             "type": "DynamicResponsePayload",
-            "description": "Rule execution successful. The response structure depends on the rule configuration."
+            "description": "Rule execution result. The response structure depends on the rule configuration."
           },
           "examples": {
-            "python": "client.rules.solve(\n    slug=\"my-rule-slug\",\n    request={\n        \"name\": \"Alice Johnson\",\n        \"age\": 28,\n        \"email\": \"alice.johnson@example.com\",\n    },\n)",
-            "typescript": "await client.rules.solve({\n    slug: \"my-rule-slug\",\n    body: {\n        name: \"Alice Johnson\",\n        age: 28,\n        email: \"alice.johnson@example.com\"\n    }\n})",
-            "go": "response, err := client.Rules.Solve(\n    context.Background(),\n    &rulebricks.SolveRulesRequest{\n        Slug: \"my-rule-slug\",\n        Body: map[string]interface{}{\n            \"name\": \"Alice Johnson\",\n            \"age\": 28,\n            \"email\": \"alice.johnson@example.com\",\n        },\n    },\n)",
-            "csharp": "var requestData = new Dictionary<string, object>\n{\n    { \"name\", \"Alice Johnson\" },\n    { \"age\", 28 },\n    { \"email\", \"alice.johnson@example.com\" }\n};\n\nvar result = await client.Rules.SolveAsync(\n    \"my-rule-slug\", requestData);",
-            "java": "Map<String, Object> requestData = new HashMap<>();\nrequestData.put(\"name\", \"Alice Johnson\");\nrequestData.put(\"age\", 28);\nrequestData.put(\"email\", \"alice@example.com\");\n\nvar result = client.rules().solve(\n    \"my-rule-slug\", requestData);",
-            "ruby": "result = client.rules.solve(\n    slug: 'my-rule-slug',\n    request: {\n        name: 'Alice Johnson',\n        age: 28,\n        email: 'alice.johnson@example.com'\n    }\n)"
+            "python": "client.rules.solve(\n    slug=\"slug\",\n    request={\n        \"name\": \"John Doe\",\n        \"age\": 30,\n        \"email\": \"jdoe@acme.co\"\n    },\n)",
+            "typescript": "await client.rules.solve({\n    slug: \"slug\",\n    body: {\n        \"name\": \"John Doe\",\n        \"age\": 30,\n        \"email\": \"jdoe@acme.co\"\n    }\n})",
+            "go": "request := &sdk.SolveRulesRequest{\n    Slug: \"slug\",\n    Body: map[string]any{\n        \"name\": \"John Doe\",\n        \"age\": 30,\n        \"email\": \"jdoe@acme.co\",\n    },\n}\nclient.Rules.Solve(context.TODO(), request)",
+            "csharp": "await client.Rules.SolveAsync(\n    new SolveRulesRequest\n    {\n        Slug = \"slug\",\n        Body = new Dictionary<string, object?>()\n        {\n            { \"name\", \"John Doe\" },\n            { \"age\", 30 },\n            { \"email\", \"jdoe@acme.co\" },\n        },\n    }\n);",
+            "java": "client.rules().solve(\"slug\", Map.of(\n    \"name\", \"John Doe\",\n    \"age\", 30,\n    \"email\", \"jdoe@acme.co\"\n));",
+            "ruby": "client.rules.solve(\n  slug: 'slug',\n  request: {\n    name: 'John Doe',\n    age: 30,\n    email: 'jdoe@acme.co'\n  }\n)"
           },
           "exampleOutput": {
             "eligible": true,
@@ -70,26 +70,26 @@
               "name": "slug",
               "type": "string",
               "required": true,
-              "description": "The unique identifier for the resource."
+              "description": "The unique identifier (slug) for the rule."
             },
             {
               "name": "request",
               "type": "array",
               "required": true,
-              "description": "Array of request payloads. Maximum 1000 payloads per request."
+              "description": "Array of request payloads (max 1000)."
             }
           ],
           "returns": {
             "type": "BulkRuleResponseItem[]",
-            "description": "Bulk rule execution successful. Array of results in the same order as requests."
+            "description": "Array of results, each dependent on the rule configuration."
           },
           "examples": {
-            "python": "client.rules.bulk_solve(\n    slug=\"my-rule-slug\",\n    request=[\n        {\"name\": \"John Doe\", \"age\": 30},\n        {\"name\": \"Jane Doe\", \"age\": 28},\n    ],\n)",
-            "typescript": "await client.rules.bulkSolve({\n    slug: \"my-rule-slug\",\n    body: [\n        { name: \"John Doe\", age: 30 },\n        { name: \"Jane Doe\", age: 28 }\n    ]\n})",
-            "go": "responses, err := client.Rules.BulkSolve(\n    context.Background(),\n    &rulebricks.BulkSolveRulesRequest{\n        Slug: \"my-rule-slug\",\n        Body: []map[string]interface{}{\n            {\"name\": \"John Doe\", \"age\": 30},\n            {\"name\": \"Jane Doe\", \"age\": 28},\n        },\n    },\n)",
-            "csharp": "var requests = new List<Dictionary<string, object>>\n{\n    new() { { \"name\", \"John Doe\" }, { \"age\", 30 } },\n    new() { { \"name\", \"Jane Doe\" }, { \"age\", 28 } }\n};\n\nvar results = await client.Rules.BulkSolveAsync(\n    \"my-rule-slug\", requests);",
-            "java": "List<Map<String, Object>> requests = List.of(\n    Map.of(\"name\", \"John Doe\", \"age\", 30),\n    Map.of(\"name\", \"Jane Doe\", \"age\", 28)\n);\n\nvar results = client.rules().bulkSolve(\n    \"my-rule-slug\", requests);",
-            "ruby": "results = client.rules.bulk_solve(\n    slug: 'my-rule-slug',\n    request: [\n        { name: 'John Doe', age: 30 },\n        { name: 'Jane Doe', age: 28 }\n    ]\n)"
+            "python": "client.rules.bulk_solve(\n    slug=\"slug\",\n    request=[\n        {\"name\": \"John Doe\", \"age\": 30, \"email\": \"jdoe@acme.co\"},\n        {\"name\": \"Jane Doe\", \"age\": 28, \"email\": \"jane@example.com\"},\n    ],\n)",
+            "typescript": "await client.rules.bulkSolve({\n    slug: \"slug\",\n    body: [\n        { \"name\": \"John Doe\", \"age\": 30, \"email\": \"jdoe@acme.co\" },\n        { \"name\": \"Jane Doe\", \"age\": 28, \"email\": \"jane@example.com\" }\n    ]\n})",
+            "go": "request := &sdk.BulkSolveRulesRequest{\n    Slug: \"slug\",\n    Body: []sdk.DynamicRequestPayload{\n        map[string]any{\"name\": \"John Doe\", \"age\": 30, \"email\": \"jdoe@acme.co\"},\n        map[string]any{\"name\": \"Jane Doe\", \"age\": 28, \"email\": \"jane@example.com\"},\n    },\n}\nclient.Rules.BulkSolve(context.TODO(), request)",
+            "csharp": "await client.Rules.BulkSolveAsync(\n    new BulkSolveRulesRequest\n    {\n        Slug = \"slug\",\n        Body = new List<Dictionary<string, object?>>()\n        {\n            new() { { \"name\", \"John Doe\" }, { \"age\", 30 }, { \"email\", \"jdoe@acme.co\" } },\n            new() { { \"name\", \"Jane Doe\" }, { \"age\", 28 }, { \"email\", \"jane@example.com\" } },\n        },\n    }\n);",
+            "java": "client.rules().bulkSolve(\"slug\", List.of(\n    Map.of(\"name\", \"John Doe\", \"age\", 30, \"email\", \"jdoe@acme.co\"),\n    Map.of(\"name\", \"Jane Doe\", \"age\", 28, \"email\", \"jane@example.com\")\n));",
+            "ruby": "client.rules.bulk_solve(\n  slug: 'slug',\n  body: [\n    { name: 'John Doe', age: 30, email: 'jdoe@acme.co' },\n    { name: 'Jane Doe', age: 28, email: 'jane@example.com' }\n  ]\n)"
           },
           "exampleOutput": [
             {
@@ -115,25 +115,22 @@
           ],
           "returns": {
             "type": "ParallelSolveResponse",
-            "description": "Object mirroring the request structure with each rule/flow's results."
+            "description": "Object mirroring the request structure, providing each rule/flow's results."
           },
           "examples": {
-            "python": "client.rules.parallel_solve(\n    request={\n        \"eligibility\": {\n            \"$rule\": \"eligibility-rule\",\n            \"name\": \"Alice Johnson\",\n            \"age\": 28,\n        },\n        \"offers\": {\n            \"$flow\": \"offers-flow\",\n            \"customer_id\": \"98765\",\n        }\n    },\n)",
-            "typescript": "await client.rules.parallelSolve({\n    eligibility: {\n        \"$rule\": \"eligibility-rule\",\n        name: \"Alice Johnson\",\n        age: 28,\n    },\n    offers: {\n        \"$flow\": \"offers-flow\",\n        customer_id: \"98765\",\n    }\n})",
-            "go": "responses, err := client.Rules.ParallelSolve(\n    context.Background(),\n    rulebricks.ParallelSolveRequest{\n        \"eligibility\": map[string]interface{}{\n            \"$rule\": \"eligibility-rule\",\n            \"name\": \"Alice Johnson\",\n            \"age\": 28,\n        },\n        \"offers\": map[string]interface{}{\n            \"$flow\": \"offers-flow\",\n            \"customer_id\": \"98765\",\n        },\n    },\n)",
-            "csharp": "var request = new Dictionary<string, object>\n{\n    { \"eligibility\", new Dictionary<string, object>\n        {\n            { \"$rule\", \"eligibility-rule\" },\n            { \"name\", \"Alice Johnson\" },\n            { \"age\", 28 }\n        }\n    }\n};\n\nvar results = await client.Rules.ParallelSolveAsync(\n    request);",
-            "java": "Map<String, Object> request = Map.of(\n    \"eligibility\", Map.of(\n        \"$rule\", \"eligibility-rule\",\n        \"name\", \"Alice Johnson\",\n        \"age\", 28\n    )\n);\n\nvar results = client.rules().parallelSolve(request);",
-            "ruby": "results = client.rules.parallel_solve(\n    request: {\n        eligibility: {\n            '$rule': 'eligibility-rule',\n            name: 'Alice Johnson',\n            age: 28\n        },\n        offers: {\n            '$flow': 'offers-flow',\n            customer_id: '98765'\n        }\n    }\n)"
+            "python": "client.rules.parallel_solve(\n    request={\n        \"eligibility\": {\n            \"$rule\": \"1ef03ms\",\n            \"name\": \"John Doe\",\n            \"age\": 30,\n            \"email\": \"jdoe@acme.co\"\n        },\n        \"offers\": {\n            \"$flow\": \"OvmsYwn\",\n            \"customer_id\": \"12345\",\n            \"selected_plan\": \"premium\"\n        }\n    },\n)",
+            "typescript": "await client.rules.parallelSolve({\n    eligibility: {\n        \"$rule\": \"1ef03ms\",\n        \"name\": \"John Doe\",\n        \"age\": 30,\n        \"email\": \"jdoe@acme.co\"\n    },\n    offers: {\n        \"$flow\": \"OvmsYwn\",\n        \"customer_id\": \"12345\",\n        \"selected_plan\": \"premium\"\n    }\n})",
+            "go": "request := map[string]*sdk.ParallelSolveRequestValue{\n    \"eligibility\": {\n        Rule: sdk.String(\"1ef03ms\"),\n        // additional fields...\n    },\n}\nclient.Rules.ParallelSolve(context.TODO(), request)",
+            "csharp": "await client.Rules.ParallelSolveAsync(\n    new Dictionary<string, ParallelSolveRequestValue>()\n    {\n        { \"eligibility\", new ParallelSolveRequestValue { Rule = \"1ef03ms\" } },\n    }\n);",
+            "java": "client.rules().parallelSolve(Map.of(\n    \"eligibility\", Map.of(\n        \"$rule\", \"1ef03ms\",\n        \"name\", \"John Doe\",\n        \"age\", 30\n    )\n));",
+            "ruby": "client.rules.parallel_solve(\n  request: {\n    eligibility: { '$rule': '1ef03ms', name: 'John Doe', age: 30 },\n    offers: { '$flow': 'OvmsYwn', customer_id: '12345' }\n  }\n)"
           },
           "exampleOutput": {
             "eligibility": {
               "eligible": true,
               "message": "User is eligible for the product."
             },
-            "offers": {
-              "flat_discount": 13.2,
-              "free_shipping": true
-            }
+            "offers": { "flat_discount": 13.2, "free_shipping": true }
           }
         }
       ]
@@ -150,26 +147,26 @@
               "name": "slug",
               "type": "string",
               "required": true,
-              "description": "The unique identifier for the flow."
+              "description": "The unique identifier (slug) for the flow."
             },
             {
               "name": "request",
               "type": "object",
               "required": true,
-              "description": "Dynamic request payload for flow execution."
+              "description": "Dynamic request payload matching the flow's origin rule schema."
             }
           ],
           "returns": {
             "type": "DynamicResponsePayload",
-            "description": "Flow execution successful."
+            "description": "Flow execution result."
           },
           "examples": {
-            "python": "client.flows.execute(\n    slug=\"my-flow-slug\",\n    request={\n        \"name\": \"Alice Johnson\",\n        \"age\": 28,\n    },\n)",
-            "typescript": "await client.flows.execute({\n    slug: \"my-flow-slug\",\n    body: {\n        name: \"Alice Johnson\",\n        age: 28\n    }\n})",
-            "go": "response, err := client.Flows.Execute(\n    context.Background(),\n    &rulebricks.ExecuteFlowsRequest{\n        Slug: \"my-flow-slug\",\n        Body: map[string]interface{}{\n            \"name\": \"Alice Johnson\",\n            \"age\": 28,\n        },\n    },\n)",
-            "csharp": "var requestData = new Dictionary<string, object>\n{\n    { \"name\", \"Alice Johnson\" },\n    { \"age\", 28 }\n};\n\nvar result = await client.Flows.ExecuteAsync(\n    \"my-flow-slug\", requestData);",
-            "java": "Map<String, Object> requestData = Map.of(\n    \"name\", \"Alice Johnson\",\n    \"age\", 28\n);\n\nvar result = client.flows().execute(\n    \"my-flow-slug\", requestData);",
-            "ruby": "result = client.flows.execute(\n    slug: 'my-flow-slug',\n    request: {\n        name: 'Alice Johnson',\n        age: 28\n    }\n)"
+            "python": "client.flows.execute(\n    slug=\"slug\",\n    request={\n        \"name\": \"John Doe\",\n        \"age\": 30,\n        \"email\": \"jdoe@acme.co\"\n    },\n)",
+            "typescript": "await client.flows.execute({\n    slug: \"slug\",\n    body: {\n        \"name\": \"John Doe\",\n        \"age\": 30,\n        \"email\": \"jdoe@acme.co\"\n    }\n})",
+            "go": "request := &sdk.ExecuteFlowsRequest{\n    Slug: \"slug\",\n    Body: map[string]any{\n        \"name\": \"John Doe\",\n        \"age\": 30,\n        \"email\": \"jdoe@acme.co\",\n    },\n}\nclient.Flows.Execute(context.TODO(), request)",
+            "csharp": "await client.Flows.ExecuteAsync(\n    new ExecuteFlowsRequest\n    {\n        Slug = \"slug\",\n        Body = new Dictionary<string, object?>()\n        {\n            { \"name\", \"John Doe\" },\n            { \"age\", 30 },\n            { \"email\", \"jdoe@acme.co\" },\n        },\n    }\n);",
+            "java": "client.flows().execute(\"slug\", Map.of(\n    \"name\", \"John Doe\",\n    \"age\", 30,\n    \"email\", \"jdoe@acme.co\"\n));",
+            "ruby": "client.flows.execute(\n  slug: 'slug',\n  request: {\n    name: 'John Doe',\n    age: 30,\n    email: 'jdoe@acme.co'\n  }\n)"
           },
           "exampleOutput": {
             "eligible": true,
@@ -179,11 +176,819 @@
       ]
     },
     {
-      "name": "Contexts",
-      "description": "Operations for managing and interacting with Contexts (Entities) and their instances",
+      "name": "Decisions",
+      "description": "Query highly detailed logs of prior rule executions within the last 90 days",
       "methods": [
         {
-          "name": "getInstance",
+          "name": "query",
+          "description": "Query decision logs with support for the decision data query language, rule/status filters, date ranges, and pagination.",
+          "parameters": [
+            {
+              "name": "search",
+              "type": "string",
+              "required": false,
+              "description": "Decision data query language expression (e.g., status=200, score>10)."
+            },
+            {
+              "name": "rules",
+              "type": "string",
+              "required": false,
+              "description": "Comma-separated list of rule names to filter by."
+            },
+            {
+              "name": "statuses",
+              "type": "string",
+              "required": false,
+              "description": "Comma-separated list of HTTP status codes to filter by."
+            },
+            {
+              "name": "start",
+              "type": "datetime",
+              "required": false,
+              "description": "Start date for the query range (ISO8601)."
+            },
+            {
+              "name": "end",
+              "type": "datetime",
+              "required": false,
+              "description": "End date for the query range (ISO8601)."
+            },
+            {
+              "name": "cursor",
+              "type": "string",
+              "required": false,
+              "description": "Cursor for pagination."
+            },
+            {
+              "name": "limit",
+              "type": "integer",
+              "required": false,
+              "description": "Number of results per page (default: 100)."
+            },
+            {
+              "name": "count",
+              "type": "string",
+              "required": false,
+              "description": "If 'true', returns only the count of matching logs."
+            }
+          ],
+          "returns": {
+            "type": "DecisionLogResponse",
+            "description": "Decision logs or count."
+          },
+          "examples": {
+            "python": "client.decisions.query(\n    search=\"status=200\",\n    rules=\"Lead Qualification,Pricing Calculator\",\n    statuses=\"200,400,500\",\n)",
+            "typescript": "await client.decisions.query({\n    search: \"status=200\",\n    rules: \"Lead Qualification,Pricing Calculator\",\n    statuses: \"200,400,500\"\n})",
+            "go": "request := &sdk.QueryDecisionsRequest{\n    Search: sdk.String(\"status=200\"),\n    Rules: sdk.String(\"Lead Qualification,Pricing Calculator\"),\n}\nclient.Decisions.Query(context.TODO(), request)",
+            "csharp": "await client.Decisions.QueryAsync(\n    new QueryDecisionsRequest\n    {\n        Search = \"status=200\",\n        Rules = \"Lead Qualification,Pricing Calculator\",\n    }\n);",
+            "java": "client.decisions().query(QueryDecisionsRequest.builder()\n    .search(\"status=200\")\n    .rules(\"Lead Qualification,Pricing Calculator\")\n    .build());",
+            "ruby": "client.decisions.query(\n  search: 'status=200',\n  rules: 'Lead Qualification,Pricing Calculator'\n)"
+          },
+          "exampleOutput": {
+            "data": [
+              {
+                "timestamp": "2024-12-17T10:30:00.000Z",
+                "name": "Lead Qualification",
+                "endpoint": "/api/v1/solve/lead-qual",
+                "status": 200,
+                "request": {},
+                "response": {},
+                "decision": {},
+                "error": null,
+                "abbreviated": false
+              }
+            ],
+            "cursor": "100"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Values",
+      "description": "Operations for managing dynamic values referenced in rules",
+      "methods": [
+        {
+          "name": "list",
+          "description": "Retrieve all dynamic values for the authenticated user.",
+          "parameters": [
+            {
+              "name": "name",
+              "type": "string",
+              "required": false,
+              "description": "Query values containing a specific name."
+            },
+            {
+              "name": "include",
+              "type": "string",
+              "required": false,
+              "description": "Use 'usage' to include which rules reference each value."
+            }
+          ],
+          "returns": {
+            "type": "DynamicValueListResponse",
+            "description": "List of dynamic values."
+          },
+          "examples": {
+            "python": "client.values.list(\n    include=\"usage\",\n)",
+            "typescript": "await client.values.list({\n    include: \"usage\"\n})",
+            "go": "request := &sdk.ListValuesRequest{\n    Include: sdk.String(\"usage\"),\n}\nclient.Values.List(context.TODO(), request)",
+            "csharp": "await client.Values.ListAsync(\n    new ListValuesRequest { Include = \"usage\" }\n);",
+            "java": "client.values().list(ListValuesRequest.builder()\n    .include(\"usage\")\n    .build());",
+            "ruby": "client.values.list(include: 'usage')"
+          },
+          "exampleOutput": [
+            {
+              "id": "abc123",
+              "name": "Favorite Color",
+              "type": "string",
+              "value": "blue",
+              "user_groups": ["marketing"]
+            },
+            {
+              "id": "def456",
+              "name": "Age",
+              "type": "number",
+              "value": 30,
+              "user_groups": ["marketing"]
+            }
+          ]
+        },
+        {
+          "name": "update",
+          "description": "Update existing dynamic values or add new ones. Supports nested objects which are automatically flattened using dot notation.",
+          "parameters": [
+            {
+              "name": "values",
+              "type": "object",
+              "required": true,
+              "description": "Dictionary of keys and values to update or add."
+            },
+            {
+              "name": "user_groups",
+              "type": "array",
+              "required": false,
+              "description": "Optional array of user group names or IDs."
+            }
+          ],
+          "returns": {
+            "type": "DynamicValueListResponse",
+            "description": "Updated list of dynamic values."
+          },
+          "examples": {
+            "python": "client.values.update(\n    values={\n        \"Favorite Color\": \"blue\",\n        \"Age\": 30,\n        \"Is Student\": False,\n        \"Hobbies\": [\"reading\", \"cycling\"],\n    },\n    user_groups=[\"marketing\", \"developers\"],\n)",
+            "typescript": "await client.values.update({\n    values: {\n        \"Favorite Color\": \"blue\",\n        \"Age\": 30,\n        \"Is Student\": false,\n        \"Hobbies\": [\"reading\", \"cycling\"]\n    },\n    userGroups: [\"marketing\", \"developers\"]\n})",
+            "go": "request := &sdk.UpdateValuesRequest{\n    Values: map[string]any{\n        \"Favorite Color\": \"blue\",\n        \"Age\": 30,\n    },\n    UserGroups: []string{\"marketing\"},\n}\nclient.Values.Update(context.TODO(), request)",
+            "csharp": "await client.Values.UpdateAsync(\n    new UpdateValuesRequest\n    {\n        Values = new Dictionary<string, object?>()\n        {\n            { \"Favorite Color\", \"blue\" },\n            { \"Age\", 30 },\n        },\n        UserGroups = new List<string> { \"marketing\" },\n    }\n);",
+            "java": "client.values().update(UpdateValuesRequest.builder()\n    .values(Map.of(\"Favorite Color\", \"blue\", \"Age\", 30))\n    .userGroups(List.of(\"marketing\"))\n    .build());",
+            "ruby": "client.values.update(\n  values: { 'Favorite Color' => 'blue', 'Age' => 30 },\n  user_groups: ['marketing']\n)"
+          },
+          "exampleOutput": [
+            {
+              "id": "I5RzbYI64h",
+              "name": "Favorite Color",
+              "type": "string",
+              "value": "blue",
+              "usages": [],
+              "user_groups": ["marketing", "developers"]
+            }
+          ]
+        },
+        {
+          "name": "delete",
+          "description": "Delete a specific dynamic value by its ID.",
+          "parameters": [
+            {
+              "name": "id",
+              "type": "string",
+              "required": true,
+              "description": "ID of the dynamic value to delete."
+            }
+          ],
+          "returns": {
+            "type": "SuccessMessage",
+            "description": "Deletion confirmation."
+          },
+          "examples": {
+            "python": "client.values.delete(\n    id=\"abc123\",\n)",
+            "typescript": "await client.values.delete({\n    id: \"abc123\"\n})",
+            "go": "request := &sdk.DeleteValuesRequest{\n    Id: \"abc123\",\n}\nclient.Values.Delete(context.TODO(), request)",
+            "csharp": "await client.Values.DeleteAsync(\n    new DeleteValuesRequest { Id = \"abc123\" }\n);",
+            "java": "client.values().delete(DeleteValuesRequest.builder()\n    .id(\"abc123\")\n    .build());",
+            "ruby": "client.values.delete(id: 'abc123')"
+          },
+          "exampleOutput": {
+            "message": "Value \"Favorite Color\" deleted successfully"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "description": "Operations for managing users on your team and their permissions",
+      "methods": [
+        {
+          "name": "invite",
+          "description": "Invite a new user to the organization or update role/user group data for an existing user.",
+          "parameters": [
+            {
+              "name": "email",
+              "type": "string",
+              "required": true,
+              "description": "Email of the user to invite."
+            },
+            {
+              "name": "role",
+              "type": "string",
+              "required": false,
+              "description": "Role to assign ('admin', 'editor', 'developer', or custom role ID)."
+            },
+            {
+              "name": "user_groups",
+              "type": "array",
+              "required": false,
+              "description": "List of user group names or IDs to assign."
+            }
+          ],
+          "returns": {
+            "type": "UserInviteResponse",
+            "description": "Invite confirmation."
+          },
+          "examples": {
+            "python": "client.users.invite(\n    email=\"newuser@example.com\",\n    role=\"developer\",\n    user_groups=[\"group1\", \"group2\"],\n)",
+            "typescript": "await client.users.invite({\n    email: \"newuser@example.com\",\n    role: \"developer\",\n    userGroups: [\"group1\", \"group2\"]\n})",
+            "go": "request := &sdk.UserInviteRequest{\n    Email: \"newuser@example.com\",\n    Role: sdk.UserInviteRequestRoleDeveloper.Ptr(),\n    UserGroups: []string{\"group1\", \"group2\"},\n}\nclient.Users.Invite(context.TODO(), request)",
+            "csharp": "await client.Users.InviteAsync(\n    new UserInviteRequest\n    {\n        Email = \"newuser@example.com\",\n        Role = UserInviteRequestRole.Developer,\n        UserGroups = new List<string> { \"group1\", \"group2\" },\n    }\n);",
+            "java": "client.users().invite(UserInviteRequest.builder()\n    .email(\"newuser@example.com\")\n    .role(UserInviteRequestRole.DEVELOPER)\n    .userGroups(List.of(\"group1\", \"group2\"))\n    .build());",
+            "ruby": "client.users.invite(\n  email: 'newuser@example.com',\n  role: 'developer',\n  user_groups: ['group1', 'group2']\n)"
+          },
+          "exampleOutput": {
+            "message": "Invite successful",
+            "user": {
+              "email": "newuser@example.com",
+              "role": "developer",
+              "user_groups": ["group1", "group2"]
+            }
+          }
+        },
+        {
+          "name": "list",
+          "description": "List all users in the organization with their details.",
+          "parameters": [],
+          "returns": {
+            "type": "UserListResponse",
+            "description": "List of users."
+          },
+          "examples": {
+            "python": "client.users.list()",
+            "typescript": "await client.users.list()",
+            "go": "client.Users.List(context.TODO())",
+            "csharp": "await client.Users.ListAsync();",
+            "java": "client.users().list();",
+            "ruby": "client.users.list"
+          },
+          "exampleOutput": [
+            {
+              "id": "a1b2c3d4",
+              "email": "admin@example.com",
+              "name": "Admin User",
+              "role": "administrator",
+              "user_groups": [],
+              "joined_at": "2024-01-15T10:30:00.000Z"
+            },
+            {
+              "id": "b2c3d4e5",
+              "email": "developer@example.com",
+              "name": "Developer User",
+              "role": "developer",
+              "user_groups": ["engineering"],
+              "joined_at": "2024-02-20T14:45:00.000Z"
+            }
+          ]
+        },
+        {
+          "name": "create",
+          "description": "Create a new user directly with a password, bypassing the email invitation flow.",
+          "parameters": [
+            {
+              "name": "email",
+              "type": "string",
+              "required": true,
+              "description": "Email address for the new user."
+            },
+            {
+              "name": "password",
+              "type": "string",
+              "required": true,
+              "description": "Password for the new user (minimum 8 characters)."
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "required": false,
+              "description": "Display name for the user."
+            },
+            {
+              "name": "role",
+              "type": "string",
+              "required": false,
+              "description": "Role to assign (defaults to 'developer')."
+            },
+            {
+              "name": "user_groups",
+              "type": "array",
+              "required": false,
+              "description": "List of user group names or IDs."
+            }
+          ],
+          "returns": {
+            "type": "CreateUserResponse",
+            "description": "User creation confirmation."
+          },
+          "examples": {
+            "python": "client.users.create(\n    email=\"newuser@example.com\",\n    password=\"securePassword123\",\n)",
+            "typescript": "await client.users.create({\n    email: \"newuser@example.com\",\n    password: \"securePassword123\"\n})",
+            "go": "request := &sdk.CreateUserRequest{\n    Email: \"newuser@example.com\",\n    Password: \"securePassword123\",\n}\nclient.Users.Create(context.TODO(), request)",
+            "csharp": "await client.Users.CreateAsync(\n    new CreateUserRequest\n    {\n        Email = \"newuser@example.com\",\n        Password = \"securePassword123\",\n    }\n);",
+            "java": "client.users().create(CreateUserRequest.builder()\n    .email(\"newuser@example.com\")\n    .password(\"securePassword123\")\n    .build());",
+            "ruby": "client.users.create(\n  email: 'newuser@example.com',\n  password: 'securePassword123'\n)"
+          },
+          "exampleOutput": {
+            "status": "success",
+            "message": "User newuser@example.com created successfully",
+            "user": {
+              "id": "c3d4e5f6",
+              "email": "newuser@example.com",
+              "role": "developer",
+              "api_key": "c3d4e5f6-a7b8-9012"
+            }
+          }
+        }
+      ],
+      "subResources": [
+        {
+          "name": "groups",
+          "description": "Manage user groups in your organization",
+          "methods": [
+            {
+              "name": "list",
+              "description": "List all user groups available in your organization.",
+              "parameters": [],
+              "returns": {
+                "type": "UserGroupListResponse",
+                "description": "List of user groups."
+              },
+              "examples": {
+                "python": "client.users.groups.list()",
+                "typescript": "await client.users.groups.list()",
+                "go": "client.Users.Groups.List(context.TODO())",
+                "csharp": "await client.Users.Groups.ListAsync();",
+                "java": "client.users().groups().list();",
+                "ruby": "client.users.groups.list"
+              },
+              "exampleOutput": [
+                {
+                  "id": "group-123",
+                  "name": "Engineering",
+                  "description": "Engineering team",
+                  "members": ["user1@example.com", "user2@example.com"],
+                  "created_at": "2024-01-15T10:30:00.000Z"
+                }
+              ]
+            },
+            {
+              "name": "create",
+              "description": "Create a new user group in your organization.",
+              "parameters": [
+                {
+                  "name": "name",
+                  "type": "string",
+                  "required": true,
+                  "description": "Unique name of the user group."
+                },
+                {
+                  "name": "description",
+                  "type": "string",
+                  "required": false,
+                  "description": "Description of the user group."
+                }
+              ],
+              "returns": {
+                "type": "UserGroup",
+                "description": "Created user group."
+              },
+              "examples": {
+                "python": "client.users.groups.create(\n    name=\"NewGroup\",\n    description=\"Description of the new group.\",\n)",
+                "typescript": "await client.users.groups.create({\n    name: \"NewGroup\",\n    description: \"Description of the new group.\"\n})",
+                "go": "request := &users.CreateUserGroupRequest{\n    Name: \"NewGroup\",\n    Description: sdk.String(\"Description of the new group.\"),\n}\nclient.Users.Groups.Create(context.TODO(), request)",
+                "csharp": "await client.Users.Groups.CreateAsync(\n    new CreateUserGroupRequest\n    {\n        Name = \"NewGroup\",\n        Description = \"Description of the new group.\",\n    }\n);",
+                "java": "client.users().groups().create(CreateUserGroupRequest.builder()\n    .name(\"NewGroup\")\n    .description(\"Description of the new group.\")\n    .build());",
+                "ruby": "client.users.groups.create(\n  name: 'NewGroup',\n  description: 'Description of the new group.'\n)"
+              },
+              "exampleOutput": {
+                "id": "a1b2c3d4",
+                "name": "NewGroup",
+                "description": "Description of the new group.",
+                "members": [],
+                "created_at": "2024-01-15T10:30:00.000Z"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Assets",
+      "description": "Administrative operations for managing rules, flows, folders, and usage",
+      "methods": [
+        {
+          "name": "getUsage",
+          "description": "Get the rule execution usage of your organization.",
+          "parameters": [],
+          "returns": {
+            "type": "UsageStatistics",
+            "description": "Usage statistics."
+          },
+          "examples": {
+            "python": "client.assets.get_usage()",
+            "typescript": "await client.assets.getUsage()",
+            "go": "client.Assets.GetUsage(context.TODO())",
+            "csharp": "await client.Assets.GetUsageAsync();",
+            "java": "client.assets().getUsage();",
+            "ruby": "client.assets.get_usage"
+          },
+          "exampleOutput": {
+            "plan": "Business",
+            "monthly_period_start": "04-28-2024",
+            "monthly_period_end": "05-28-2024",
+            "monthly_executions_usage": 42,
+            "monthly_executions_limit": 1000000,
+            "monthly_executions_remaining": 999958
+          }
+        },
+        {
+          "name": "importRbm",
+          "description": "Import rules, flows, contexts, and values from a Rulebricks manifest file (*.rbm).",
+          "parameters": [
+            {
+              "name": "manifest",
+              "type": "object",
+              "required": true,
+              "description": "The RBM manifest object containing assets to import."
+            },
+            {
+              "name": "conflict_strategy",
+              "type": "string",
+              "required": false,
+              "description": "How to handle conflicts: 'update' overwrites, 'skip' ignores, 'error' fails."
+            },
+            {
+              "name": "target_folder_name",
+              "type": "string",
+              "required": false,
+              "description": "Optional folder name to place imported assets into."
+            }
+          ],
+          "returns": {
+            "type": "ImportManifestResponse",
+            "description": "Import result with created/updated/skipped items."
+          },
+          "examples": {
+            "python": "from rulebricks.assets import ImportManifestRequestManifest\n\nclient.assets.import_rbm(\n    manifest=ImportManifestRequestManifest(\n        version=\"1.0\",\n        rules=[{\"name\": \"Pricing Rule\", \"slug\": \"pricing-rule\"}],\n        flows=[{\"name\": \"Onboarding Flow\", \"slug\": \"onboarding-flow\"}],\n        entities=[{\"name\": \"Customer\", \"slug\": \"customer\"}],\n        values=[{\"name\": \"tax_rate\", \"value\": 0.08}],\n    ),\n    conflict_strategy=\"update\",\n)",
+            "typescript": "await client.assets.importRbm({\n    manifest: {\n        version: \"1.0\",\n        rules: [{ name: \"Pricing Rule\", slug: \"pricing-rule\" }],\n        flows: [{ name: \"Onboarding Flow\", slug: \"onboarding-flow\" }],\n        entities: [{ name: \"Customer\", slug: \"customer\" }],\n        values: [{ name: \"tax_rate\", value: 0.08 }]\n    },\n    conflict_strategy: \"update\"\n})",
+            "go": "request := &sdk.ImportManifestRequest{\n    Manifest: &sdk.ImportManifestRequestManifest{\n        Version: sdk.String(\"1.0\"),\n        Rules: []map[string]any{\n            {\"name\": \"Pricing Rule\", \"slug\": \"pricing-rule\"},\n        },\n    },\n    ConflictStrategy: sdk.ImportManifestRequestConflictStrategyUpdate.Ptr(),\n}\nclient.Assets.ImportRbm(context.TODO(), request)",
+            "csharp": "await client.Assets.ImportRbmAsync(\n    new ImportManifestRequest\n    {\n        Manifest = new ImportManifestRequestManifest\n        {\n            Version = \"1.0\",\n            Rules = new List<object> { new { name = \"Pricing Rule\", slug = \"pricing-rule\" } },\n        },\n        ConflictStrategy = ImportManifestRequestConflictStrategy.Update,\n    }\n);",
+            "java": "client.assets().importRbm(ImportManifestRequest.builder()\n    .manifest(Map.of(\"version\", \"1.0\", \"rules\", List.of(Map.of(\"name\", \"Pricing Rule\"))))\n    .conflictStrategy(ImportManifestRequestConflictStrategy.UPDATE)\n    .build());",
+            "ruby": "client.assets.import_rbm(\n  manifest: {\n    version: '1.0',\n    rules: [{ name: 'Pricing Rule', slug: 'pricing-rule' }],\n    flows: [{ name: 'Onboarding Flow', slug: 'onboarding-flow' }]\n  },\n  conflict_strategy: 'update'\n)"
+          },
+          "exampleOutput": {
+            "success": true,
+            "created": ["Pricing Rule", "Onboarding Flow"],
+            "updated": [],
+            "skipped": [],
+            "errors": []
+          }
+        },
+        {
+          "name": "exportRbm",
+          "description": "Export selected rules, flows, contexts, and values to a Rulebricks manifest file (*.rbm).",
+          "parameters": [
+            {
+              "name": "root_type",
+              "type": "string",
+              "required": true,
+              "description": "The type of root asset to export ('rule', 'flow', or 'context')."
+            },
+            {
+              "name": "root_ids",
+              "type": "array",
+              "required": true,
+              "description": "Array of IDs/slugs for the root assets to export."
+            },
+            {
+              "name": "include_downstream",
+              "type": "boolean",
+              "required": false,
+              "description": "For context exports, whether to include bound rules and flows."
+            },
+            {
+              "name": "preview_only",
+              "type": "boolean",
+              "required": false,
+              "description": "If true, returns a preview without full data."
+            }
+          ],
+          "returns": {
+            "type": "ExportManifestResponse",
+            "description": "The exported manifest containing all assets and dependencies."
+          },
+          "examples": {
+            "python": "client.assets.export_rbm(\n    root_type=\"rule\",\n    root_ids=[\"pricing-rule\", \"eligibility-check\"],\n    include_downstream=False,\n)",
+            "typescript": "await client.assets.exportRbm({\n    root_type: \"rule\",\n    root_ids: [\"pricing-rule\", \"eligibility-check\"],\n    include_downstream: false\n})",
+            "go": "request := &sdk.ExportManifestRequest{\n    RootType: sdk.ExportManifestRequestRootTypeRule,\n    RootIDs: []string{\"pricing-rule\", \"eligibility-check\"},\n    IncludeDownstream: sdk.Bool(false),\n}\nclient.Assets.ExportRbm(context.TODO(), request)",
+            "csharp": "await client.Assets.ExportRbmAsync(\n    new ExportManifestRequest\n    {\n        RootType = ExportManifestRequestRootType.Rule,\n        RootIds = new List<string> { \"pricing-rule\", \"eligibility-check\" },\n        IncludeDownstream = false,\n    }\n);",
+            "java": "client.assets().exportRbm(ExportManifestRequest.builder()\n    .rootType(ExportManifestRequestRootType.RULE)\n    .rootIds(List.of(\"pricing-rule\", \"eligibility-check\"))\n    .includeDownstream(false)\n    .build());",
+            "ruby": "client.assets.export_rbm(\n  root_type: 'rule',\n  root_ids: ['pricing-rule', 'eligibility-check'],\n  include_downstream: false\n)"
+          },
+          "exampleOutput": {
+            "success": true,
+            "manifest": {
+              "version": "1.0",
+              "name": "Export",
+              "exported_at": "2024-01-15T10:30:00.000Z",
+              "rules": [],
+              "flows": [],
+              "contexts": [],
+              "values": []
+            }
+          }
+        }
+      ],
+      "subResources": [
+        {
+          "name": "rules",
+          "description": "List and manage rule assets",
+          "methods": [
+            {
+              "name": "list",
+              "description": "List all rules in the organization. Optionally filter by folder.",
+              "parameters": [
+                {
+                  "name": "folder",
+                  "type": "string",
+                  "required": false,
+                  "description": "Filter rules by folder name or folder ID."
+                }
+              ],
+              "returns": {
+                "type": "RuleListResponse",
+                "description": "List of rules."
+              },
+              "examples": {
+                "python": "client.assets.rules.list(\n    folder=\"Marketing Rules\",\n)",
+                "typescript": "await client.assets.rules.list({\n    folder: \"Marketing Rules\"\n})",
+                "go": "request := &assets.ListRulesRequest{\n    Folder: sdk.String(\"Marketing Rules\"),\n}\nclient.Assets.Rules.List(context.TODO(), request)",
+                "csharp": "await client.Assets.Rules.ListAsync(\n    new ListRulesRequest { Folder = \"Marketing Rules\" }\n);",
+                "java": "client.assets().rules().list(ListRulesRequest.builder()\n    .folder(\"Marketing Rules\")\n    .build());",
+                "ruby": "client.assets.rules.list(folder: 'Marketing Rules')"
+              },
+              "exampleOutput": [
+                {
+                  "id": "2855f8da-2654-4df9-8903-8f797cbfe8eb",
+                  "name": "Pricing Calculator",
+                  "description": "Calculates product pricing based on inputs",
+                  "slug": "pricing-calculator",
+                  "created_at": "2024-01-15T10:30:00.000Z",
+                  "updated_at": "2024-01-20T14:45:00.000Z",
+                  "folder": { "id": "folder-123", "name": "Marketing Rules" }
+                }
+              ]
+            },
+            {
+              "name": "pull",
+              "description": "Export a specific rule by its ID.",
+              "parameters": [
+                {
+                  "name": "id",
+                  "type": "string",
+                  "required": true,
+                  "description": "The ID of the rule to export."
+                }
+              ],
+              "returns": {
+                "type": "RuleExport",
+                "description": "Exported rule definition."
+              },
+              "examples": {
+                "python": "client.assets.rules.pull(\n    id=\"2855f8da-2654-4df9-8903-8f797cbfe8eb\",\n)",
+                "typescript": "await client.assets.rules.pull({\n    id: \"2855f8da-2654-4df9-8903-8f797cbfe8eb\"\n})",
+                "go": "request := &assets.PullRulesRequest{\n    Id: \"2855f8da-2654-4df9-8903-8f797cbfe8eb\",\n}\nclient.Assets.Rules.Pull(context.TODO(), request)",
+                "csharp": "await client.Assets.Rules.PullAsync(\n    new PullRulesRequest { Id = \"2855f8da-2654-4df9-8903-8f797cbfe8eb\" }\n);",
+                "java": "client.assets().rules().pull(\"2855f8da-2654-4df9-8903-8f797cbfe8eb\");",
+                "ruby": "client.assets.rules.pull(id: '2855f8da-2654-4df9-8903-8f797cbfe8eb')"
+              },
+              "exampleOutput": {
+                "id": "2855f8da-2654-4df9-8903-8f797cbfe8eb",
+                "name": "Pricing Calculator",
+                "description": "Calculates product pricing",
+                "slug": "pricing-calculator"
+              }
+            },
+            {
+              "name": "push",
+              "description": "Import a rule into the user's account.",
+              "parameters": [
+                {
+                  "name": "rule",
+                  "type": "object",
+                  "required": true,
+                  "description": "The rule data to import."
+                }
+              ],
+              "returns": {
+                "type": "RuleExport",
+                "description": "Imported rule."
+              },
+              "examples": {
+                "python": "client.assets.rules.push(\n    rule={\"name\": \"Imported Rule\", \"description\": \"A rule imported via API\"},\n)",
+                "typescript": "await client.assets.rules.push({\n    rule: { name: \"Imported Rule\", description: \"A rule imported via API\" }\n})",
+                "go": "request := &assets.PushRulesRequest{\n    Rule: map[string]any{\"name\": \"Imported Rule\"},\n}\nclient.Assets.Rules.Push(context.TODO(), request)",
+                "csharp": "await client.Assets.Rules.PushAsync(\n    new PushRulesRequest\n    {\n        Rule = new Dictionary<string, object?>()\n        {\n            { \"name\", \"Imported Rule\" },\n        },\n    }\n);",
+                "java": "client.assets().rules().push(Map.of(\"name\", \"Imported Rule\"));",
+                "ruby": "client.assets.rules.push(\n  rule: { name: 'Imported Rule', description: 'A rule imported via API' }\n)"
+              },
+              "exampleOutput": {
+                "id": "new-rule-id-123",
+                "name": "Imported Rule",
+                "description": "A rule imported via API",
+                "slug": "imported-rule"
+              }
+            },
+            {
+              "name": "delete",
+              "description": "Delete a specific rule by its ID.",
+              "parameters": [
+                {
+                  "name": "id",
+                  "type": "string",
+                  "required": true,
+                  "description": "The ID of the rule to delete."
+                }
+              ],
+              "returns": {
+                "type": "SuccessMessage",
+                "description": "Deletion confirmation."
+              },
+              "examples": {
+                "python": "client.assets.rules.delete(\n    id=\"2855f8da-2654-4df9-8903-8f797cbfe8eb\",\n)",
+                "typescript": "await client.assets.rules.delete({\n    id: \"2855f8da-2654-4df9-8903-8f797cbfe8eb\"\n})",
+                "go": "request := &assets.DeleteRulesRequest{\n    Id: \"2855f8da-2654-4df9-8903-8f797cbfe8eb\",\n}\nclient.Assets.Rules.Delete(context.TODO(), request)",
+                "csharp": "await client.Assets.Rules.DeleteAsync(\n    new DeleteRulesRequest { Id = \"2855f8da-2654-4df9-8903-8f797cbfe8eb\" }\n);",
+                "java": "client.assets().rules().delete(\"2855f8da-2654-4df9-8903-8f797cbfe8eb\");",
+                "ruby": "client.assets.rules.delete(id: '2855f8da-2654-4df9-8903-8f797cbfe8eb')"
+              },
+              "exampleOutput": { "message": "Rule deleted successfully." }
+            }
+          ]
+        },
+        {
+          "name": "flows",
+          "description": "List flow assets",
+          "methods": [
+            {
+              "name": "list",
+              "description": "List all flows in the organization.",
+              "parameters": [],
+              "returns": {
+                "type": "FlowListResponse",
+                "description": "List of flows."
+              },
+              "examples": {
+                "python": "client.assets.flows.list()",
+                "typescript": "await client.assets.flows.list()",
+                "go": "client.Assets.Flows.List(context.TODO())",
+                "csharp": "await client.Assets.Flows.ListAsync();",
+                "java": "client.assets().flows().list();",
+                "ruby": "client.assets.flows.list"
+              },
+              "exampleOutput": [
+                {
+                  "id": "flow-123",
+                  "name": "Onboarding Flow",
+                  "description": "Customer onboarding workflow",
+                  "slug": "onboarding-flow",
+                  "created_at": "2024-01-15T10:30:00.000Z"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "folders",
+          "description": "Manage folders for organizing rules",
+          "methods": [
+            {
+              "name": "list",
+              "description": "Retrieve all rule folders.",
+              "parameters": [],
+              "returns": {
+                "type": "FolderListResponse",
+                "description": "List of folders."
+              },
+              "examples": {
+                "python": "client.assets.folders.list()",
+                "typescript": "await client.assets.folders.list()",
+                "go": "client.Assets.Folders.List(context.TODO())",
+                "csharp": "await client.Assets.Folders.ListAsync();",
+                "java": "client.assets().folders().list();",
+                "ruby": "client.assets.folders.list"
+              },
+              "exampleOutput": [
+                {
+                  "id": "folder-123",
+                  "name": "Marketing Rules",
+                  "description": "Rules for marketing automation",
+                  "created_at": "2024-01-15T10:30:00.000Z"
+                }
+              ]
+            },
+            {
+              "name": "upsert",
+              "description": "Create a new folder or update an existing one.",
+              "parameters": [
+                {
+                  "name": "name",
+                  "type": "string",
+                  "required": true,
+                  "description": "Name of the folder."
+                },
+                {
+                  "name": "description",
+                  "type": "string",
+                  "required": false,
+                  "description": "Description of the folder."
+                },
+                {
+                  "name": "id",
+                  "type": "string",
+                  "required": false,
+                  "description": "ID of existing folder to update."
+                }
+              ],
+              "returns": {
+                "type": "Folder",
+                "description": "Created or updated folder."
+              },
+              "examples": {
+                "python": "client.assets.folders.upsert(\n    name=\"Marketing Rules\",\n    description=\"Rules for marketing automation workflows\",\n)",
+                "typescript": "await client.assets.folders.upsert({\n    name: \"Marketing Rules\",\n    description: \"Rules for marketing automation workflows\"\n})",
+                "go": "request := &assets.UpsertFolderRequest{\n    Name: \"Marketing Rules\",\n    Description: sdk.String(\"Rules for marketing automation workflows\"),\n}\nclient.Assets.Folders.Upsert(context.TODO(), request)",
+                "csharp": "await client.Assets.Folders.UpsertAsync(\n    new UpsertFolderRequest\n    {\n        Name = \"Marketing Rules\",\n        Description = \"Rules for marketing automation workflows\",\n    }\n);",
+                "java": "client.assets().folders().upsert(UpsertFolderRequest.builder()\n    .name(\"Marketing Rules\")\n    .description(\"Rules for marketing automation workflows\")\n    .build());",
+                "ruby": "client.assets.folders.upsert(\n  name: 'Marketing Rules',\n  description: 'Rules for marketing automation workflows'\n)"
+              },
+              "exampleOutput": {
+                "id": "folder-123",
+                "name": "Marketing Rules",
+                "description": "Rules for marketing automation workflows",
+                "created_at": "2024-01-15T10:30:00.000Z"
+              }
+            },
+            {
+              "name": "delete",
+              "description": "Delete a specific folder. Does not delete rules within the folder.",
+              "parameters": [
+                {
+                  "name": "id",
+                  "type": "string",
+                  "required": true,
+                  "description": "ID of the folder to delete."
+                }
+              ],
+              "returns": { "type": "Folder", "description": "Deleted folder." },
+              "examples": {
+                "python": "client.assets.folders.delete(\n    id=\"abc123\",\n)",
+                "typescript": "await client.assets.folders.delete({\n    id: \"abc123\"\n})",
+                "go": "request := &assets.DeleteFolderRequest{\n    Id: \"abc123\",\n}\nclient.Assets.Folders.Delete(context.TODO(), request)",
+                "csharp": "await client.Assets.Folders.DeleteAsync(\n    new DeleteFolderRequest { Id = \"abc123\" }\n);",
+                "java": "client.assets().folders().delete(\"abc123\");",
+                "ruby": "client.assets.folders.delete(id: 'abc123')"
+              },
+              "exampleOutput": {
+                "id": "abc123",
+                "name": "Marketing Rules",
+                "description": "Rules for marketing automation"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Contexts",
+      "description": "Operations for managing and interacting with live Context instances",
+      "methods": [
+        {
+          "name": "get",
           "description": "Retrieve the current state of a context instance.",
           "parameters": [
             {
@@ -201,26 +1006,23 @@
           ],
           "returns": {
             "type": "ContextInstanceState",
-            "description": "The current state of the context instance."
+            "description": "Current state of the context instance."
           },
           "examples": {
-            "python": "client.contexts.get_instance(\n    slug=\"customer\",\n    instance=\"cust-12345\",\n)",
-            "typescript": "await client.contexts.getInstance({\n    slug: \"customer\",\n    instance: \"cust-12345\"\n})",
-            "go": "response, err := client.Contexts.GetInstance(\n    context.Background(),\n    &rulebricks.GetInstanceContextsRequest{\n        Slug: \"customer\",\n        Instance: \"cust-12345\",\n    },\n)",
-            "csharp": "var result = await client.Contexts.GetInstanceAsync(\n    \"customer\", \"cust-12345\");",
-            "java": "var result = client.contexts().getInstance(\n    \"customer\", \"cust-12345\");",
-            "ruby": "client.contexts.get_instance(\n    slug: 'customer',\n    instance: 'cust-12345'\n)"
+            "python": "client.contexts.get(\n    slug=\"customer\",\n    instance=\"cust-12345\",\n)",
+            "typescript": "await client.contexts.get({\n    slug: \"customer\",\n    instance: \"cust-12345\"\n})",
+            "go": "request := &sdk.GetContextsRequest{\n    Slug: \"customer\",\n    Instance: \"cust-12345\",\n}\nclient.Contexts.Get(context.TODO(), request)",
+            "csharp": "await client.Contexts.GetAsync(\n    new GetContextsRequest\n    {\n        Slug = \"customer\",\n        Instance = \"cust-12345\",\n    }\n);",
+            "java": "client.contexts().get(\"customer\", \"cust-12345\");",
+            "ruby": "client.contexts.get(\n  slug: 'customer',\n  instance: 'cust-12345'\n)"
           },
           "exampleOutput": {
-            "id": "cust-12345",
-            "contextSlug": "customer",
-            "data": {
+            "context": "customer:cust-12345",
+            "state": {
               "email": "customer@example.com",
               "age": 30,
-              "tier": "premium"
-            },
-            "createdAt": "2024-01-01T00:00:00Z",
-            "updatedAt": "2024-01-15T10:30:00Z"
+              "status": "active"
+            }
           }
         },
         {
@@ -243,37 +1045,29 @@
               "name": "request",
               "type": "object",
               "required": true,
-              "description": "Data to submit to the context instance."
+              "description": "Data to submit to the instance."
             }
           ],
           "returns": {
             "type": "SubmitContextDataResponse",
-            "description": "Data submitted successfully with any triggered evaluations."
+            "description": "Submission result."
           },
           "examples": {
             "python": "client.contexts.submit(\n    slug=\"customer\",\n    instance=\"cust-12345\",\n    request={\"email\": \"customer@example.com\", \"age\": 30},\n)",
-            "typescript": "await client.contexts.submit({\n    slug: \"customer\",\n    instance: \"cust-12345\",\n    body: {\n        email: \"customer@example.com\",\n        age: 30\n    }\n})",
-            "go": "response, err := client.Contexts.Submit(\n    context.Background(),\n    &rulebricks.SubmitContextsRequest{\n        Slug: \"customer\",\n        Instance: \"cust-12345\",\n        Body: map[string]interface{}{\n            \"email\": \"customer@example.com\",\n            \"age\": 30,\n        },\n    },\n)",
-            "csharp": "var data = new Dictionary<string, object>\n{\n    { \"email\", \"customer@example.com\" },\n    { \"age\", 30 }\n};\nvar result = await client.Contexts.SubmitAsync(\n    \"customer\", \"cust-12345\", data);",
-            "java": "var data = Map.of(\"email\", \"customer@example.com\", \"age\", 30);\nvar result = client.contexts().submit(\n    \"customer\", \"cust-12345\", data);",
-            "ruby": "client.contexts.submit(\n    slug: 'customer',\n    instance: 'cust-12345',\n    request: { email: 'customer@example.com', age: 30 }\n)"
+            "typescript": "await client.contexts.submit({\n    slug: \"customer\",\n    instance: \"cust-12345\",\n    body: { \"email\": \"customer@example.com\", \"age\": 30 }\n})",
+            "go": "request := &sdk.SubmitContextsRequest{\n    Slug: \"customer\",\n    Instance: \"cust-12345\",\n    Body: map[string]any{\"email\": \"customer@example.com\", \"age\": 30},\n}\nclient.Contexts.Submit(context.TODO(), request)",
+            "csharp": "await client.Contexts.SubmitAsync(\n    new SubmitContextsRequest\n    {\n        Slug = \"customer\",\n        Instance = \"cust-12345\",\n        Body = new Dictionary<string, object?>()\n        {\n            { \"email\", \"customer@example.com\" },\n            { \"age\", 30 },\n        },\n    }\n);",
+            "java": "client.contexts().submit(\"customer\", \"cust-12345\",\n    Map.of(\"email\", \"customer@example.com\", \"age\", 30));",
+            "ruby": "client.contexts.submit(\n  slug: 'customer',\n  instance: 'cust-12345',\n  request: { email: 'customer@example.com', age: 30 }\n)"
           },
           "exampleOutput": {
-            "instance": {
-              "id": "cust-12345",
-              "contextSlug": "customer",
-              "data": { "email": "customer@example.com", "age": 30 }
-            },
-            "evaluations": [
-              {
-                "ruleSlug": "eligibility-check",
-                "result": { "eligible": true }
-              }
-            ]
+            "context": "customer:cust-12345",
+            "updated_fields": ["email", "age"],
+            "triggered_evaluations": []
           }
         },
         {
-          "name": "deleteInstance",
+          "name": "delete",
           "description": "Delete a specific context instance and its history.",
           "parameters": [
             {
@@ -291,19 +1085,18 @@
           ],
           "returns": {
             "type": "DeleteContextInstanceResponse",
-            "description": "Instance deleted successfully."
+            "description": "Deletion confirmation."
           },
           "examples": {
-            "python": "client.contexts.delete_instance(\n    slug=\"customer\",\n    instance=\"cust-12345\",\n)",
-            "typescript": "await client.contexts.deleteInstance({\n    slug: \"customer\",\n    instance: \"cust-12345\"\n})",
-            "go": "response, err := client.Contexts.DeleteInstance(\n    context.Background(),\n    &rulebricks.DeleteInstanceContextsRequest{\n        Slug: \"customer\",\n        Instance: \"cust-12345\",\n    },\n)",
-            "csharp": "await client.Contexts.DeleteInstanceAsync(\n    \"customer\", \"cust-12345\");",
-            "java": "client.contexts().deleteInstance(\n    \"customer\", \"cust-12345\");",
-            "ruby": "client.contexts.delete_instance(\n    slug: 'customer',\n    instance: 'cust-12345'\n)"
+            "python": "client.contexts.delete(\n    slug=\"customer\",\n    instance=\"cust-12345\",\n)",
+            "typescript": "await client.contexts.delete({\n    slug: \"customer\",\n    instance: \"cust-12345\"\n})",
+            "go": "request := &sdk.DeleteContextsRequest{\n    Slug: \"customer\",\n    Instance: \"cust-12345\",\n}\nclient.Contexts.Delete(context.TODO(), request)",
+            "csharp": "await client.Contexts.DeleteAsync(\n    new DeleteContextsRequest\n    {\n        Slug = \"customer\",\n        Instance = \"cust-12345\",\n    }\n);",
+            "java": "client.contexts().delete(\"customer\", \"cust-12345\");",
+            "ruby": "client.contexts.delete(\n  slug: 'customer',\n  instance: 'cust-12345'\n)"
           },
           "exampleOutput": {
-            "success": true,
-            "message": "Instance deleted successfully"
+            "message": "Instance deleted successfully."
           }
         },
         {
@@ -337,29 +1130,27 @@
           ],
           "returns": {
             "type": "ContextInstanceHistory",
-            "description": "History of changes to the instance."
+            "description": "Change history."
           },
           "examples": {
             "python": "client.contexts.get_history(\n    slug=\"customer\",\n    instance=\"cust-12345\",\n)",
             "typescript": "await client.contexts.getHistory({\n    slug: \"customer\",\n    instance: \"cust-12345\"\n})",
-            "go": "response, err := client.Contexts.GetHistory(\n    context.Background(),\n    &rulebricks.GetHistoryContextsRequest{\n        Slug: \"customer\",\n        Instance: \"cust-12345\",\n    },\n)",
-            "csharp": "var result = await client.Contexts.GetHistoryAsync(\n    \"customer\", \"cust-12345\");",
-            "java": "var result = client.contexts().getHistory(\n    \"customer\", \"cust-12345\");",
-            "ruby": "client.contexts.get_history(\n    slug: 'customer',\n    instance: 'cust-12345'\n)"
+            "go": "request := &sdk.GetHistoryContextsRequest{\n    Slug: \"customer\",\n    Instance: \"cust-12345\",\n}\nclient.Contexts.GetHistory(context.TODO(), request)",
+            "csharp": "await client.Contexts.GetHistoryAsync(\n    new GetHistoryContextsRequest\n    {\n        Slug = \"customer\",\n        Instance = \"cust-12345\",\n    }\n);",
+            "java": "client.contexts().getHistory(\"customer\", \"cust-12345\");",
+            "ruby": "client.contexts.get_history(\n  slug: 'customer',\n  instance: 'cust-12345'\n)"
           },
-          "exampleOutput": [
-            {
-              "timestamp": "2024-01-15T10:30:00Z",
-              "action": "update",
-              "changes": { "email": "newemail@example.com" },
-              "previousValues": { "email": "oldemail@example.com" }
-            },
-            {
-              "timestamp": "2024-01-01T00:00:00Z",
-              "action": "create",
-              "changes": { "email": "oldemail@example.com", "age": 30 }
+          "exampleOutput": {
+            "context": "customer:cust-12345",
+            "history": {
+              "email": [
+                {
+                  "value": "customer@example.com",
+                  "timestamp": "2024-01-15T10:30:00.000Z"
+                }
+              ]
             }
-          ]
+          }
         },
         {
           "name": "getPending",
@@ -380,24 +1171,25 @@
           ],
           "returns": {
             "type": "ContextInstancePendingResponse",
-            "description": "List of pending evaluations for the instance."
+            "description": "List of pending evaluations."
           },
           "examples": {
             "python": "client.contexts.get_pending(\n    slug=\"customer\",\n    instance=\"cust-12345\",\n)",
             "typescript": "await client.contexts.getPending({\n    slug: \"customer\",\n    instance: \"cust-12345\"\n})",
-            "go": "response, err := client.Contexts.GetPending(\n    context.Background(),\n    &rulebricks.GetPendingContextsRequest{\n        Slug: \"customer\",\n        Instance: \"cust-12345\",\n    },\n)",
-            "csharp": "var result = await client.Contexts.GetPendingAsync(\n    \"customer\", \"cust-12345\");",
-            "java": "var result = client.contexts().getPending(\n    \"customer\", \"cust-12345\");",
-            "ruby": "client.contexts.get_pending(\n    slug: 'customer',\n    instance: 'cust-12345'\n)"
+            "go": "request := &sdk.GetPendingContextsRequest{\n    Slug: \"customer\",\n    Instance: \"cust-12345\",\n}\nclient.Contexts.GetPending(context.TODO(), request)",
+            "csharp": "await client.Contexts.GetPendingAsync(\n    new GetPendingContextsRequest\n    {\n        Slug = \"customer\",\n        Instance = \"cust-12345\",\n    }\n);",
+            "java": "client.contexts().getPending(\"customer\", \"cust-12345\");",
+            "ruby": "client.contexts.get_pending(\n  slug: 'customer',\n  instance: 'cust-12345'\n)"
           },
-          "exampleOutput": [
-            {
-              "type": "rule",
-              "slug": "eligibility-check",
-              "scheduledFor": "2024-01-16T00:00:00Z",
-              "reason": "scheduled_evaluation"
-            }
-          ]
+          "exampleOutput": {
+            "pending": [
+              {
+                "type": "rule",
+                "slug": "eligibility-check",
+                "missing_fields": ["age"]
+              }
+            ]
+          }
         },
         {
           "name": "solve",
@@ -416,39 +1208,33 @@
               "description": "The unique identifier for the context instance."
             },
             {
-              "name": "ruleSlug",
+              "name": "rule_slug",
               "type": "string",
               "required": true,
               "description": "The unique slug for the rule."
             },
             {
-              "name": "additionalData",
+              "name": "request",
               "type": "object",
               "required": false,
-              "description": "Additional data to merge with instance state for rule evaluation."
-            },
-            {
-              "name": "persist",
-              "type": "boolean",
-              "required": false,
-              "description": "Whether to persist derived outputs to the instance."
+              "description": "Additional data to merge with context state."
             }
           ],
           "returns": {
             "type": "SolveContextRuleResponse",
-            "description": "Rule executed successfully."
+            "description": "Rule execution result."
           },
           "examples": {
-            "python": "client.contexts.solve(\n    slug=\"customer\",\n    instance=\"cust-12345\",\n    rule_slug=\"eligibility-check\",\n)",
-            "typescript": "await client.contexts.solve({\n    slug: \"customer\",\n    instance: \"cust-12345\",\n    ruleSlug: \"eligibility-check\"\n})",
-            "go": "response, err := client.Contexts.Solve(\n    context.Background(),\n    &rulebricks.SolveContextRuleRequest{\n        Slug: \"customer\",\n        Instance: \"cust-12345\",\n        RuleSlug: \"eligibility-check\",\n    },\n)",
-            "csharp": "var result = await client.Contexts.SolveAsync(\n    \"customer\", \"cust-12345\", \"eligibility-check\");",
-            "java": "var result = client.contexts().solve(\n    \"customer\", \"cust-12345\", \"eligibility-check\");",
-            "ruby": "client.contexts.solve(\n    slug: 'customer',\n    instance: 'cust-12345',\n    rule_slug: 'eligibility-check'\n)"
+            "python": "client.contexts.solve(\n    slug=\"customer\",\n    instance=\"cust-12345\",\n    rule_slug=\"eligibility-check\",\n    request={},\n)",
+            "typescript": "await client.contexts.solve({\n    slug: \"customer\",\n    instance: \"cust-12345\",\n    ruleSlug: \"eligibility-check\",\n    body: {}\n})",
+            "go": "request := &sdk.SolveContextsRequest{\n    Slug: \"customer\",\n    Instance: \"cust-12345\",\n    RuleSlug: \"eligibility-check\",\n}\nclient.Contexts.Solve(context.TODO(), request)",
+            "csharp": "await client.Contexts.SolveAsync(\n    new SolveContextsRequest\n    {\n        Slug = \"customer\",\n        Instance = \"cust-12345\",\n        RuleSlug = \"eligibility-check\",\n    }\n);",
+            "java": "client.contexts().solve(\"customer\", \"cust-12345\", \"eligibility-check\", Map.of());",
+            "ruby": "client.contexts.solve(\n  slug: 'customer',\n  instance: 'cust-12345',\n  rule_slug: 'eligibility-check',\n  request: {}\n)"
           },
           "exampleOutput": {
             "eligible": true,
-            "message": "Customer is eligible for the promotion."
+            "message": "Customer is eligible for premium tier."
           }
         },
         {
@@ -468,30 +1254,27 @@
               "description": "The unique identifier for the context instance."
             },
             {
-              "name": "maxDepth",
-              "type": "integer",
+              "name": "request",
+              "type": "object",
               "required": false,
-              "description": "Maximum depth for cascading evaluations."
+              "description": "Additional options for cascade."
             }
           ],
           "returns": {
             "type": "CascadeContextResponse",
-            "description": "Cascade completed successfully."
+            "description": "Cascade result."
           },
           "examples": {
-            "python": "client.contexts.cascade(\n    slug=\"customer\",\n    instance=\"cust-12345\",\n)",
-            "typescript": "await client.contexts.cascade({\n    slug: \"customer\",\n    instance: \"cust-12345\"\n})",
-            "go": "response, err := client.Contexts.Cascade(\n    context.Background(),\n    &rulebricks.CascadeContextRequest{\n        Slug: \"customer\",\n        Instance: \"cust-12345\",\n    },\n)",
-            "csharp": "var result = await client.Contexts.CascadeAsync(\n    \"customer\", \"cust-12345\");",
-            "java": "var result = client.contexts().cascade(\n    \"customer\", \"cust-12345\");",
-            "ruby": "client.contexts.cascade(\n    slug: 'customer',\n    instance: 'cust-12345'\n)"
+            "python": "client.contexts.cascade(\n    slug=\"customer\",\n    instance=\"cust-12345\",\n    request={},\n)",
+            "typescript": "await client.contexts.cascade({\n    slug: \"customer\",\n    instance: \"cust-12345\",\n    body: {}\n})",
+            "go": "request := &sdk.CascadeContextsRequest{\n    Slug: \"customer\",\n    Instance: \"cust-12345\",\n}\nclient.Contexts.Cascade(context.TODO(), request)",
+            "csharp": "await client.Contexts.CascadeAsync(\n    new CascadeContextsRequest\n    {\n        Slug = \"customer\",\n        Instance = \"cust-12345\",\n    }\n);",
+            "java": "client.contexts().cascade(\"customer\", \"cust-12345\", Map.of());",
+            "ruby": "client.contexts.cascade(\n  slug: 'customer',\n  instance: 'cust-12345',\n  request: {}\n)"
           },
           "exampleOutput": {
-            "evaluated": 3,
-            "results": [
-              { "type": "rule", "slug": "eligibility-check", "success": true },
-              { "type": "flow", "slug": "onboarding-flow", "success": true }
-            ]
+            "evaluated": ["eligibility-check", "pricing-rule"],
+            "results": {}
           }
         },
         {
@@ -511,94 +1294,158 @@
               "description": "The unique identifier for the context instance."
             },
             {
-              "name": "flowSlug",
+              "name": "flow_slug",
               "type": "string",
               "required": true,
               "description": "The unique slug for the flow."
             },
             {
-              "name": "additionalData",
+              "name": "request",
               "type": "object",
               "required": false,
-              "description": "Additional data to merge with instance state for flow execution."
-            },
-            {
-              "name": "persist",
-              "type": "boolean",
-              "required": false,
-              "description": "Whether to persist derived outputs to the instance."
+              "description": "Additional data to merge with context state."
             }
           ],
           "returns": {
             "type": "SolveContextFlowResponse",
-            "description": "Flow executed successfully."
+            "description": "Flow execution result."
           },
           "examples": {
-            "python": "client.contexts.execute(\n    slug=\"customer\",\n    instance=\"cust-12345\",\n    flow_slug=\"onboarding-flow\",\n)",
-            "typescript": "await client.contexts.execute({\n    slug: \"customer\",\n    instance: \"cust-12345\",\n    flowSlug: \"onboarding-flow\"\n})",
-            "go": "response, err := client.Contexts.Execute(\n    context.Background(),\n    &rulebricks.SolveContextFlowRequest{\n        Slug: \"customer\",\n        Instance: \"cust-12345\",\n        FlowSlug: \"onboarding-flow\",\n    },\n)",
-            "csharp": "var result = await client.Contexts.ExecuteAsync(\n    \"customer\", \"cust-12345\", \"onboarding-flow\");",
-            "java": "var result = client.contexts().execute(\n    \"customer\", \"cust-12345\", \"onboarding-flow\");",
-            "ruby": "client.contexts.execute(\n    slug: 'customer',\n    instance: 'cust-12345',\n    flow_slug: 'onboarding-flow'\n)"
+            "python": "client.contexts.execute(\n    slug=\"customer\",\n    instance=\"cust-12345\",\n    flow_slug=\"onboarding-flow\",\n    request={},\n)",
+            "typescript": "await client.contexts.execute({\n    slug: \"customer\",\n    instance: \"cust-12345\",\n    flowSlug: \"onboarding-flow\",\n    body: {}\n})",
+            "go": "request := &sdk.ExecuteContextsRequest{\n    Slug: \"customer\",\n    Instance: \"cust-12345\",\n    FlowSlug: \"onboarding-flow\",\n}\nclient.Contexts.Execute(context.TODO(), request)",
+            "csharp": "await client.Contexts.ExecuteAsync(\n    new ExecuteContextsRequest\n    {\n        Slug = \"customer\",\n        Instance = \"cust-12345\",\n        FlowSlug = \"onboarding-flow\",\n    }\n);",
+            "java": "client.contexts().execute(\"customer\", \"cust-12345\", \"onboarding-flow\", Map.of());",
+            "ruby": "client.contexts.execute(\n  slug: 'customer',\n  instance: 'cust-12345',\n  flow_slug: 'onboarding-flow',\n  request: {}\n)"
           },
           "exampleOutput": {
             "status": "completed",
-            "steps": ["welcome", "profile", "preferences"],
-            "nextAction": "send_welcome_email"
+            "result": { "onboarding_complete": true }
           }
         }
       ],
       "subResources": [
         {
-          "name": "admin",
-          "description": "Administrative operations for managing context definitions",
+          "name": "objects",
+          "description": "Administrative operations for context schemas",
           "methods": [
             {
               "name": "list",
-              "description": "Retrieve all contexts (entities) for the authenticated user.",
+              "description": "Retrieve all context schemas.",
               "parameters": [],
               "returns": {
-                "type": "Context[]",
-                "description": "List of all context definitions."
+                "type": "ContextListResponse",
+                "description": "List of context schemas."
               },
               "examples": {
-                "python": "client.contexts.admin.list()",
-                "typescript": "await client.contexts.admin.list()",
-                "go": "response, err := client.Contexts.Admin.List(\n    context.Background())",
-                "csharp": "var result = await client.Contexts.Admin.ListAsync();",
-                "java": "var result = client.contexts().admin().list();",
-                "ruby": "result = client.contexts.admin.list()"
+                "python": "client.contexts.objects.list()",
+                "typescript": "await client.contexts.objects.list()",
+                "go": "client.Contexts.Objects.List(context.TODO())",
+                "csharp": "await client.Contexts.Objects.ListAsync();",
+                "java": "client.contexts().objects().list();",
+                "ruby": "client.contexts.objects.list"
               },
               "exampleOutput": [
                 {
                   "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
                   "name": "Customer",
                   "slug": "customer",
-                  "description": "Customer entity",
-                  "schema": [
-                    { "key": "email", "name": "Email", "type": "string" },
-                    { "key": "age", "name": "Age", "type": "number" }
-                  ],
-                  "instanceCount": 1500,
-                  "createdAt": "2024-01-01T00:00:00Z"
+                  "description": "Represents a customer in the system"
                 }
               ]
             },
             {
+              "name": "get",
+              "description": "Retrieve a specific context schema by its ID.",
+              "parameters": [
+                {
+                  "name": "id",
+                  "type": "string",
+                  "required": true,
+                  "description": "The ID of the context."
+                }
+              ],
+              "returns": {
+                "type": "ContextDetail",
+                "description": "Context schema details."
+              },
+              "examples": {
+                "python": "client.contexts.objects.get(\n    id=\"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n)",
+                "typescript": "await client.contexts.objects.get({\n    id: \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\"\n})",
+                "go": "request := &contexts.GetContextObjectsRequest{\n    Id: \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n}\nclient.Contexts.Objects.Get(context.TODO(), request)",
+                "csharp": "await client.Contexts.Objects.GetAsync(\n    new GetContextObjectsRequest { Id = \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\" }\n);",
+                "java": "client.contexts().objects().get(\"a1b2c3d4-e5f6-7890-abcd-ef1234567890\");",
+                "ruby": "client.contexts.objects.get(id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890')"
+              },
+              "exampleOutput": {
+                "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+                "name": "Customer",
+                "slug": "customer",
+                "description": "Represents a customer in the system",
+                "schema": [
+                  { "key": "email", "name": "Email", "type": "string" },
+                  { "key": "age", "name": "Age", "type": "number" }
+                ]
+              }
+            },
+            {
+              "name": "update",
+              "description": "Update an existing context's properties and schema.",
+              "parameters": [
+                {
+                  "name": "id",
+                  "type": "string",
+                  "required": true,
+                  "description": "The unique identifier for the context."
+                },
+                {
+                  "name": "name",
+                  "type": "string",
+                  "required": false,
+                  "description": "The name of the context."
+                },
+                {
+                  "name": "description",
+                  "type": "string",
+                  "required": false,
+                  "description": "The description of the context."
+                },
+                {
+                  "name": "schema",
+                  "type": "array",
+                  "required": false,
+                  "description": "Updated schema fields for the context."
+                }
+              ],
+              "returns": {
+                "type": "UpdateContextResponse",
+                "description": "Updated context."
+              },
+              "examples": {
+                "python": "client.contexts.objects.update(\n    id=\"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n    name=\"Updated Customer\",\n    description=\"Updated description for premium customers\",\n)",
+                "typescript": "await client.contexts.objects.update({\n    id: \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n    name: \"Updated Customer\",\n    description: \"Updated description for premium customers\"\n})",
+                "go": "request := &contexts.UpdateContextRequest{\n    Id: \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n    Name: sdk.String(\"Updated Customer\"),\n    Description: sdk.String(\"Updated description for premium customers\"),\n}\nclient.Contexts.Objects.Update(context.TODO(), request)",
+                "csharp": "await client.Contexts.Objects.UpdateAsync(\n    new UpdateContextObjectsRequest\n    {\n        Id = \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n        Name = \"Updated Customer\",\n        Description = \"Updated description for premium customers\",\n    }\n);",
+                "java": "client.contexts().objects().update(UpdateContextRequest.builder()\n    .id(\"a1b2c3d4-e5f6-7890-abcd-ef1234567890\")\n    .name(\"Updated Customer\")\n    .description(\"Updated description for premium customers\")\n    .build());",
+                "ruby": "client.contexts.objects.update(\n  id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',\n  name: 'Updated Customer',\n  description: 'Updated description for premium customers'\n)"
+              },
+              "exampleOutput": {
+                "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+                "slug": "updated-customer",
+                "name": "Updated Customer",
+                "description": "Updated description for premium customers",
+                "updated_at": "2024-01-15T12:00:00.000Z"
+              }
+            },
+            {
               "name": "create",
-              "description": "Create a new context (entity) for the authenticated user.",
+              "description": "Create a new context schema.",
               "parameters": [
                 {
                   "name": "name",
                   "type": "string",
                   "required": true,
                   "description": "Name of the context."
-                },
-                {
-                  "name": "slug",
-                  "type": "string",
-                  "required": false,
-                  "description": "URL-friendly identifier (auto-generated if not provided)."
                 },
                 {
                   "name": "description",
@@ -610,275 +1457,156 @@
                   "name": "schema",
                   "type": "array",
                   "required": true,
-                  "description": "Array of schema items defining the context fields."
+                  "description": "Array of schema field definitions."
                 },
                 {
-                  "name": "ttlSeconds",
-                  "type": "integer",
+                  "name": "identity_fact",
+                  "type": "string",
                   "required": false,
-                  "description": "Time-to-live in seconds for instances (optional)."
-                },
-                {
-                  "name": "historyLimit",
-                  "type": "integer",
-                  "required": false,
-                  "description": "Maximum number of history entries to retain."
+                  "description": "Field to use as the identity fact."
                 }
               ],
               "returns": {
-                "type": "Context",
-                "description": "The created context definition."
+                "type": "CreateContextResponse",
+                "description": "Created context."
               },
               "examples": {
-                "python": "client.contexts.admin.create(\n    name=\"Customer\",\n    slug=\"customer\",\n    description=\"Customer entity\",\n    schema=[\n        {\"key\": \"email\", \"name\": \"Email\", \"type\": \"string\"},\n        {\"key\": \"age\", \"name\": \"Age\", \"type\": \"number\"},\n    ],\n    ttl_seconds=86400,\n    history_limit=100,\n)",
-                "typescript": "await client.contexts.admin.create({\n    name: \"Customer\",\n    slug: \"customer\",\n    description: \"Customer entity\",\n    schema: [\n        { key: \"email\", name: \"Email\", type: \"string\" },\n        { key: \"age\", name: \"Age\", type: \"number\" }\n    ],\n    ttlSeconds: 86400,\n    historyLimit: 100\n})",
-                "go": "response, err := client.Contexts.Admin.Create(\n    context.Background(),\n    &rulebricks.CreateContextRequest{\n        Name: \"Customer\",\n        Slug: rulebricks.String(\"customer\"),\n        Description: rulebricks.String(\"Customer entity\"),\n        Schema: []rulebricks.SchemaItem{\n            {Key: \"email\", Name: \"Email\", Type: \"string\"},\n            {Key: \"age\", Name: \"Age\", Type: \"number\"},\n        },\n        TtlSeconds: rulebricks.Int(86400),\n        HistoryLimit: rulebricks.Int(100),\n    },\n)",
-                "csharp": "var schema = new List<SchemaItem>\n{\n    new() { Key = \"email\", Name = \"Email\", Type = \"string\" },\n    new() { Key = \"age\", Name = \"Age\", Type = \"number\" }\n};\nvar result = await client.Contexts.Admin.CreateAsync(\n    name: \"Customer\",\n    slug: \"customer\",\n    description: \"Customer entity\",\n    schema: schema,\n    ttlSeconds: 86400,\n    historyLimit: 100\n);",
-                "java": "var schema = List.of(\n    new SchemaItem(\"email\", \"Email\", \"string\"),\n    new SchemaItem(\"age\", \"Age\", \"number\")\n);\nvar result = client.contexts().admin().create(\n    CreateContextRequest.builder()\n        .name(\"Customer\")\n        .slug(\"customer\")\n        .description(\"Customer entity\")\n        .schema(schema)\n        .ttlSeconds(86400)\n        .historyLimit(100)\n        .build()\n);",
-                "ruby": "result = client.contexts.admin.create(\n    name: 'Customer',\n    slug: 'customer',\n    description: 'Customer entity',\n    schema: [\n        { key: 'email', name: 'Email', type: 'string' },\n        { key: 'age', name: 'Age', type: 'number' }\n    ],\n    ttl_seconds: 86400,\n    history_limit: 100\n)"
+                "python": "client.contexts.objects.create(\n    name=\"Customer\",\n    description=\"Represents a customer in the system\",\n    schema=[\n        {\"key\": \"email\", \"name\": \"Email\", \"type\": \"string\"},\n        {\"key\": \"age\", \"name\": \"Age\", \"type\": \"number\"}\n    ],\n    identity_fact=\"email\",\n)",
+                "typescript": "await client.contexts.objects.create({\n    name: \"Customer\",\n    description: \"Represents a customer in the system\",\n    schema: [\n        { key: \"email\", name: \"Email\", type: \"string\" },\n        { key: \"age\", name: \"Age\", type: \"number\" }\n    ],\n    identityFact: \"email\"\n})",
+                "go": "request := &contexts.CreateContextObjectsRequest{\n    Name: \"Customer\",\n    Description: sdk.String(\"Represents a customer\"),\n    Schema: []*contexts.CreateContextRequestSchemaItem{\n        {Key: \"email\", Name: \"Email\", Type: \"string\"},\n    },\n}\nclient.Contexts.Objects.Create(context.TODO(), request)",
+                "csharp": "await client.Contexts.Objects.CreateAsync(\n    new CreateContextObjectsRequest\n    {\n        Name = \"Customer\",\n        Description = \"Represents a customer in the system\",\n    }\n);",
+                "java": "client.contexts().objects().create(CreateContextRequest.builder()\n    .name(\"Customer\")\n    .description(\"Represents a customer in the system\")\n    .build());",
+                "ruby": "client.contexts.objects.create(\n  name: 'Customer',\n  description: 'Represents a customer in the system'\n)"
               },
               "exampleOutput": {
-                "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+                "id": "new-context-id-123",
                 "name": "Customer",
                 "slug": "customer",
-                "description": "Customer entity",
-                "schema": [
-                  { "key": "email", "name": "Email", "type": "string" },
-                  { "key": "age", "name": "Age", "type": "number" }
-                ],
-                "ttlSeconds": 86400,
-                "historyLimit": 100,
-                "createdAt": "2024-01-15T10:30:00Z"
-              }
-            },
-            {
-              "name": "get",
-              "description": "Retrieve a specific context definition by its ID.",
-              "parameters": [
-                {
-                  "name": "contextId",
-                  "type": "string",
-                  "required": true,
-                  "description": "The UUID of the context."
-                }
-              ],
-              "returns": {
-                "type": "Context",
-                "description": "The context definition."
-              },
-              "examples": {
-                "python": "client.contexts.admin.get(\n    id=\"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n)",
-                "typescript": "await client.contexts.admin.get({\n    id: \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\"\n})",
-                "go": "response, err := client.Contexts.Admin.Get(\n    context.Background(),\n    \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n)",
-                "csharp": "var result = await client.Contexts.Admin.GetAsync(\n    \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\");",
-                "java": "var result = client.contexts().admin().get(\n    \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\");",
-                "ruby": "result = client.contexts.admin.get(\n    id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'\n)"
-              },
-              "exampleOutput": {
-                "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-                "name": "Customer",
-                "slug": "customer",
-                "description": "Customer entity",
-                "schema": [
-                  { "key": "email", "name": "Email", "type": "string" },
-                  { "key": "age", "name": "Age", "type": "number" }
-                ],
-                "instanceCount": 1500,
-                "createdAt": "2024-01-01T00:00:00Z",
-                "updatedAt": "2024-01-15T10:30:00Z"
-              }
-            },
-            {
-              "name": "update",
-              "description": "Update an existing context definition.",
-              "parameters": [
-                {
-                  "name": "contextId",
-                  "type": "string",
-                  "required": true,
-                  "description": "The UUID of the context to update."
-                },
-                {
-                  "name": "name",
-                  "type": "string",
-                  "required": false,
-                  "description": "Updated name of the context."
-                },
-                {
-                  "name": "description",
-                  "type": "string",
-                  "required": false,
-                  "description": "Updated description of the context."
-                },
-                {
-                  "name": "schema",
-                  "type": "array",
-                  "required": false,
-                  "description": "Updated array of schema items."
-                },
-                {
-                  "name": "ttlSeconds",
-                  "type": "integer",
-                  "required": false,
-                  "description": "Updated time-to-live in seconds."
-                },
-                {
-                  "name": "historyLimit",
-                  "type": "integer",
-                  "required": false,
-                  "description": "Updated history limit."
-                }
-              ],
-              "returns": {
-                "type": "Context",
-                "description": "The updated context definition."
-              },
-              "examples": {
-                "python": "client.contexts.admin.update(\n    id=\"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n    name=\"Customer Profile\",\n    description=\"Updated customer entity\",\n)",
-                "typescript": "await client.contexts.admin.update({\n    id: \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n    name: \"Customer Profile\",\n    description: \"Updated customer entity\"\n})",
-                "go": "response, err := client.Contexts.Admin.Update(\n    context.Background(),\n    &rulebricks.UpdateContextRequest{\n        Id: \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n        Name: rulebricks.String(\"Customer Profile\"),\n        Description: rulebricks.String(\"Updated customer entity\"),\n    },\n)",
-                "csharp": "var result = await client.Contexts.Admin.UpdateAsync(\n    id: \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n    name: \"Customer Profile\",\n    description: \"Updated customer entity\"\n);",
-                "java": "var result = client.contexts().admin().update(\n    UpdateContextRequest.builder()\n        .id(\"a1b2c3d4-e5f6-7890-abcd-ef1234567890\")\n        .name(\"Customer Profile\")\n        .description(\"Updated customer entity\")\n        .build()\n);",
-                "ruby": "result = client.contexts.admin.update(\n    id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',\n    name: 'Customer Profile',\n    description: 'Updated customer entity'\n)"
-              },
-              "exampleOutput": {
-                "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-                "name": "Customer Profile",
-                "slug": "customer",
-                "description": "Updated customer entity",
-                "updatedAt": "2024-01-15T10:30:00Z"
+                "description": "Represents a customer in the system"
               }
             },
             {
               "name": "delete",
-              "description": "Delete a specific context and all its instances.",
+              "description": "Delete a context schema and all its instances.",
               "parameters": [
                 {
-                  "name": "contextId",
+                  "name": "id",
                   "type": "string",
                   "required": true,
-                  "description": "The UUID of the context to delete."
+                  "description": "The ID of the context to delete."
                 }
               ],
               "returns": {
-                "type": "DeleteResponse",
-                "description": "Confirmation of deletion."
+                "type": "DeleteContextResponse",
+                "description": "Deletion confirmation."
               },
               "examples": {
-                "python": "client.contexts.admin.delete(\n    id=\"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n)",
-                "typescript": "await client.contexts.admin.delete({\n    id: \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\"\n})",
-                "go": "response, err := client.Contexts.Admin.Delete(\n    context.Background(),\n    \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n)",
-                "csharp": "await client.Contexts.Admin.DeleteAsync(\n    \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\");",
-                "java": "client.contexts().admin().delete(\n    \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\");",
-                "ruby": "client.contexts.admin.delete(\n    id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'\n)"
+                "python": "client.contexts.objects.delete(\n    id=\"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n)",
+                "typescript": "await client.contexts.objects.delete({\n    id: \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\"\n})",
+                "go": "request := &contexts.DeleteContextObjectsRequest{\n    Id: \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n}\nclient.Contexts.Objects.Delete(context.TODO(), request)",
+                "csharp": "await client.Contexts.Objects.DeleteAsync(\n    new DeleteContextObjectsRequest { Id = \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\" }\n);",
+                "java": "client.contexts().objects().delete(\"a1b2c3d4-e5f6-7890-abcd-ef1234567890\");",
+                "ruby": "client.contexts.objects.delete(id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890')"
               },
-              "exampleOutput": {
-                "success": true,
-                "message": "Context and all instances deleted successfully",
-                "deletedInstances": 1500
-              }
+              "exampleOutput": { "message": "Context deleted successfully." }
             }
           ]
         },
         {
           "name": "relationships",
-          "description": "Operations for managing relationships between context definitions",
+          "description": "Manage relationships between context schemas",
           "methods": [
             {
               "name": "list",
-              "description": "List all relationships for a specific context definition.",
+              "description": "List all relationships for a specific context.",
               "parameters": [
                 {
                   "name": "id",
                   "type": "string",
                   "required": true,
-                  "description": "The unique identifier (UUID) of the context definition."
+                  "description": "The ID of the context."
                 }
               ],
               "returns": {
                 "type": "ContextRelationshipsResponse",
-                "description": "List of relationships for the context."
+                "description": "List of relationships."
               },
               "examples": {
                 "python": "client.contexts.relationships.list(\n    id=\"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n)",
                 "typescript": "await client.contexts.relationships.list({\n    id: \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\"\n})",
-                "go": "response, err := client.Contexts.Relationships.List(\n    context.Background(),\n    &rulebricks.ListRelationshipsRequest{\n        ID: \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n    },\n)",
-                "csharp": "var result = await client.Contexts.Relationships.ListAsync(\n    \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\");",
-                "java": "var result = client.contexts().relationships().list(\n    \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\");",
-                "ruby": "result = client.contexts.relationships.list(\n    id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'\n)"
+                "go": "request := &contexts.ListContextRelationshipsRequest{\n    Id: \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n}\nclient.Contexts.Relationships.List(context.TODO(), request)",
+                "csharp": "await client.Contexts.Relationships.ListAsync(\n    new ListContextRelationshipsRequest { Id = \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\" }\n);",
+                "java": "client.contexts().relationships().list(\"a1b2c3d4-e5f6-7890-abcd-ef1234567890\");",
+                "ruby": "client.contexts.relationships.list(id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890')"
               },
-              "exampleOutput": [
-                {
-                  "id": "rel-001",
-                  "type": "one-to-many",
-                  "targetContextId": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
-                  "foreignKey": "customer_id",
-                  "name": "Customer Orders",
-                  "createdAt": "2024-01-01T00:00:00Z"
-                }
-              ]
+              "exampleOutput": {
+                "relationships": [
+                  {
+                    "id": "rel-123",
+                    "name": "Customer Orders",
+                    "to_context": { "id": "order-context-id", "name": "Order" },
+                    "relation_type": "has_many",
+                    "foreign_key_fact": "customer_id"
+                  }
+                ]
+              }
             },
             {
               "name": "create",
-              "description": "Create a new relationship between two context definitions.",
+              "description": "Create a new relationship between two contexts.",
               "parameters": [
                 {
                   "name": "id",
                   "type": "string",
                   "required": true,
-                  "description": "The unique identifier (UUID) of the source context."
+                  "description": "The ID of the source context."
                 },
                 {
-                  "name": "targetContextId",
+                  "name": "to_context_id",
                   "type": "string",
                   "required": true,
-                  "description": "The ID of the target context definition."
+                  "description": "The ID of the target context."
                 },
                 {
-                  "name": "type",
+                  "name": "relation_type",
                   "type": "string",
                   "required": true,
-                  "description": "The type of relationship (one-to-one, one-to-many, many-to-one)."
+                  "description": "Type of relationship ('has_one' or 'has_many')."
                 },
                 {
-                  "name": "foreignKey",
+                  "name": "foreign_key_fact",
                   "type": "string",
                   "required": true,
-                  "description": "The field key to use as the foreign key."
+                  "description": "The foreign key field."
                 },
                 {
                   "name": "name",
                   "type": "string",
                   "required": false,
-                  "description": "Display name for the relationship."
-                },
-                {
-                  "name": "description",
-                  "type": "string",
-                  "required": false,
-                  "description": "Description of the relationship."
+                  "description": "Name for the relationship."
                 }
               ],
               "returns": {
                 "type": "CreateRelationshipResponse",
-                "description": "The created relationship."
+                "description": "Created relationship."
               },
               "examples": {
-                "python": "client.contexts.relationships.create(\n    id=\"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n    target_context_id=\"b2c3d4e5-f6a7-8901-bcde-f12345678901\",\n    type=\"one-to-many\",\n    foreign_key=\"customer_id\",\n    name=\"Customer Orders\",\n)",
-                "typescript": "await client.contexts.relationships.create({\n    id: \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n    targetContextId: \"b2c3d4e5-f6a7-8901-bcde-f12345678901\",\n    type: \"one-to-many\",\n    foreignKey: \"customer_id\",\n    name: \"Customer Orders\"\n})",
-                "go": "response, err := client.Contexts.Relationships.Create(\n    context.Background(),\n    &rulebricks.CreateRelationshipRequest{\n        ID: \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n        TargetContextID: \"b2c3d4e5-f6a7-8901-bcde-f12345678901\",\n        Type: rulebricks.CreateRelationshipRequestTypeOneToMany,\n        ForeignKey: \"customer_id\",\n        Name: rulebricks.String(\"Customer Orders\"),\n    },\n)",
-                "csharp": "var result = await client.Contexts.Relationships.CreateAsync(\n    id: \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n    targetContextId: \"b2c3d4e5-f6a7-8901-bcde-f12345678901\",\n    type: \"one-to-many\",\n    foreignKey: \"customer_id\",\n    name: \"Customer Orders\"\n);",
-                "java": "var result = client.contexts().relationships().create(\n    CreateRelationshipRequest.builder()\n        .id(\"a1b2c3d4-e5f6-7890-abcd-ef1234567890\")\n        .targetContextId(\"b2c3d4e5-f6a7-8901-bcde-f12345678901\")\n        .type(CreateRelationshipRequestType.ONE_TO_MANY)\n        .foreignKey(\"customer_id\")\n        .name(\"Customer Orders\")\n        .build()\n);",
-                "ruby": "result = client.contexts.relationships.create(\n    id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',\n    target_context_id: 'b2c3d4e5-f6a7-8901-bcde-f12345678901',\n    type: 'one-to-many',\n    foreign_key: 'customer_id',\n    name: 'Customer Orders'\n)"
+                "python": "client.contexts.relationships.create(\n    id=\"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n    to_context_id=\"b2c3d4e5-f6a7-8901-bcde-f12345678901\",\n    relation_type=\"has_many\",\n    foreign_key_fact=\"customer_id\",\n    name=\"Customer Orders\",\n)",
+                "typescript": "await client.contexts.relationships.create({\n    id: \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n    toContextId: \"b2c3d4e5-f6a7-8901-bcde-f12345678901\",\n    relationType: \"has_many\",\n    foreignKeyFact: \"customer_id\",\n    name: \"Customer Orders\"\n})",
+                "go": "request := &contexts.CreateContextRelationshipsRequest{\n    Id: \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n    ToContextId: \"b2c3d4e5-f6a7-8901-bcde-f12345678901\",\n    RelationType: contexts.CreateRelationshipRequestRelationTypeHasMany,\n    ForeignKeyFact: \"customer_id\",\n}\nclient.Contexts.Relationships.Create(context.TODO(), request)",
+                "csharp": "await client.Contexts.Relationships.CreateAsync(\n    new CreateContextRelationshipsRequest\n    {\n        Id = \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n        ToContextId = \"b2c3d4e5-f6a7-8901-bcde-f12345678901\",\n        RelationType = \"has_many\",\n        ForeignKeyFact = \"customer_id\",\n    }\n);",
+                "java": "client.contexts().relationships().create(CreateContextRelationshipRequest.builder()\n    .id(\"a1b2c3d4-e5f6-7890-abcd-ef1234567890\")\n    .toContextId(\"b2c3d4e5-f6a7-8901-bcde-f12345678901\")\n    .relationType(\"has_many\")\n    .foreignKeyFact(\"customer_id\")\n    .build());",
+                "ruby": "client.contexts.relationships.create(\n  id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',\n  to_context_id: 'b2c3d4e5-f6a7-8901-bcde-f12345678901',\n  relation_type: 'has_many',\n  foreign_key_fact: 'customer_id'\n)"
               },
               "exampleOutput": {
-                "id": "rel-002",
-                "type": "one-to-many",
-                "sourceContextId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-                "targetContextId": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
-                "foreignKey": "customer_id",
+                "id": "new-rel-id-123",
                 "name": "Customer Orders",
-                "createdAt": "2024-01-15T10:30:00Z"
+                "to_context": {
+                  "id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+                  "name": "Order"
+                },
+                "relation_type": "has_many",
+                "foreign_key_fact": "customer_id"
               }
             },
             {
@@ -889,434 +1617,29 @@
                   "name": "id",
                   "type": "string",
                   "required": true,
-                  "description": "The unique identifier (UUID) of the context definition."
+                  "description": "The ID of the source context."
                 },
                 {
                   "name": "relationship",
                   "type": "string",
                   "required": true,
-                  "description": "The unique identifier of the relationship to delete."
+                  "description": "The ID of the relationship to delete."
                 }
               ],
               "returns": {
                 "type": "DeleteRelationshipResponse",
-                "description": "Confirmation of deletion."
+                "description": "Deletion confirmation."
               },
               "examples": {
-                "python": "client.contexts.relationships.delete(\n    id=\"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n    relationship=\"c3d4e5f6-a7b8-9012-cdef-123456789012\",\n)",
-                "typescript": "await client.contexts.relationships.delete({\n    id: \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n    relationship: \"c3d4e5f6-a7b8-9012-cdef-123456789012\"\n})",
-                "go": "response, err := client.Contexts.Relationships.Delete(\n    context.Background(),\n    &rulebricks.DeleteRelationshipsRequest{\n        ID: \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n        Relationship: \"c3d4e5f6-a7b8-9012-cdef-123456789012\",\n    },\n)",
-                "csharp": "await client.Contexts.Relationships.DeleteAsync(\n    \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n    \"c3d4e5f6-a7b8-9012-cdef-123456789012\");",
-                "java": "client.contexts().relationships().delete(\n    \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n    \"c3d4e5f6-a7b8-9012-cdef-123456789012\");",
-                "ruby": "client.contexts.relationships.delete(\n    id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',\n    relationship: 'c3d4e5f6-a7b8-9012-cdef-123456789012'\n)"
+                "python": "client.contexts.relationships.delete(\n    id=\"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n    relationship=\"rel-1234-5678-90ab\",\n)",
+                "typescript": "await client.contexts.relationships.delete({\n    id: \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n    relationship: \"rel-1234-5678-90ab\"\n})",
+                "go": "request := &contexts.DeleteContextRelationshipsRequest{\n    Id: \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n    Relationship: \"rel-1234-5678-90ab\",\n}\nclient.Contexts.Relationships.Delete(context.TODO(), request)",
+                "csharp": "await client.Contexts.Relationships.DeleteAsync(\n    new DeleteContextRelationshipsRequest\n    {\n        Id = \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n        Relationship = \"rel-1234-5678-90ab\",\n    }\n);",
+                "java": "client.contexts().relationships().delete(\"a1b2c3d4-e5f6-7890-abcd-ef1234567890\", \"rel-1234-5678-90ab\");",
+                "ruby": "client.contexts.relationships.delete(\n  id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',\n  relationship: 'rel-1234-5678-90ab'\n)"
               },
               "exampleOutput": {
-                "success": true,
-                "message": "Relationship deleted successfully"
-              }
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "Assets",
-      "description": "Administrative operations for managing rules, flows, folders, and usage",
-      "methods": [
-        {
-          "name": "getUsage",
-          "description": "Get the rule execution usage of your organization.",
-          "parameters": [],
-          "returns": {
-            "type": "UsageResponse",
-            "description": "Organization usage statistics."
-          },
-          "examples": {
-            "python": "client.assets.get_usage()",
-            "typescript": "await client.assets.getUsage()",
-            "go": "response, err := client.Assets.GetUsage(\n    context.Background())",
-            "csharp": "var result = await client.Assets.GetUsageAsync();",
-            "java": "var result = client.assets().getUsage();",
-            "ruby": "result = client.assets.get_usage()"
-          },
-          "exampleOutput": {
-            "used": 15000,
-            "limit": 100000,
-            "periodStart": "2024-01-01T00:00:00Z",
-            "periodEnd": "2024-01-31T23:59:59Z"
-          }
-        },
-        {
-          "name": "import_",
-          "description": "Import rules, flows, contexts, and values from an RBM manifest file.",
-          "parameters": [
-            {
-              "name": "manifest",
-              "type": "object",
-              "required": true,
-              "description": "The RBM manifest object to import."
-            },
-            {
-              "name": "overwrite",
-              "type": "boolean",
-              "required": false,
-              "description": "Whether to overwrite existing assets with the same slug."
-            }
-          ],
-          "returns": {
-            "type": "ImportResponse",
-            "description": "Summary of imported assets."
-          },
-          "examples": {
-            "python": "client.assets.import_(\n    manifest={\n        \"version\": \"1.0\",\n        \"rules\": [...],\n        \"flows\": [...]\n    },\n    overwrite=True,\n)",
-            "typescript": "await client.assets.import_({\n    manifest: {\n        version: \"1.0\",\n        rules: [...],\n        flows: [...]\n    },\n    overwrite: true\n})",
-            "go": "response, err := client.Assets.Import(\n    context.Background(),\n    &rulebricks.ImportManifestRequest{\n        Manifest: manifest,\n        Overwrite: rulebricks.Bool(true),\n    },\n)",
-            "csharp": "var result = await client.Assets.ImportAsync(\n    manifest,\n    overwrite: true);",
-            "java": "var result = client.assets().import_(\n    ImportManifestRequest.builder()\n        .manifest(manifest)\n        .overwrite(true)\n        .build()\n);",
-            "ruby": "result = client.assets.import_(\n    manifest: manifest,\n    overwrite: true\n)"
-          },
-          "exampleOutput": {
-            "rules": { "created": 2, "updated": 1, "skipped": 0 },
-            "flows": { "created": 1, "updated": 0, "skipped": 0 },
-            "contexts": { "created": 0, "updated": 0, "skipped": 0 },
-            "values": { "created": 3, "updated": 0, "skipped": 0 }
-          }
-        },
-        {
-          "name": "export",
-          "description": "Export selected rules, flows, contexts, and values to an RBM manifest file.",
-          "parameters": [
-            {
-              "name": "rules",
-              "type": "string[]",
-              "required": false,
-              "description": "Array of rule slugs to export."
-            },
-            {
-              "name": "flows",
-              "type": "string[]",
-              "required": false,
-              "description": "Array of flow slugs to export."
-            },
-            {
-              "name": "contexts",
-              "type": "string[]",
-              "required": false,
-              "description": "Array of context slugs to export."
-            },
-            {
-              "name": "values",
-              "type": "string[]",
-              "required": false,
-              "description": "Array of value keys to export."
-            }
-          ],
-          "returns": {
-            "type": "ExportManifest",
-            "description": "The exported manifest."
-          },
-          "examples": {
-            "python": "client.assets.export(\n    rules=[\"pricing-rule\", \"eligibility\"],\n    flows=[\"onboarding-flow\"],\n)",
-            "typescript": "await client.assets.export({\n    rules: [\"pricing-rule\", \"eligibility\"],\n    flows: [\"onboarding-flow\"]\n})",
-            "go": "response, err := client.Assets.Export(\n    context.Background(),\n    &rulebricks.ExportManifestRequest{\n        Rules: []string{\"pricing-rule\"},\n        Flows: []string{\"onboarding-flow\"},\n    },\n)",
-            "csharp": "var result = await client.Assets.ExportAsync(\n    rules: new[] { \"pricing-rule\" },\n    flows: new[] { \"onboarding-flow\" }\n);",
-            "java": "var result = client.assets().export(\n    ExportManifestRequest.builder()\n        .rules(List.of(\"pricing-rule\"))\n        .flows(List.of(\"onboarding-flow\"))\n        .build()\n);",
-            "ruby": "result = client.assets.export(\n    rules: ['pricing-rule'],\n    flows: ['onboarding-flow']\n)"
-          },
-          "exampleOutput": {
-            "version": "1.0",
-            "exportedAt": "2024-01-15T10:30:00Z",
-            "rules": [
-              {
-                "slug": "pricing-rule",
-                "name": "Pricing Rule",
-                "description": "Calculate product pricing"
-              }
-            ],
-            "flows": [
-              {
-                "slug": "onboarding-flow",
-                "name": "Onboarding Flow",
-                "description": "New user onboarding"
-              }
-            ]
-          }
-        }
-      ],
-      "subResources": [
-        {
-          "name": "rules",
-          "description": "Operations for managing rule assets",
-          "methods": [
-            {
-              "name": "list",
-              "description": "List all rules in the organization. Optionally filter by folder.",
-              "parameters": [
-                {
-                  "name": "folder",
-                  "type": "string",
-                  "required": false,
-                  "description": "Filter by folder name or ID."
-                }
-              ],
-              "returns": { "type": "Rule[]", "description": "List of rules." },
-              "examples": {
-                "python": "client.assets.rules.list(\n    folder=\"Marketing Rules\",\n)",
-                "typescript": "await client.assets.rules.list({\n    folder: \"Marketing Rules\"\n})",
-                "go": "response, err := client.Assets.Rules.List(\n    context.Background(),\n    &rulebricks.ListRulesRequest{\n        Folder: rulebricks.String(\"Marketing Rules\"),\n    },\n)",
-                "csharp": "var result = await client.Assets.Rules.ListAsync(\n    folder: \"Marketing Rules\");",
-                "java": "var result = client.assets().rules().list(\n    ListRulesRequest.builder()\n        .folder(\"Marketing Rules\")\n        .build()\n);",
-                "ruby": "result = client.assets.rules.list(\n    folder: 'Marketing Rules'\n)"
-              },
-              "exampleOutput": [
-                {
-                  "id": "2855f8da-2654-4df9-8903-8f797cbfe8eb",
-                  "name": "Pricing Rule",
-                  "slug": "pricing-rule",
-                  "description": "Calculate product pricing",
-                  "folder": "Marketing Rules",
-                  "published": true,
-                  "createdAt": "2024-01-01T00:00:00Z",
-                  "updatedAt": "2024-01-15T10:30:00Z"
-                }
-              ]
-            },
-            {
-              "name": "delete",
-              "description": "Delete a specific rule by its ID.",
-              "parameters": [
-                {
-                  "name": "id",
-                  "type": "string",
-                  "required": true,
-                  "description": "The UUID of the rule to delete."
-                }
-              ],
-              "returns": {
-                "type": "DeleteResponse",
-                "description": "Confirmation of deletion."
-              },
-              "examples": {
-                "python": "client.assets.rules.delete(\n    id=\"2855f8da-2654-4df9-8903-8f797cbfe8eb\",\n)",
-                "typescript": "await client.assets.rules.delete({\n    id: \"2855f8da-2654-4df9-8903-8f797cbfe8eb\"\n})",
-                "go": "response, err := client.Assets.Rules.Delete(\n    context.Background(),\n    \"2855f8da-2654-4df9-8903-8f797cbfe8eb\",\n)",
-                "csharp": "await client.Assets.Rules.DeleteAsync(\n    \"2855f8da-2654-4df9-8903-8f797cbfe8eb\");",
-                "java": "client.assets().rules().delete(\n    \"2855f8da-2654-4df9-8903-8f797cbfe8eb\");",
-                "ruby": "client.assets.rules.delete(\n    id: '2855f8da-2654-4df9-8903-8f797cbfe8eb'\n)"
-              },
-              "exampleOutput": {
-                "success": true,
-                "message": "Rule deleted successfully"
-              }
-            },
-            {
-              "name": "pull",
-              "description": "Pull the complete rule definition including schema, conditions, and configuration.",
-              "parameters": [
-                {
-                  "name": "id",
-                  "type": "string",
-                  "required": true,
-                  "description": "The UUID of the rule to pull."
-                }
-              ],
-              "returns": {
-                "type": "RuleDefinition",
-                "description": "Complete rule definition."
-              },
-              "examples": {
-                "python": "client.assets.rules.pull(\n    id=\"2855f8da-2654-4df9-8903-8f797cbfe8eb\",\n)",
-                "typescript": "await client.assets.rules.pull({\n    id: \"2855f8da-2654-4df9-8903-8f797cbfe8eb\"\n})",
-                "go": "response, err := client.Assets.Rules.Pull(\n    context.Background(),\n    \"2855f8da-2654-4df9-8903-8f797cbfe8eb\",\n)",
-                "csharp": "var result = await client.Assets.Rules.PullAsync(\n    \"2855f8da-2654-4df9-8903-8f797cbfe8eb\");",
-                "java": "var result = client.assets().rules().pull(\n    \"2855f8da-2654-4df9-8903-8f797cbfe8eb\");",
-                "ruby": "result = client.assets.rules.pull(\n    id: '2855f8da-2654-4df9-8903-8f797cbfe8eb'\n)"
-              },
-              "exampleOutput": {
-                "id": "2855f8da-2654-4df9-8903-8f797cbfe8eb",
-                "name": "Pricing Rule",
-                "slug": "pricing-rule",
-                "description": "Calculate product pricing",
-                "requestSchema": [
-                  { "key": "quantity", "name": "Quantity", "type": "number" },
-                  {
-                    "key": "product_type",
-                    "name": "Product Type",
-                    "type": "string"
-                  }
-                ],
-                "responseSchema": [
-                  { "key": "price", "name": "Price", "type": "number" },
-                  { "key": "discount", "name": "Discount", "type": "number" }
-                ],
-                "conditions": []
-              }
-            },
-            {
-              "name": "push",
-              "description": "Push a rule definition to create or update a rule.",
-              "parameters": [
-                {
-                  "name": "rule",
-                  "type": "object",
-                  "required": true,
-                  "description": "The complete rule definition to push."
-                }
-              ],
-              "returns": {
-                "type": "Rule",
-                "description": "The created or updated rule."
-              },
-              "examples": {
-                "python": "client.assets.rules.push(\n    rule={\n        \"name\": \"Pricing Rule\",\n        \"slug\": \"pricing-rule\",\n        \"requestSchema\": [...],\n        \"responseSchema\": [...],\n        \"conditions\": [...]\n    },\n)",
-                "typescript": "await client.assets.rules.push({\n    rule: {\n        name: \"Pricing Rule\",\n        slug: \"pricing-rule\",\n        requestSchema: [...],\n        responseSchema: [...],\n        conditions: [...]\n    }\n})",
-                "go": "response, err := client.Assets.Rules.Push(\n    context.Background(),\n    &rulebricks.PushRuleRequest{\n        Rule: ruleDefinition,\n    },\n)",
-                "csharp": "var result = await client.Assets.Rules.PushAsync(\n    ruleDefinition);",
-                "java": "var result = client.assets().rules().push(\n    ruleDefinition);",
-                "ruby": "result = client.assets.rules.push(\n    rule: rule_definition\n)"
-              },
-              "exampleOutput": {
-                "id": "2855f8da-2654-4df9-8903-8f797cbfe8eb",
-                "name": "Pricing Rule",
-                "slug": "pricing-rule",
-                "published": true,
-                "updatedAt": "2024-01-15T10:30:00Z"
-              }
-            }
-          ]
-        },
-        {
-          "name": "flows",
-          "description": "Operations for managing flow assets",
-          "methods": [
-            {
-              "name": "list",
-              "description": "List all flows in the organization.",
-              "parameters": [
-                {
-                  "name": "folder",
-                  "type": "string",
-                  "required": false,
-                  "description": "Filter by folder name or ID."
-                }
-              ],
-              "returns": { "type": "Flow[]", "description": "List of flows." },
-              "examples": {
-                "python": "client.assets.flows.list(\n    folder=\"Onboarding\",\n)",
-                "typescript": "await client.assets.flows.list({\n    folder: \"Onboarding\"\n})",
-                "go": "response, err := client.Assets.Flows.List(\n    context.Background(),\n    &rulebricks.ListFlowsRequest{\n        Folder: rulebricks.String(\"Onboarding\"),\n    },\n)",
-                "csharp": "var result = await client.Assets.Flows.ListAsync(\n    folder: \"Onboarding\");",
-                "java": "var result = client.assets().flows().list(\n    ListFlowsRequest.builder()\n        .folder(\"Onboarding\")\n        .build()\n);",
-                "ruby": "result = client.assets.flows.list(\n    folder: 'Onboarding'\n)"
-              },
-              "exampleOutput": [
-                {
-                  "id": "3966f9eb-3765-5e0a-9014-9g898dcgf9fc",
-                  "name": "Onboarding Flow",
-                  "slug": "onboarding-flow",
-                  "description": "New user onboarding workflow",
-                  "folder": "Onboarding",
-                  "published": true,
-                  "createdAt": "2024-01-01T00:00:00Z",
-                  "updatedAt": "2024-01-15T10:30:00Z"
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "name": "folders",
-          "description": "Operations for managing rule folders",
-          "methods": [
-            {
-              "name": "list",
-              "description": "Retrieve all rule folders for the authenticated user.",
-              "parameters": [],
-              "returns": {
-                "type": "Folder[]",
-                "description": "List of folders."
-              },
-              "examples": {
-                "python": "client.assets.folders.list()",
-                "typescript": "await client.assets.folders.list()",
-                "go": "response, err := client.Assets.Folders.List(\n    context.Background())",
-                "csharp": "var result = await client.Assets.Folders.ListAsync();",
-                "java": "var result = client.assets().folders().list();",
-                "ruby": "result = client.assets.folders.list()"
-              },
-              "exampleOutput": [
-                {
-                  "id": "4a77g0fc-4876-6f1b-0125-0h909edh0gd",
-                  "name": "Marketing Rules",
-                  "description": "Rules for marketing campaigns",
-                  "ruleCount": 5,
-                  "createdAt": "2024-01-01T00:00:00Z"
-                }
-              ]
-            },
-            {
-              "name": "upsert",
-              "description": "Create a new rule folder or update an existing one.",
-              "parameters": [
-                {
-                  "name": "name",
-                  "type": "string",
-                  "required": true,
-                  "description": "Name of the folder."
-                },
-                {
-                  "name": "description",
-                  "type": "string",
-                  "required": false,
-                  "description": "Description of the folder."
-                }
-              ],
-              "returns": {
-                "type": "Folder",
-                "description": "The created or updated folder."
-              },
-              "examples": {
-                "python": "client.assets.folders.upsert(\n    name=\"Marketing Rules\",\n    description=\"Rules for marketing\",\n)",
-                "typescript": "await client.assets.folders.upsert({\n    name: \"Marketing Rules\",\n    description: \"Rules for marketing\"\n})",
-                "go": "response, err := client.Assets.Folders.Upsert(\n    context.Background(),\n    &rulebricks.UpsertFolderRequest{\n        Name: \"Marketing Rules\",\n        Description: rulebricks.String(\"Rules for marketing\"),\n    },\n)",
-                "csharp": "var result = await client.Assets.Folders.UpsertAsync(\n    \"Marketing Rules\", \"Rules for marketing\");",
-                "java": "var result = client.assets().folders().upsert(\n    UpsertFolderRequest.builder()\n        .name(\"Marketing Rules\")\n        .description(\"Rules for marketing\")\n        .build()\n);",
-                "ruby": "result = client.assets.folders.upsert(\n    name: 'Marketing Rules',\n    description: 'Rules for marketing'\n)"
-              },
-              "exampleOutput": {
-                "id": "4a77g0fc-4876-6f1b-0125-0h909edh0gd",
-                "name": "Marketing Rules",
-                "description": "Rules for marketing",
-                "ruleCount": 0,
-                "createdAt": "2024-01-15T10:30:00Z"
-              }
-            },
-            {
-              "name": "delete",
-              "description": "Delete a specific folder by its ID.",
-              "parameters": [
-                {
-                  "name": "id",
-                  "type": "string",
-                  "required": true,
-                  "description": "The UUID of the folder to delete."
-                }
-              ],
-              "returns": {
-                "type": "DeleteResponse",
-                "description": "Confirmation of deletion."
-              },
-              "examples": {
-                "python": "client.assets.folders.delete(\n    id=\"4a77g0fc-4876-6f1b-0125-0h909edh0gd\",\n)",
-                "typescript": "await client.assets.folders.delete({\n    id: \"4a77g0fc-4876-6f1b-0125-0h909edh0gd\"\n})",
-                "go": "response, err := client.Assets.Folders.Delete(\n    context.Background(),\n    \"4a77g0fc-4876-6f1b-0125-0h909edh0gd\",\n)",
-                "csharp": "await client.Assets.Folders.DeleteAsync(\n    \"4a77g0fc-4876-6f1b-0125-0h909edh0gd\");",
-                "java": "client.assets().folders().delete(\n    \"4a77g0fc-4876-6f1b-0125-0h909edh0gd\");",
-                "ruby": "client.assets.folders.delete(\n    id: '4a77g0fc-4876-6f1b-0125-0h909edh0gd'\n)"
-              },
-              "exampleOutput": {
-                "success": true,
-                "message": "Folder deleted successfully"
+                "message": "Relationship deleted successfully."
               }
             }
           ]
@@ -1325,698 +1648,254 @@
     },
     {
       "name": "Tests",
-      "description": "Operations for managing test cases for rules and flows",
+      "description": "Administrative operations for programmatically managing test suites for rules and flows",
+      "methods": [],
       "subResources": [
         {
           "name": "rules",
-          "description": "Operations for managing test cases for rules",
+          "description": "Manage tests for rules",
           "methods": [
             {
               "name": "list",
-              "description": "List all test cases for a specific rule.",
+              "description": "Retrieves a list of tests associated with a rule.",
               "parameters": [
                 {
-                  "name": "ruleId",
+                  "name": "slug",
                   "type": "string",
                   "required": true,
-                  "description": "The UUID of the rule to list tests for."
+                  "description": "The unique identifier (slug) for the rule."
                 }
               ],
               "returns": {
-                "type": "RuleTest[]",
-                "description": "List of test cases for the rule."
+                "type": "TestListResponse",
+                "description": "List of tests for the rule."
               },
               "examples": {
-                "python": "client.tests.rules.list(\n    rule_id=\"2855f8da-2654-4df9-8903-8f797cbfe8eb\",\n)",
-                "typescript": "await client.tests.rules.list({\n    ruleId: \"2855f8da-2654-4df9-8903-8f797cbfe8eb\"\n})",
-                "go": "response, err := client.Tests.Rules.List(\n    context.Background(),\n    \"2855f8da-2654-4df9-8903-8f797cbfe8eb\",\n)",
-                "csharp": "var result = await client.Tests.Rules.ListAsync(\n    \"2855f8da-2654-4df9-8903-8f797cbfe8eb\");",
-                "java": "var result = client.tests().rules().list(\n    \"2855f8da-2654-4df9-8903-8f797cbfe8eb\");",
-                "ruby": "result = client.tests.rules.list(\n    rule_id: '2855f8da-2654-4df9-8903-8f797cbfe8eb'\n)"
+                "python": "client.tests.rules.list(\n    slug=\"slug\",\n)",
+                "typescript": "await client.tests.rules.list({\n    slug: \"slug\"\n})",
+                "go": "request := &tests.ListRulesTestsRequest{\n    Slug: \"slug\",\n}\nclient.Tests.Rules.List(context.TODO(), request)",
+                "csharp": "await client.Tests.Rules.ListAsync(\n    new ListRulesTestsRequest { Slug = \"slug\" }\n);",
+                "java": "client.tests().rules().list(\"slug\");",
+                "ruby": "client.tests.rules.list(slug: 'slug')"
               },
               "exampleOutput": [
                 {
-                  "id": "test-001",
-                  "name": "Valid user eligibility",
-                  "request": { "name": "John", "age": 30 },
-                  "expectedResponse": { "eligible": true },
-                  "createdAt": "2024-01-01T00:00:00Z"
-                },
-                {
-                  "id": "test-002",
-                  "name": "Underage user",
-                  "request": { "name": "Jane", "age": 17 },
-                  "expectedResponse": { "eligible": false },
-                  "createdAt": "2024-01-02T00:00:00Z"
+                  "id": "test-123",
+                  "name": "Test 1",
+                  "request": { "param1": "value1" },
+                  "response": { "status": "success" },
+                  "critical": true
                 }
               ]
             },
             {
               "name": "create",
-              "description": "Create a new test case for a rule.",
+              "description": "Adds a new test to the test suite of a rule.",
               "parameters": [
                 {
-                  "name": "ruleId",
+                  "name": "slug",
                   "type": "string",
                   "required": true,
-                  "description": "The UUID of the rule to create a test for."
+                  "description": "The unique identifier (slug) for the rule."
                 },
                 {
                   "name": "name",
                   "type": "string",
                   "required": true,
-                  "description": "Name of the test case."
+                  "description": "The name of the test."
                 },
                 {
                   "name": "request",
                   "type": "object",
                   "required": true,
-                  "description": "The request payload for the test."
+                  "description": "The request object for the test."
                 },
                 {
-                  "name": "expectedResponse",
+                  "name": "response",
                   "type": "object",
                   "required": true,
-                  "description": "The expected response payload."
+                  "description": "The expected response object for the test."
                 },
                 {
                   "name": "critical",
                   "type": "boolean",
-                  "required": false,
-                  "description": "Whether this test is critical (blocks publishing)."
+                  "required": true,
+                  "description": "Indicates whether the test is critical."
                 }
               ],
-              "returns": {
-                "type": "RuleTest",
-                "description": "The created test case."
-              },
+              "returns": { "type": "Test", "description": "Created test." },
               "examples": {
-                "python": "client.tests.rules.create(\n    rule_id=\"2855f8da-2654-4df9-8903-8f797cbfe8eb\",\n    name=\"Valid user eligibility\",\n    request={\"name\": \"John\", \"age\": 30},\n    expected_response={\"eligible\": True},\n    critical=True,\n)",
-                "typescript": "await client.tests.rules.create({\n    ruleId: \"2855f8da-2654-4df9-8903-8f797cbfe8eb\",\n    name: \"Valid user eligibility\",\n    request: { name: \"John\", age: 30 },\n    expectedResponse: { eligible: true },\n    critical: true\n})",
-                "go": "response, err := client.Tests.Rules.Create(\n    context.Background(),\n    &rulebricks.CreateRuleTestRequest{\n        RuleId: \"2855f8da-2654-4df9-8903-8f797cbfe8eb\",\n        Name: \"Valid user eligibility\",\n        Request: map[string]interface{}{\"name\": \"John\", \"age\": 30},\n        ExpectedResponse: map[string]interface{}{\"eligible\": true},\n        Critical: rulebricks.Bool(true),\n    },\n)",
-                "csharp": "var result = await client.Tests.Rules.CreateAsync(\n    ruleId: \"2855f8da-2654-4df9-8903-8f797cbfe8eb\",\n    name: \"Valid user eligibility\",\n    request: new Dictionary<string, object> { { \"name\", \"John\" }, { \"age\", 30 } },\n    expectedResponse: new Dictionary<string, object> { { \"eligible\", true } },\n    critical: true\n);",
-                "java": "var result = client.tests().rules().create(\n    CreateRuleTestRequest.builder()\n        .ruleId(\"2855f8da-2654-4df9-8903-8f797cbfe8eb\")\n        .name(\"Valid user eligibility\")\n        .request(Map.of(\"name\", \"John\", \"age\", 30))\n        .expectedResponse(Map.of(\"eligible\", true))\n        .critical(true)\n        .build()\n);",
-                "ruby": "result = client.tests.rules.create(\n    rule_id: '2855f8da-2654-4df9-8903-8f797cbfe8eb',\n    name: 'Valid user eligibility',\n    request: { name: 'John', age: 30 },\n    expected_response: { eligible: true },\n    critical: true\n)"
+                "python": "client.tests.rules.create(\n    slug=\"slug\",\n    name=\"Test 3\",\n    request={\"param1\": \"value1\"},\n    response={\"status\": \"success\"},\n    critical=True,\n)",
+                "typescript": "await client.tests.rules.create({\n    slug: \"slug\",\n    name: \"Test 3\",\n    request: { param1: \"value1\" },\n    response: { status: \"success\" },\n    critical: true\n})",
+                "go": "request := &tests.CreateRulesTestsRequest{\n    Slug: \"slug\",\n    Name: \"Test 3\",\n    Request: map[string]any{\"param1\": \"value1\"},\n    Response: map[string]any{\"status\": \"success\"},\n    Critical: true,\n}\nclient.Tests.Rules.Create(context.TODO(), request)",
+                "csharp": "await client.Tests.Rules.CreateAsync(\n    new CreateRulesTestsRequest\n    {\n        Slug = \"slug\",\n        Name = \"Test 3\",\n        Request = new Dictionary<string, object?> { { \"param1\", \"value1\" } },\n        Response = new Dictionary<string, object?> { { \"status\", \"success\" } },\n        Critical = true,\n    }\n);",
+                "java": "client.tests().rules().create(CreateRulesTestsRequest.builder()\n    .slug(\"slug\")\n    .name(\"Test 3\")\n    .request(Map.of(\"param1\", \"value1\"))\n    .response(Map.of(\"status\", \"success\"))\n    .critical(true)\n    .build());",
+                "ruby": "client.tests.rules.create(\n  slug: 'slug',\n  name: 'Test 3',\n  request: { param1: 'value1' },\n  response: { status: 'success' },\n  critical: true\n)"
               },
               "exampleOutput": {
-                "id": "test-003",
-                "name": "Valid user eligibility",
-                "request": { "name": "John", "age": 30 },
-                "expectedResponse": { "eligible": true },
-                "critical": true,
-                "createdAt": "2024-01-15T10:30:00Z"
+                "id": "new-test-id-123",
+                "name": "Test 3",
+                "request": { "param1": "value1" },
+                "response": { "status": "success" },
+                "critical": true
               }
             },
             {
               "name": "delete",
-              "description": "Delete a specific test case from a rule.",
+              "description": "Deletes a test from the test suite of a rule.",
               "parameters": [
                 {
-                  "name": "ruleId",
+                  "name": "slug",
                   "type": "string",
                   "required": true,
-                  "description": "The UUID of the rule."
+                  "description": "The unique identifier (slug) for the rule."
                 },
                 {
-                  "name": "testId",
+                  "name": "test_id",
                   "type": "string",
                   "required": true,
-                  "description": "The ID of the test case to delete."
+                  "description": "The ID of the test to delete."
                 }
               ],
-              "returns": {
-                "type": "DeleteResponse",
-                "description": "Confirmation of deletion."
-              },
+              "returns": { "type": "Test", "description": "Deleted test." },
               "examples": {
-                "python": "client.tests.rules.delete(\n    rule_id=\"2855f8da-2654-4df9-8903-8f797cbfe8eb\",\n    test_id=\"test-001\",\n)",
-                "typescript": "await client.tests.rules.delete({\n    ruleId: \"2855f8da-2654-4df9-8903-8f797cbfe8eb\",\n    testId: \"test-001\"\n})",
-                "go": "response, err := client.Tests.Rules.Delete(\n    context.Background(),\n    \"2855f8da-2654-4df9-8903-8f797cbfe8eb\",\n    \"test-001\",\n)",
-                "csharp": "await client.Tests.Rules.DeleteAsync(\n    \"2855f8da-2654-4df9-8903-8f797cbfe8eb\",\n    \"test-001\");",
-                "java": "client.tests().rules().delete(\n    \"2855f8da-2654-4df9-8903-8f797cbfe8eb\",\n    \"test-001\");",
-                "ruby": "client.tests.rules.delete(\n    rule_id: '2855f8da-2654-4df9-8903-8f797cbfe8eb',\n    test_id: 'test-001'\n)"
+                "python": "client.tests.rules.delete(\n    slug=\"slug\",\n    test_id=\"testId\",\n)",
+                "typescript": "await client.tests.rules.delete({\n    slug: \"slug\",\n    testId: \"testId\"\n})",
+                "go": "request := &tests.DeleteRulesTestsRequest{\n    Slug: \"slug\",\n    TestId: \"testId\",\n}\nclient.Tests.Rules.Delete(context.TODO(), request)",
+                "csharp": "await client.Tests.Rules.DeleteAsync(\n    new DeleteRulesTestsRequest\n    {\n        Slug = \"slug\",\n        TestId = \"testId\",\n    }\n);",
+                "java": "client.tests().rules().delete(\"slug\", \"testId\");",
+                "ruby": "client.tests.rules.delete(\n  slug: 'slug',\n  test_id: 'testId'\n)"
               },
               "exampleOutput": {
-                "success": true,
-                "message": "Test case deleted successfully"
+                "id": "testId",
+                "name": "Test 3",
+                "deleted": true
               }
             }
           ]
         },
         {
           "name": "flows",
-          "description": "Operations for managing test cases for flows",
+          "description": "Manage tests for flows",
           "methods": [
             {
               "name": "list",
-              "description": "List all test cases for a specific flow.",
+              "description": "Retrieves a list of tests associated with a flow.",
               "parameters": [
                 {
-                  "name": "flowId",
+                  "name": "slug",
                   "type": "string",
                   "required": true,
-                  "description": "The UUID of the flow to list tests for."
+                  "description": "The unique identifier (slug) for the flow."
                 }
               ],
               "returns": {
-                "type": "FlowTest[]",
-                "description": "List of test cases for the flow."
+                "type": "TestListResponse",
+                "description": "List of tests for the flow."
               },
               "examples": {
-                "python": "client.tests.flows.list(\n    flow_id=\"3966f9eb-3765-5e0a-9014-9g898dcgf9fc\",\n)",
-                "typescript": "await client.tests.flows.list({\n    flowId: \"3966f9eb-3765-5e0a-9014-9g898dcgf9fc\"\n})",
-                "go": "response, err := client.Tests.Flows.List(\n    context.Background(),\n    \"3966f9eb-3765-5e0a-9014-9g898dcgf9fc\",\n)",
-                "csharp": "var result = await client.Tests.Flows.ListAsync(\n    \"3966f9eb-3765-5e0a-9014-9g898dcgf9fc\");",
-                "java": "var result = client.tests().flows().list(\n    \"3966f9eb-3765-5e0a-9014-9g898dcgf9fc\");",
-                "ruby": "result = client.tests.flows.list(\n    flow_id: '3966f9eb-3765-5e0a-9014-9g898dcgf9fc'\n)"
+                "python": "client.tests.flows.list(\n    slug=\"slug\",\n)",
+                "typescript": "await client.tests.flows.list({\n    slug: \"slug\"\n})",
+                "go": "request := &tests.ListFlowsTestsRequest{\n    Slug: \"slug\",\n}\nclient.Tests.Flows.List(context.TODO(), request)",
+                "csharp": "await client.Tests.Flows.ListAsync(\n    new ListFlowsTestsRequest { Slug = \"slug\" }\n);",
+                "java": "client.tests().flows().list(\"slug\");",
+                "ruby": "client.tests.flows.list(slug: 'slug')"
               },
               "exampleOutput": [
                 {
-                  "id": "flow-test-001",
-                  "name": "Standard onboarding",
-                  "request": { "user_type": "standard", "region": "US" },
-                  "expectedResponse": {
-                    "steps": ["welcome", "profile", "preferences"]
-                  },
-                  "createdAt": "2024-01-01T00:00:00Z"
+                  "id": "test-flow-123",
+                  "name": "Flow Test 1",
+                  "request": { "param1": "value1" },
+                  "response": { "status": "success" },
+                  "critical": true
                 }
               ]
             },
             {
               "name": "create",
-              "description": "Create a new test case for a flow.",
+              "description": "Adds a new test to the test suite of a flow.",
               "parameters": [
                 {
-                  "name": "flowId",
+                  "name": "slug",
                   "type": "string",
                   "required": true,
-                  "description": "The UUID of the flow to create a test for."
+                  "description": "The unique identifier (slug) for the flow."
                 },
                 {
                   "name": "name",
                   "type": "string",
                   "required": true,
-                  "description": "Name of the test case."
+                  "description": "The name of the test."
                 },
                 {
                   "name": "request",
                   "type": "object",
                   "required": true,
-                  "description": "The request payload for the test."
+                  "description": "The request object for the test."
                 },
                 {
-                  "name": "expectedResponse",
+                  "name": "response",
                   "type": "object",
                   "required": true,
-                  "description": "The expected response payload."
+                  "description": "The expected response object for the test."
                 },
                 {
                   "name": "critical",
                   "type": "boolean",
-                  "required": false,
-                  "description": "Whether this test is critical (blocks publishing)."
+                  "required": true,
+                  "description": "Indicates whether the test is critical."
                 }
               ],
-              "returns": {
-                "type": "FlowTest",
-                "description": "The created test case."
-              },
+              "returns": { "type": "Test", "description": "Created test." },
               "examples": {
-                "python": "client.tests.flows.create(\n    flow_id=\"3966f9eb-3765-5e0a-9014-9g898dcgf9fc\",\n    name=\"Premium onboarding\",\n    request={\"user_type\": \"premium\", \"region\": \"EU\"},\n    expected_response={\"steps\": [\"welcome\", \"vip_profile\", \"concierge\"]},\n    critical=True,\n)",
-                "typescript": "await client.tests.flows.create({\n    flowId: \"3966f9eb-3765-5e0a-9014-9g898dcgf9fc\",\n    name: \"Premium onboarding\",\n    request: { user_type: \"premium\", region: \"EU\" },\n    expectedResponse: { steps: [\"welcome\", \"vip_profile\", \"concierge\"] },\n    critical: true\n})",
-                "go": "response, err := client.Tests.Flows.Create(\n    context.Background(),\n    &rulebricks.CreateFlowTestRequest{\n        FlowId: \"3966f9eb-3765-5e0a-9014-9g898dcgf9fc\",\n        Name: \"Premium onboarding\",\n        Request: map[string]interface{}{\"user_type\": \"premium\", \"region\": \"EU\"},\n        ExpectedResponse: map[string]interface{}{\"steps\": []string{\"welcome\", \"vip_profile\", \"concierge\"}},\n        Critical: rulebricks.Bool(true),\n    },\n)",
-                "csharp": "var result = await client.Tests.Flows.CreateAsync(\n    flowId: \"3966f9eb-3765-5e0a-9014-9g898dcgf9fc\",\n    name: \"Premium onboarding\",\n    request: new Dictionary<string, object> { { \"user_type\", \"premium\" }, { \"region\", \"EU\" } },\n    expectedResponse: new Dictionary<string, object> { { \"steps\", new[] { \"welcome\", \"vip_profile\", \"concierge\" } } },\n    critical: true\n);",
-                "java": "var result = client.tests().flows().create(\n    CreateFlowTestRequest.builder()\n        .flowId(\"3966f9eb-3765-5e0a-9014-9g898dcgf9fc\")\n        .name(\"Premium onboarding\")\n        .request(Map.of(\"user_type\", \"premium\", \"region\", \"EU\"))\n        .expectedResponse(Map.of(\"steps\", List.of(\"welcome\", \"vip_profile\", \"concierge\")))\n        .critical(true)\n        .build()\n);",
-                "ruby": "result = client.tests.flows.create(\n    flow_id: '3966f9eb-3765-5e0a-9014-9g898dcgf9fc',\n    name: 'Premium onboarding',\n    request: { user_type: 'premium', region: 'EU' },\n    expected_response: { steps: ['welcome', 'vip_profile', 'concierge'] },\n    critical: true\n)"
+                "python": "client.tests.flows.create(\n    slug=\"slug\",\n    name=\"Test 3\",\n    request={\"param1\": \"value1\"},\n    response={\"status\": \"success\"},\n    critical=True,\n)",
+                "typescript": "await client.tests.flows.create({\n    slug: \"slug\",\n    name: \"Test 3\",\n    request: { param1: \"value1\" },\n    response: { status: \"success\" },\n    critical: true\n})",
+                "go": "request := &tests.CreateFlowsTestsRequest{\n    Slug: \"slug\",\n    Name: \"Test 3\",\n    Request: map[string]any{\"param1\": \"value1\"},\n    Response: map[string]any{\"status\": \"success\"},\n    Critical: true,\n}\nclient.Tests.Flows.Create(context.TODO(), request)",
+                "csharp": "await client.Tests.Flows.CreateAsync(\n    new CreateFlowsTestsRequest\n    {\n        Slug = \"slug\",\n        Name = \"Test 3\",\n        Request = new Dictionary<string, object?> { { \"param1\", \"value1\" } },\n        Response = new Dictionary<string, object?> { { \"status\", \"success\" } },\n        Critical = true,\n    }\n);",
+                "java": "client.tests().flows().create(CreateFlowsTestsRequest.builder()\n    .slug(\"slug\")\n    .name(\"Test 3\")\n    .request(Map.of(\"param1\", \"value1\"))\n    .response(Map.of(\"status\", \"success\"))\n    .critical(true)\n    .build());",
+                "ruby": "client.tests.flows.create(\n  slug: 'slug',\n  name: 'Test 3',\n  request: { param1: 'value1' },\n  response: { status: 'success' },\n  critical: true\n)"
               },
               "exampleOutput": {
-                "id": "flow-test-002",
-                "name": "Premium onboarding",
-                "request": { "user_type": "premium", "region": "EU" },
-                "expectedResponse": {
-                  "steps": ["welcome", "vip_profile", "concierge"]
-                },
-                "critical": true,
-                "createdAt": "2024-01-15T10:30:00Z"
+                "id": "new-flow-test-id-123",
+                "name": "Test 3",
+                "request": { "param1": "value1" },
+                "response": { "status": "success" },
+                "critical": true
               }
             },
             {
               "name": "delete",
-              "description": "Delete a specific test case from a flow.",
+              "description": "Deletes a test from the test suite of a flow.",
               "parameters": [
                 {
-                  "name": "flowId",
+                  "name": "slug",
                   "type": "string",
                   "required": true,
-                  "description": "The UUID of the flow."
+                  "description": "The unique identifier (slug) for the flow."
                 },
                 {
-                  "name": "testId",
+                  "name": "test_id",
                   "type": "string",
                   "required": true,
-                  "description": "The ID of the test case to delete."
+                  "description": "The ID of the test to delete."
                 }
               ],
-              "returns": {
-                "type": "DeleteResponse",
-                "description": "Confirmation of deletion."
-              },
+              "returns": { "type": "Test", "description": "Deleted test." },
               "examples": {
-                "python": "client.tests.flows.delete(\n    flow_id=\"3966f9eb-3765-5e0a-9014-9g898dcgf9fc\",\n    test_id=\"flow-test-001\",\n)",
-                "typescript": "await client.tests.flows.delete({\n    flowId: \"3966f9eb-3765-5e0a-9014-9g898dcgf9fc\",\n    testId: \"flow-test-001\"\n})",
-                "go": "response, err := client.Tests.Flows.Delete(\n    context.Background(),\n    \"3966f9eb-3765-5e0a-9014-9g898dcgf9fc\",\n    \"flow-test-001\",\n)",
-                "csharp": "await client.Tests.Flows.DeleteAsync(\n    \"3966f9eb-3765-5e0a-9014-9g898dcgf9fc\",\n    \"flow-test-001\");",
-                "java": "client.tests().flows().delete(\n    \"3966f9eb-3765-5e0a-9014-9g898dcgf9fc\",\n    \"flow-test-001\");",
-                "ruby": "client.tests.flows.delete(\n    flow_id: '3966f9eb-3765-5e0a-9014-9g898dcgf9fc',\n    test_id: 'flow-test-001'\n)"
+                "python": "client.tests.flows.delete(\n    slug=\"slug\",\n    test_id=\"testId\",\n)",
+                "typescript": "await client.tests.flows.delete({\n    slug: \"slug\",\n    testId: \"testId\"\n})",
+                "go": "request := &tests.DeleteFlowsTestsRequest{\n    Slug: \"slug\",\n    TestId: \"testId\",\n}\nclient.Tests.Flows.Delete(context.TODO(), request)",
+                "csharp": "await client.Tests.Flows.DeleteAsync(\n    new DeleteFlowsTestsRequest\n    {\n        Slug = \"slug\",\n        TestId = \"testId\",\n    }\n);",
+                "java": "client.tests().flows().delete(\"slug\", \"testId\");",
+                "ruby": "client.tests.flows.delete(\n  slug: 'slug',\n  test_id: 'testId'\n)"
               },
               "exampleOutput": {
-                "success": true,
-                "message": "Test case deleted successfully"
+                "id": "testId",
+                "name": "Test 3",
+                "deleted": true
               }
             }
           ]
-        }
-      ]
-    },
-    {
-      "name": "Decisions",
-      "description": "Query highly detailed logs of prior rule executions within the last 90 days",
-      "methods": [
-        {
-          "name": "query",
-          "description": "Query decision logs with support for the decision data query language, rule/status filters, date ranges, and pagination.",
-          "parameters": [
-            {
-              "name": "search",
-              "type": "string",
-              "required": false,
-              "description": "Search query using decision data query language."
-            },
-            {
-              "name": "rules",
-              "type": "string",
-              "required": false,
-              "description": "Comma-separated list of rule names to filter."
-            },
-            {
-              "name": "statuses",
-              "type": "string",
-              "required": false,
-              "description": "Comma-separated list of status codes (200, 400, 500)."
-            },
-            {
-              "name": "start",
-              "type": "string",
-              "required": false,
-              "description": "Start date for filtering logs (ISO 8601 format)."
-            },
-            {
-              "name": "end",
-              "type": "string",
-              "required": false,
-              "description": "End date for filtering logs (ISO 8601 format)."
-            },
-            {
-              "name": "cursor",
-              "type": "string",
-              "required": false,
-              "description": "Cursor for pagination."
-            },
-            {
-              "name": "limit",
-              "type": "integer",
-              "required": false,
-              "description": "Maximum number of results to return (default 50, max 100)."
-            },
-            {
-              "name": "count",
-              "type": "boolean",
-              "required": false,
-              "description": "If true, returns only the count of matching logs."
-            }
-          ],
-          "returns": {
-            "type": "DecisionLogResponse",
-            "description": "Decision log entries with pagination information."
-          },
-          "examples": {
-            "python": "client.decisions.query(\n    search=\"status=200\",\n    rules=\"Lead Qualification,Pricing\",\n    statuses=\"200,400\",\n    start=\"2024-01-01T00:00:00Z\",\n    end=\"2024-01-31T23:59:59Z\",\n    limit=50,\n)",
-            "typescript": "await client.decisions.query({\n    search: \"status=200\",\n    rules: \"Lead Qualification,Pricing\",\n    statuses: \"200,400\",\n    start: \"2024-01-01T00:00:00Z\",\n    end: \"2024-01-31T23:59:59Z\",\n    limit: 50\n})",
-            "go": "response, err := client.Decisions.Query(\n    context.Background(),\n    &rulebricks.QueryDecisionsRequest{\n        Search: rulebricks.String(\"status=200\"),\n        Rules: rulebricks.String(\"Lead Qualification,Pricing\"),\n        Statuses: rulebricks.String(\"200,400\"),\n        Start: rulebricks.String(\"2024-01-01T00:00:00Z\"),\n        End: rulebricks.String(\"2024-01-31T23:59:59Z\"),\n        Limit: rulebricks.Int(50),\n    },\n)",
-            "csharp": "var result = await client.Decisions.QueryAsync(\n    search: \"status=200\",\n    rules: \"Lead Qualification,Pricing\",\n    statuses: \"200,400\",\n    start: \"2024-01-01T00:00:00Z\",\n    end: \"2024-01-31T23:59:59Z\",\n    limit: 50\n);",
-            "java": "var result = client.decisions().query(\n    QueryDecisionsRequest.builder()\n        .search(\"status=200\")\n        .rules(\"Lead Qualification,Pricing\")\n        .statuses(\"200,400\")\n        .start(\"2024-01-01T00:00:00Z\")\n        .end(\"2024-01-31T23:59:59Z\")\n        .limit(50)\n        .build()\n);",
-            "ruby": "result = client.decisions.query(\n    search: 'status=200',\n    rules: 'Lead Qualification,Pricing',\n    statuses: '200,400',\n    start: '2024-01-01T00:00:00Z',\n    end_: '2024-01-31T23:59:59Z',\n    limit: 50\n)"
-          },
-          "exampleOutput": {
-            "logs": [
-              {
-                "id": "550e8400-e29b-41d4-a716-446655440000",
-                "ruleName": "Lead Qualification",
-                "ruleSlug": "lead-qualification",
-                "status": 200,
-                "request": { "lead_score": 85, "company_size": "enterprise" },
-                "response": { "qualified": true, "tier": "premium" },
-                "createdAt": "2024-01-15T10:30:00Z",
-                "duration": 12
-              }
-            ],
-            "cursor": "eyJsYXN0SWQiOiI1NTBlODQwMC1lMjliLTQxZDQifQ==",
-            "hasMore": true
-          }
-        }
-      ]
-    },
-    {
-      "name": "Users",
-      "description": "Operations for managing users on your team and their permissions",
-      "methods": [
-        {
-          "name": "invite",
-          "description": "Invite a new user to the organization or update role/access for an existing user.",
-          "parameters": [
-            {
-              "name": "email",
-              "type": "string",
-              "required": true,
-              "description": "Email address of the user."
-            },
-            {
-              "name": "role",
-              "type": "string",
-              "required": false,
-              "description": "Role to assign (admin, developer, viewer)."
-            },
-            {
-              "name": "accessGroups",
-              "type": "string[]",
-              "required": false,
-              "description": "Access groups to assign."
-            }
-          ],
-          "returns": {
-            "type": "User",
-            "description": "The invited or updated user."
-          },
-          "examples": {
-            "python": "client.users.invite(\n    email=\"newuser@example.com\",\n    role=\"developer\",\n    access_groups=[\"group1\", \"group2\"],\n)",
-            "typescript": "await client.users.invite({\n    email: \"newuser@example.com\",\n    role: \"developer\",\n    accessGroups: [\"group1\", \"group2\"]\n})",
-            "go": "response, err := client.Users.Invite(\n    context.Background(),\n    &rulebricks.UserInviteRequest{\n        Email: \"newuser@example.com\",\n        Role: rulebricks.String(\"developer\"),\n        AccessGroups: []string{\"group1\"},\n    },\n)",
-            "csharp": "var result = await client.Users.InviteAsync(\n    email: \"newuser@example.com\",\n    role: \"developer\",\n    accessGroups: new[] { \"group1\" }\n);",
-            "java": "var result = client.users().invite(\n    UserInviteRequest.builder()\n        .email(\"newuser@example.com\")\n        .role(\"developer\")\n        .accessGroups(List.of(\"group1\"))\n        .build()\n);",
-            "ruby": "result = client.users.invite(\n    email: 'newuser@example.com',\n    role: 'developer',\n    access_groups: ['group1']\n)"
-          },
-          "exampleOutput": {
-            "id": "user-550e8400-e29b-41d4",
-            "email": "newuser@example.com",
-            "role": "developer",
-            "accessGroups": ["group1"],
-            "status": "invited",
-            "createdAt": "2024-01-15T10:30:00Z"
-          }
-        },
-        {
-          "name": "list",
-          "description": "List all users in the organization with their details.",
-          "parameters": [],
-          "returns": { "type": "User[]", "description": "List of users." },
-          "examples": {
-            "python": "client.users.list()",
-            "typescript": "await client.users.list()",
-            "go": "response, err := client.Users.List(\n    context.Background())",
-            "csharp": "var result = await client.Users.ListAsync();",
-            "java": "var result = client.users().list();",
-            "ruby": "result = client.users.list()"
-          },
-          "exampleOutput": [
-            {
-              "id": "user-550e8400-e29b-41d4",
-              "email": "admin@example.com",
-              "name": "John Admin",
-              "role": "admin",
-              "accessGroups": [],
-              "status": "active",
-              "lastLoginAt": "2024-01-15T09:00:00Z"
-            },
-            {
-              "id": "user-660f9511-f30c-52e5",
-              "email": "dev@example.com",
-              "name": "Jane Developer",
-              "role": "developer",
-              "accessGroups": ["marketing", "sales"],
-              "status": "active",
-              "lastLoginAt": "2024-01-14T16:30:00Z"
-            }
-          ]
-        },
-        {
-          "name": "create",
-          "description": "Create a new user directly in the organization (without sending an invite email).",
-          "parameters": [
-            {
-              "name": "email",
-              "type": "string",
-              "required": true,
-              "description": "Email address of the user."
-            },
-            {
-              "name": "name",
-              "type": "string",
-              "required": true,
-              "description": "Full name of the user."
-            },
-            {
-              "name": "role",
-              "type": "string",
-              "required": false,
-              "description": "Role to assign (admin, developer, viewer). Defaults to viewer."
-            },
-            {
-              "name": "accessGroups",
-              "type": "string[]",
-              "required": false,
-              "description": "Access groups to assign to the user."
-            }
-          ],
-          "returns": {
-            "type": "User",
-            "description": "The created user."
-          },
-          "examples": {
-            "python": "client.users.create(\n    email=\"newuser@example.com\",\n    name=\"New User\",\n    role=\"developer\",\n    access_groups=[\"marketing\"],\n)",
-            "typescript": "await client.users.create({\n    email: \"newuser@example.com\",\n    name: \"New User\",\n    role: \"developer\",\n    accessGroups: [\"marketing\"]\n})",
-            "go": "response, err := client.Users.Create(\n    context.Background(),\n    &rulebricks.CreateUserRequest{\n        Email: \"newuser@example.com\",\n        Name: \"New User\",\n        Role: rulebricks.String(\"developer\"),\n        AccessGroups: []string{\"marketing\"},\n    },\n)",
-            "csharp": "var result = await client.Users.CreateAsync(\n    email: \"newuser@example.com\",\n    name: \"New User\",\n    role: \"developer\",\n    accessGroups: new[] { \"marketing\" }\n);",
-            "java": "var result = client.users().create(\n    CreateUserRequest.builder()\n        .email(\"newuser@example.com\")\n        .name(\"New User\")\n        .role(\"developer\")\n        .accessGroups(List.of(\"marketing\"))\n        .build()\n);",
-            "ruby": "result = client.users.create(\n    email: 'newuser@example.com',\n    name: 'New User',\n    role: 'developer',\n    access_groups: ['marketing']\n)"
-          },
-          "exampleOutput": {
-            "id": "user-770g0622-g41d-63f6",
-            "email": "newuser@example.com",
-            "name": "New User",
-            "role": "developer",
-            "accessGroups": ["marketing"],
-            "status": "active",
-            "createdAt": "2024-01-15T10:30:00Z"
-          }
-        }
-      ],
-      "subResources": [
-        {
-          "name": "groups",
-          "description": "Operations for managing user access groups",
-          "methods": [
-            {
-              "name": "list",
-              "description": "List all access groups in the organization.",
-              "parameters": [],
-              "returns": {
-                "type": "AccessGroup[]",
-                "description": "List of access groups."
-              },
-              "examples": {
-                "python": "client.users.groups.list()",
-                "typescript": "await client.users.groups.list()",
-                "go": "response, err := client.Users.Groups.List(\n    context.Background())",
-                "csharp": "var result = await client.Users.Groups.ListAsync();",
-                "java": "var result = client.users().groups().list();",
-                "ruby": "result = client.users.groups.list()"
-              },
-              "exampleOutput": [
-                {
-                  "id": "group-001",
-                  "name": "Marketing",
-                  "description": "Marketing team access",
-                  "memberCount": 5,
-                  "createdAt": "2024-01-01T00:00:00Z"
-                },
-                {
-                  "id": "group-002",
-                  "name": "Sales",
-                  "description": "Sales team access",
-                  "memberCount": 8,
-                  "createdAt": "2024-01-02T00:00:00Z"
-                }
-              ]
-            },
-            {
-              "name": "create",
-              "description": "Create a new access group.",
-              "parameters": [
-                {
-                  "name": "name",
-                  "type": "string",
-                  "required": true,
-                  "description": "Name of the access group."
-                },
-                {
-                  "name": "description",
-                  "type": "string",
-                  "required": false,
-                  "description": "Description of the access group."
-                }
-              ],
-              "returns": {
-                "type": "AccessGroup",
-                "description": "The created access group."
-              },
-              "examples": {
-                "python": "client.users.groups.create(\n    name=\"Engineering\",\n    description=\"Engineering team access\",\n)",
-                "typescript": "await client.users.groups.create({\n    name: \"Engineering\",\n    description: \"Engineering team access\"\n})",
-                "go": "response, err := client.Users.Groups.Create(\n    context.Background(),\n    &rulebricks.CreateAccessGroupRequest{\n        Name: \"Engineering\",\n        Description: rulebricks.String(\"Engineering team access\"),\n    },\n)",
-                "csharp": "var result = await client.Users.Groups.CreateAsync(\n    name: \"Engineering\",\n    description: \"Engineering team access\"\n);",
-                "java": "var result = client.users().groups().create(\n    CreateAccessGroupRequest.builder()\n        .name(\"Engineering\")\n        .description(\"Engineering team access\")\n        .build()\n);",
-                "ruby": "result = client.users.groups.create(\n    name: 'Engineering',\n    description: 'Engineering team access'\n)"
-              },
-              "exampleOutput": {
-                "id": "group-003",
-                "name": "Engineering",
-                "description": "Engineering team access",
-                "memberCount": 0,
-                "createdAt": "2024-01-15T10:30:00Z"
-              }
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "Values",
-      "description": "Operations for managing dynamic values referenced in rules",
-      "methods": [
-        {
-          "name": "list",
-          "description": "Retrieve all dynamic values for the authenticated user.",
-          "parameters": [
-            {
-              "name": "name",
-              "type": "string",
-              "required": false,
-              "description": "Filter values by name."
-            },
-            {
-              "name": "include",
-              "type": "string",
-              "required": false,
-              "description": "Set to 'usage' to include usage information."
-            }
-          ],
-          "returns": {
-            "type": "Value[]",
-            "description": "List of dynamic values."
-          },
-          "examples": {
-            "python": "client.values.list(\n    name=\"discount\",\n    include=\"usage\",\n)",
-            "typescript": "await client.values.list({\n    name: \"discount\",\n    include: \"usage\"\n})",
-            "go": "response, err := client.Values.List(\n    context.Background(),\n    &rulebricks.ListValuesRequest{\n        Name: rulebricks.String(\"discount\"),\n        Include: rulebricks.String(\"usage\"),\n    },\n)",
-            "csharp": "var result = await client.Values.ListAsync(\n    name: \"discount\",\n    include: \"usage\");",
-            "java": "var result = client.values().list(\n    ListValuesRequest.builder()\n        .name(\"discount\")\n        .include(\"usage\")\n        .build()\n);",
-            "ruby": "result = client.values.list(\n    name: 'discount',\n    include: 'usage'\n)"
-          },
-          "exampleOutput": [
-            {
-              "id": "550e8400-e29b-41d4-a716-446655440000",
-              "name": "Discount Rate",
-              "value": 0.15,
-              "type": "number",
-              "createdAt": "2024-01-01T00:00:00Z",
-              "updatedAt": "2024-01-15T10:30:00Z",
-              "usage": ["pricing-rule", "checkout-flow"]
-            }
-          ]
-        },
-        {
-          "name": "update",
-          "description": "Update existing dynamic values or add new ones.",
-          "parameters": [
-            {
-              "name": "values",
-              "type": "object",
-              "required": true,
-              "description": "Object mapping value names to their values."
-            },
-            {
-              "name": "accessGroups",
-              "type": "string[]",
-              "required": false,
-              "description": "Access groups for the values."
-            }
-          ],
-          "returns": {
-            "type": "Value[]",
-            "description": "The updated values."
-          },
-          "examples": {
-            "python": "client.values.update(\n    values={\n        \"Favorite Color\": \"blue\",\n        \"Age\": 30,\n    },\n)",
-            "typescript": "await client.values.update({\n    values: {\n        \"Favorite Color\": \"blue\",\n        \"Age\": 30\n    }\n})",
-            "go": "response, err := client.Values.Update(\n    context.Background(),\n    &rulebricks.UpdateValuesRequest{\n        Values: map[string]interface{}{\n            \"Favorite Color\": \"blue\",\n            \"Age\": 30,\n        },\n    },\n)",
-            "csharp": "var values = new Dictionary<string, object>\n{\n    { \"Favorite Color\", \"blue\" },\n    { \"Age\", 30 }\n};\nvar result = await client.Values.UpdateAsync(values);",
-            "java": "var values = Map.of(\n    \"Favorite Color\", \"blue\",\n    \"Age\", 30\n);\nvar result = client.values().update(values);",
-            "ruby": "result = client.values.update(\n    values: {\n        'Favorite Color' => 'blue',\n        'Age' => 30\n    }\n)"
-          },
-          "exampleOutput": [
-            {
-              "id": "550e8400-e29b-41d4-a716-446655440001",
-              "name": "Favorite Color",
-              "value": "blue",
-              "type": "string",
-              "updatedAt": "2024-01-15T10:30:00Z"
-            },
-            {
-              "id": "550e8400-e29b-41d4-a716-446655440002",
-              "name": "Age",
-              "value": 30,
-              "type": "number",
-              "updatedAt": "2024-01-15T10:30:00Z"
-            }
-          ]
-        },
-        {
-          "name": "delete",
-          "description": "Delete a specific dynamic value by its ID.",
-          "parameters": [
-            {
-              "name": "id",
-              "type": "string",
-              "required": true,
-              "description": "The ID of the value to delete."
-            }
-          ],
-          "returns": {
-            "type": "DeleteResponse",
-            "description": "Confirmation of deletion."
-          },
-          "examples": {
-            "python": "client.values.delete(\n    id=\"550e8400-e29b-41d4-a716-446655440000\",\n)",
-            "typescript": "await client.values.delete({\n    id: \"550e8400-e29b-41d4-a716-446655440000\"\n})",
-            "go": "response, err := client.Values.Delete(\n    context.Background(),\n    \"550e8400-e29b-41d4-a716-446655440000\",\n)",
-            "csharp": "await client.Values.DeleteAsync(\n    \"550e8400-e29b-41d4-a716-446655440000\");",
-            "java": "client.values().delete(\n    \"550e8400-e29b-41d4-a716-446655440000\");",
-            "ruby": "client.values.delete(\n    id: '550e8400-e29b-41d4-a716-446655440000'\n)"
-          },
-          "exampleOutput": {
-            "success": true,
-            "message": "Value deleted successfully"
-          }
         }
       ]
     }
