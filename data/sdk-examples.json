@@ -1898,6 +1898,1109 @@
           ]
         }
       ]
+    },
+    {
+      "name": "Forge",
+      "description": "Programmatically build and manage rules in memory. Available in Python and TypeScript SDKs only.",
+      "methods": [],
+      "subResources": [
+        {
+          "name": "Rule",
+          "description": "Create and configure business rules with request/response schemas and conditions",
+          "methods": [
+            {
+              "name": "constructor",
+              "description": "Create a new Rule instance. Optionally pass a Rulebricks client to enable workspace operations.",
+              "parameters": [
+                {
+                  "name": "client",
+                  "type": "RulebricksClient",
+                  "required": false,
+                  "description": "Optional Rulebricks client for workspace operations."
+                }
+              ],
+              "returns": {
+                "type": "Rule",
+                "description": "A new Rule instance."
+              },
+              "examples": {
+                "python": "from rulebricks.forge import Rule\n\n# Create a standalone rule\nrule = Rule()\n\n# Or with a workspace client\nfrom rulebricks import Rulebricks\nclient = Rulebricks(api_key=\"YOUR_API_KEY\")\nrule = Rule(client)",
+                "typescript": "import { Rule } from \"@rulebricks/sdk/forge\";\n\n// Create a standalone rule\nconst rule = new Rule();\n\n// Or set workspace later\nrule.setWorkspace(client);"
+              },
+              "exampleOutput": {
+                "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+                "name": "Untitled Rule",
+                "description": "",
+                "slug": "Ab3xK9mPqR",
+                "conditions": []
+              }
+            },
+            {
+              "name": "setName",
+              "description": "Set the rule's display name.",
+              "parameters": [
+                {
+                  "name": "name",
+                  "type": "string",
+                  "required": true,
+                  "description": "The name for the rule."
+                }
+              ],
+              "returns": {
+                "type": "Rule",
+                "description": "The rule instance for method chaining."
+              },
+              "examples": {
+                "python": "rule.set_name(\"Pricing Calculator\")",
+                "typescript": "rule.setName(\"Pricing Calculator\");"
+              },
+              "exampleOutput": {
+                "name": "Pricing Calculator"
+              }
+            },
+            {
+              "name": "setDescription",
+              "description": "Set the rule's description.",
+              "parameters": [
+                {
+                  "name": "description",
+                  "type": "string",
+                  "required": true,
+                  "description": "The description for the rule."
+                }
+              ],
+              "returns": {
+                "type": "Rule",
+                "description": "The rule instance for method chaining."
+              },
+              "examples": {
+                "python": "rule.set_description(\"Calculates product pricing based on customer tier and quantity\")",
+                "typescript": "rule.setDescription(\"Calculates product pricing based on customer tier and quantity\");"
+              },
+              "exampleOutput": {
+                "description": "Calculates product pricing based on customer tier and quantity"
+              }
+            },
+            {
+              "name": "addNumberField",
+              "description": "Add a number input field to the rule's request schema.",
+              "parameters": [
+                {
+                  "name": "name",
+                  "type": "string",
+                  "required": true,
+                  "description": "The field name/key."
+                },
+                {
+                  "name": "description",
+                  "type": "string",
+                  "required": false,
+                  "description": "Description of the field."
+                },
+                {
+                  "name": "default",
+                  "type": "number",
+                  "required": false,
+                  "description": "Default value for the field."
+                }
+              ],
+              "returns": {
+                "type": "NumberField",
+                "description": "The field instance with operator methods."
+              },
+              "examples": {
+                "python": "age = rule.add_number_field(\"age\", \"Customer's age\", 0)\nquantity = rule.add_number_field(\"quantity\", \"Order quantity\", 1)",
+                "typescript": "const age = rule.addNumberField(\"age\", \"Customer's age\", 0);\nconst quantity = rule.addNumberField(\"quantity\", \"Order quantity\", 1);"
+              },
+              "exampleOutput": {
+                "name": "age",
+                "type": "number",
+                "description": "Customer's age",
+                "defaultValue": 0
+              }
+            },
+            {
+              "name": "addStringField",
+              "description": "Add a string input field to the rule's request schema.",
+              "parameters": [
+                {
+                  "name": "name",
+                  "type": "string",
+                  "required": true,
+                  "description": "The field name/key."
+                },
+                {
+                  "name": "description",
+                  "type": "string",
+                  "required": false,
+                  "description": "Description of the field."
+                },
+                {
+                  "name": "default",
+                  "type": "string",
+                  "required": false,
+                  "description": "Default value for the field."
+                }
+              ],
+              "returns": {
+                "type": "StringField",
+                "description": "The field instance with operator methods."
+              },
+              "examples": {
+                "python": "status = rule.add_string_field(\"status\", \"Account status\", \"active\")\nemail = rule.add_string_field(\"email\", \"Customer email\")",
+                "typescript": "const status = rule.addStringField(\"status\", \"Account status\", \"active\");\nconst email = rule.addStringField(\"email\", \"Customer email\");"
+              },
+              "exampleOutput": {
+                "name": "status",
+                "type": "string",
+                "description": "Account status",
+                "defaultValue": "active"
+              }
+            },
+            {
+              "name": "addBooleanField",
+              "description": "Add a boolean input field to the rule's request schema.",
+              "parameters": [
+                {
+                  "name": "name",
+                  "type": "string",
+                  "required": true,
+                  "description": "The field name/key."
+                },
+                {
+                  "name": "description",
+                  "type": "string",
+                  "required": false,
+                  "description": "Description of the field."
+                },
+                {
+                  "name": "default",
+                  "type": "boolean",
+                  "required": false,
+                  "description": "Default value for the field."
+                }
+              ],
+              "returns": {
+                "type": "BooleanField",
+                "description": "The field instance with operator methods."
+              },
+              "examples": {
+                "python": "is_premium = rule.add_boolean_field(\"is_premium\", \"Premium customer flag\", False)",
+                "typescript": "const isPremium = rule.addBooleanField(\"is_premium\", \"Premium customer flag\", false);"
+              },
+              "exampleOutput": {
+                "name": "is_premium",
+                "type": "boolean",
+                "description": "Premium customer flag",
+                "defaultValue": false
+              }
+            },
+            {
+              "name": "addDateField",
+              "description": "Add a date input field to the rule's request schema.",
+              "parameters": [
+                {
+                  "name": "name",
+                  "type": "string",
+                  "required": true,
+                  "description": "The field name/key."
+                },
+                {
+                  "name": "description",
+                  "type": "string",
+                  "required": false,
+                  "description": "Description of the field."
+                },
+                {
+                  "name": "default",
+                  "type": "Date",
+                  "required": false,
+                  "description": "Default value for the field."
+                }
+              ],
+              "returns": {
+                "type": "DateField",
+                "description": "The field instance with operator methods."
+              },
+              "examples": {
+                "python": "from datetime import datetime\ncreated_at = rule.add_date_field(\"created_at\", \"Account creation date\")",
+                "typescript": "const createdAt = rule.addDateField(\"created_at\", \"Account creation date\");"
+              },
+              "exampleOutput": {
+                "name": "created_at",
+                "type": "date",
+                "description": "Account creation date",
+                "defaultValue": null
+              }
+            },
+            {
+              "name": "addListField",
+              "description": "Add a list/array input field to the rule's request schema.",
+              "parameters": [
+                {
+                  "name": "name",
+                  "type": "string",
+                  "required": true,
+                  "description": "The field name/key."
+                },
+                {
+                  "name": "description",
+                  "type": "string",
+                  "required": false,
+                  "description": "Description of the field."
+                },
+                {
+                  "name": "default",
+                  "type": "array",
+                  "required": false,
+                  "description": "Default value for the field."
+                }
+              ],
+              "returns": {
+                "type": "ListField",
+                "description": "The field instance with operator methods."
+              },
+              "examples": {
+                "python": "tags = rule.add_list_field(\"tags\", \"Item tags\", [])\nroles = rule.add_list_field(\"roles\", \"User roles\", [\"user\"])",
+                "typescript": "const tags = rule.addListField(\"tags\", \"Item tags\", []);\nconst roles = rule.addListField(\"roles\", \"User roles\", [\"user\"]);"
+              },
+              "exampleOutput": {
+                "name": "tags",
+                "type": "list",
+                "description": "Item tags",
+                "defaultValue": []
+              }
+            },
+            {
+              "name": "addNumberResponse",
+              "description": "Add a number output field to the rule's response schema.",
+              "parameters": [
+                {
+                  "name": "name",
+                  "type": "string",
+                  "required": true,
+                  "description": "The field name/key."
+                },
+                {
+                  "name": "description",
+                  "type": "string",
+                  "required": false,
+                  "description": "Description of the field."
+                },
+                {
+                  "name": "default",
+                  "type": "number",
+                  "required": false,
+                  "description": "Default value for the field."
+                }
+              ],
+              "returns": {
+                "type": "NumberField",
+                "description": "The field instance."
+              },
+              "examples": {
+                "python": "rule.add_number_response(\"price\", \"Calculated price\", 0)\nrule.add_number_response(\"discount_percent\", \"Discount percentage\", 0)",
+                "typescript": "rule.addNumberResponse(\"price\", \"Calculated price\", 0);\nrule.addNumberResponse(\"discount_percent\", \"Discount percentage\", 0);"
+              },
+              "exampleOutput": {
+                "name": "price",
+                "type": "number",
+                "description": "Calculated price",
+                "defaultValue": 0
+              }
+            },
+            {
+              "name": "addStringResponse",
+              "description": "Add a string output field to the rule's response schema.",
+              "parameters": [
+                {
+                  "name": "name",
+                  "type": "string",
+                  "required": true,
+                  "description": "The field name/key."
+                },
+                {
+                  "name": "description",
+                  "type": "string",
+                  "required": false,
+                  "description": "Description of the field."
+                },
+                {
+                  "name": "default",
+                  "type": "string",
+                  "required": false,
+                  "description": "Default value for the field."
+                }
+              ],
+              "returns": {
+                "type": "StringField",
+                "description": "The field instance."
+              },
+              "examples": {
+                "python": "rule.add_string_response(\"message\", \"Result message\", \"\")\nrule.add_string_response(\"tier\", \"Customer tier\", \"standard\")",
+                "typescript": "rule.addStringResponse(\"message\", \"Result message\", \"\");\nrule.addStringResponse(\"tier\", \"Customer tier\", \"standard\");"
+              },
+              "exampleOutput": {
+                "name": "message",
+                "type": "string",
+                "description": "Result message",
+                "defaultValue": ""
+              }
+            },
+            {
+              "name": "addBooleanResponse",
+              "description": "Add a boolean output field to the rule's response schema.",
+              "parameters": [
+                {
+                  "name": "name",
+                  "type": "string",
+                  "required": true,
+                  "description": "The field name/key."
+                },
+                {
+                  "name": "description",
+                  "type": "string",
+                  "required": false,
+                  "description": "Description of the field."
+                },
+                {
+                  "name": "default",
+                  "type": "boolean",
+                  "required": false,
+                  "description": "Default value for the field."
+                }
+              ],
+              "returns": {
+                "type": "BooleanField",
+                "description": "The field instance."
+              },
+              "examples": {
+                "python": "rule.add_boolean_response(\"approved\", \"Whether request is approved\", False)",
+                "typescript": "rule.addBooleanResponse(\"approved\", \"Whether request is approved\", false);"
+              },
+              "exampleOutput": {
+                "name": "approved",
+                "type": "boolean",
+                "description": "Whether request is approved",
+                "defaultValue": false
+              }
+            },
+            {
+              "name": "when",
+              "description": "Start defining a new condition row. Chain with .then() to set the response values.",
+              "parameters": [
+                {
+                  "name": "conditions",
+                  "type": "object",
+                  "required": false,
+                  "description": "Field conditions as keyword arguments (field=operator_result)."
+                }
+              ],
+              "returns": {
+                "type": "Condition",
+                "description": "A Condition instance for chaining with .then()."
+              },
+              "examples": {
+                "python": "age = rule.add_number_field(\"age\", \"Customer age\")\nstatus = rule.add_string_field(\"status\", \"Account status\")\nrule.add_string_response(\"tier\", \"Customer tier\")\n\n# Define a condition\nrule.when(\n    age=age.greater_than(18),\n    status=status.equals(\"active\")\n).then(\n    tier=\"premium\"\n)",
+                "typescript": "const age = rule.addNumberField(\"age\", \"Customer age\");\nconst status = rule.addStringField(\"status\", \"Account status\");\nrule.addStringResponse(\"tier\", \"Customer tier\");\n\n// Define a condition\nrule.when({\n    age: age.greater_than(18),\n    status: status.equals(\"active\")\n}).then({\n    tier: \"premium\"\n});"
+              },
+              "exampleOutput": {
+                "request": {
+                  "age": { "op": "greater than", "args": [18] },
+                  "status": { "op": "equals", "args": ["active"] }
+                },
+                "response": {
+                  "tier": { "value": "premium" }
+                },
+                "settings": { "enabled": true, "priority": 0 }
+              }
+            },
+            {
+              "name": "any",
+              "description": "Start defining a condition with OR logic. Any matching condition triggers the response.",
+              "parameters": [
+                {
+                  "name": "conditions",
+                  "type": "object",
+                  "required": false,
+                  "description": "Field conditions as keyword arguments (field=operator_result)."
+                }
+              ],
+              "returns": {
+                "type": "Condition",
+                "description": "A Condition instance with OR logic for chaining with .then()."
+              },
+              "examples": {
+                "python": "# If ANY of these conditions match, apply the response\nrule.any(\n    age=age.greater_than(65),\n    status=status.equals(\"vip\")\n).then(\n    discount_percent=20\n)",
+                "typescript": "// If ANY of these conditions match, apply the response\nrule.any({\n    age: age.greater_than(65),\n    status: status.equals(\"vip\")\n}).then({\n    discount_percent: 20\n});"
+              },
+              "exampleOutput": {
+                "request": {
+                  "age": { "op": "greater than", "args": [65] },
+                  "status": { "op": "equals", "args": ["vip"] }
+                },
+                "response": {
+                  "discount_percent": { "value": 20 }
+                },
+                "settings": { "enabled": true, "priority": 0, "or": true }
+              }
+            },
+            {
+              "name": "findConditions",
+              "description": "Search for existing conditions that match specific criteria.",
+              "parameters": [
+                {
+                  "name": "conditions",
+                  "type": "object",
+                  "required": true,
+                  "description": "Field conditions to search for as keyword arguments."
+                }
+              ],
+              "returns": {
+                "type": "Condition[]",
+                "description": "List of matching Condition instances."
+              },
+              "examples": {
+                "python": "# Find all conditions where age > 18\nage_field = rule.get_number_field(\"age\")\nmatches = rule.find_conditions(\n    age=age_field.greater_than(18)\n)\n\n# Modify the first match\nif matches:\n    matches[0].then(tier=\"gold\")",
+                "typescript": "// Find all conditions where age > 18\nconst ageField = rule.getNumberField(\"age\");\nconst matches = rule.findConditions({\n    age: ageField.greater_than(18)\n});\n\n// Modify the first match\nif (matches.length > 0) {\n    matches[0].then({ tier: \"gold\" });\n}"
+              },
+              "exampleOutput": [
+                {
+                  "index": 0,
+                  "request": { "age": { "op": "greater than", "args": [18] } },
+                  "response": { "tier": { "value": "premium" } }
+                }
+              ]
+            },
+            {
+              "name": "addTest",
+              "description": "Add a test case to the rule's test suite.",
+              "parameters": [
+                {
+                  "name": "test",
+                  "type": "RuleTest",
+                  "required": true,
+                  "description": "The test case to add."
+                }
+              ],
+              "returns": {
+                "type": "Rule",
+                "description": "The rule instance for method chaining."
+              },
+              "examples": {
+                "python": "from rulebricks.forge import RuleTest\n\ntest = RuleTest()\ntest.set_name(\"Adult premium test\")\ntest.expect(\n    request={\"age\": 25, \"status\": \"active\"},\n    response={\"tier\": \"premium\"}\n)\ntest.is_critical(True)\n\nrule.add_test(test)",
+                "typescript": "import { RuleTest } from \"@rulebricks/sdk/forge\";\n\nconst test = new RuleTest()\n    .setName(\"Adult premium test\")\n    .expect(\n        { age: 25, status: \"active\" },\n        { tier: \"premium\" }\n    )\n    .isCritical(true);\n\nrule.addTest(test);"
+              },
+              "exampleOutput": {
+                "id": "test-abc123",
+                "name": "Adult premium test",
+                "request": { "age": 25, "status": "active" },
+                "response": { "tier": "premium" },
+                "critical": true
+              }
+            },
+            {
+              "name": "update",
+              "description": "Push local changes to the connected workspace without publishing.",
+              "parameters": [],
+              "returns": {
+                "type": "Rule",
+                "description": "The updated rule instance."
+              },
+              "examples": {
+                "python": "# Requires workspace client\nrule.set_workspace(client)\n\n# Push changes to workspace (draft mode)\nrule.update()",
+                "typescript": "// Requires workspace client\nrule.setWorkspace(client);\n\n// Push changes to workspace (draft mode)\nawait rule.update();"
+              },
+              "exampleOutput": {
+                "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+                "name": "Pricing Calculator",
+                "published": false,
+                "updatedAt": "2024-01-15T10:30:00.000Z"
+              }
+            },
+            {
+              "name": "publish",
+              "description": "Publish a new version of the rule to the connected workspace.",
+              "parameters": [],
+              "returns": {
+                "type": "Rule",
+                "description": "The published rule instance."
+              },
+              "examples": {
+                "python": "# Requires workspace client\nrule.set_workspace(client)\n\n# Publish the rule (makes it live)\nrule.publish()",
+                "typescript": "// Requires workspace client\nrule.setWorkspace(client);\n\n// Publish the rule (makes it live)\nawait rule.publish();"
+              },
+              "exampleOutput": {
+                "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+                "name": "Pricing Calculator",
+                "published": true,
+                "publishedAt": "2024-01-15T10:30:00.000Z"
+              }
+            },
+            {
+              "name": "toDict",
+              "description": "Convert the rule to a dictionary/object representation.",
+              "parameters": [],
+              "returns": {
+                "type": "object",
+                "description": "Dictionary containing all rule data."
+              },
+              "examples": {
+                "python": "rule_data = rule.to_dict()\nprint(rule_data[\"name\"])\nprint(rule_data[\"conditions\"])",
+                "typescript": "const ruleData = rule.toDict();\nconsole.log(ruleData.name);\nconsole.log(ruleData.conditions);"
+              },
+              "exampleOutput": {
+                "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+                "name": "Pricing Calculator",
+                "description": "Calculates pricing",
+                "slug": "Ab3xK9mPqR",
+                "requestSchema": [
+                  { "key": "age", "name": "Age", "type": "number" }
+                ],
+                "responseSchema": [
+                  { "key": "tier", "name": "Tier", "type": "string" }
+                ],
+                "conditions": []
+              }
+            },
+            {
+              "name": "toJson",
+              "description": "Convert the rule to a JSON string.",
+              "parameters": [],
+              "returns": {
+                "type": "string",
+                "description": "JSON string representation of the rule."
+              },
+              "examples": {
+                "python": "json_str = rule.to_json()\nwith open(\"rule.json\", \"w\") as f:\n    f.write(json_str)",
+                "typescript": "const jsonStr = rule.toJSON();\nconsole.log(jsonStr);"
+              },
+              "exampleOutput": "{\"id\": \"a1b2c3d4...\", \"name\": \"Pricing Calculator\", ...}"
+            },
+            {
+              "name": "toTable",
+              "description": "Generate a formatted table view of all conditions for debugging.",
+              "parameters": [],
+              "returns": {
+                "type": "string",
+                "description": "ASCII table representation of conditions."
+              },
+              "examples": {
+                "python": "print(rule.to_table())\n# +--------+--------+---------+\n# | age    | status | tier    |\n# +========+========+=========+\n# | > 18   | active | premium |\n# +--------+--------+---------+",
+                "typescript": "console.log(rule.toTable());"
+              },
+              "exampleOutput": "+--------+--------+---------+\n| age    | status | tier    |\n+========+========+=========+\n| > 18   | active | premium |\n+--------+--------+---------+"
+            },
+            {
+              "name": "export",
+              "description": "Export the rule to a .rbx file that can be imported into Rulebricks.",
+              "parameters": [
+                {
+                  "name": "directory",
+                  "type": "string",
+                  "required": false,
+                  "description": "Directory to save the file. Defaults to current directory."
+                }
+              ],
+              "returns": {
+                "type": "string",
+                "description": "Path to the exported file."
+              },
+              "examples": {
+                "python": "# Export to current directory\nfilename = rule.export()\nprint(f\"Exported to {filename}\")\n\n# Export to specific directory\nfilename = rule.export(\"./rules\")",
+                "typescript": "// Not available in TypeScript SDK"
+              },
+              "exampleOutput": "Pricing_Calculator-Generated.rbx"
+            },
+            {
+              "name": "fromJson",
+              "description": "Create a Rule instance from JSON data.",
+              "parameters": [
+                {
+                  "name": "data",
+                  "type": "string | object",
+                  "required": true,
+                  "description": "JSON string or object containing rule data."
+                }
+              ],
+              "returns": {
+                "type": "Rule",
+                "description": "A new Rule instance populated with the data."
+              },
+              "examples": {
+                "python": "# From JSON string\nrule = Rule.from_json('{\"name\": \"My Rule\", ...}')\n\n# From dictionary\nrule = Rule.from_json({\"name\": \"My Rule\", \"conditions\": []})",
+                "typescript": "// From JSON string\nconst rule = Rule.fromJSON('{\"name\": \"My Rule\", ...}');\n\n// From object\nconst rule = Rule.fromJSON({ name: \"My Rule\", conditions: [] });"
+              },
+              "exampleOutput": {
+                "id": "loaded-rule-id",
+                "name": "My Rule",
+                "conditions": []
+              }
+            },
+            {
+              "name": "fromWorkspace",
+              "description": "Load a rule from the connected workspace by ID.",
+              "parameters": [
+                {
+                  "name": "ruleId",
+                  "type": "string",
+                  "required": true,
+                  "description": "The ID of the rule to load."
+                }
+              ],
+              "returns": {
+                "type": "Rule",
+                "description": "The loaded Rule instance."
+              },
+              "examples": {
+                "python": "rule = Rule(client)\nrule = rule.from_workspace(\"a1b2c3d4-e5f6-7890-abcd-ef1234567890\")",
+                "typescript": "const rule = new Rule();\nrule.setWorkspace(client);\nawait rule.fromWorkspace(\"a1b2c3d4-e5f6-7890-abcd-ef1234567890\");"
+              },
+              "exampleOutput": {
+                "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+                "name": "Existing Rule",
+                "conditions": [
+                  { "request": {}, "response": {}, "settings": {} }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Condition",
+          "description": "Represents a single condition row in a rule with request conditions and response values",
+          "methods": [
+            {
+              "name": "when",
+              "description": "Set or update the conditions for this condition row.",
+              "parameters": [
+                {
+                  "name": "conditions",
+                  "type": "object",
+                  "required": true,
+                  "description": "Field conditions as keyword arguments."
+                }
+              ],
+              "returns": {
+                "type": "Condition",
+                "description": "The condition instance for method chaining."
+              },
+              "examples": {
+                "python": "condition = rule.get_condition(0)\ncondition.when(\n    age=age.greater_than(21)\n)",
+                "typescript": "const condition = rule.getCondition(0);\ncondition.when({\n    age: age.greater_than(21)\n});"
+              },
+              "exampleOutput": {
+                "request": {
+                  "age": { "op": "greater than", "args": [21] }
+                }
+              }
+            },
+            {
+              "name": "then",
+              "description": "Set or update the response values for this condition.",
+              "parameters": [
+                {
+                  "name": "responses",
+                  "type": "object",
+                  "required": true,
+                  "description": "Response field values as keyword arguments."
+                }
+              ],
+              "returns": {
+                "type": "Rule | Condition",
+                "description": "The parent Rule for new conditions, or this Condition for existing ones."
+              },
+              "examples": {
+                "python": "# For a new condition (returns Rule)\nrule.when(age=age.greater_than(18)).then(\n    approved=True,\n    message=\"Welcome!\"\n)\n\n# For editing existing (returns Condition)\ncondition = rule.get_condition(0)\ncondition.then(approved=False)",
+                "typescript": "// For a new condition (returns Rule)\nrule.when({ age: age.greater_than(18) }).then({\n    approved: true,\n    message: \"Welcome!\"\n});\n\n// For editing existing (returns Condition)\nconst condition = rule.getCondition(0);\ncondition.then({ approved: false });"
+              },
+              "exampleOutput": {
+                "response": {
+                  "approved": { "value": true },
+                  "message": { "value": "Welcome!" }
+                }
+              }
+            },
+            {
+              "name": "setPriority",
+              "description": "Set the priority level for this condition. Higher priority conditions are evaluated first.",
+              "parameters": [
+                {
+                  "name": "priority",
+                  "type": "number",
+                  "required": true,
+                  "description": "Priority level (higher = evaluated first)."
+                }
+              ],
+              "returns": {
+                "type": "Condition",
+                "description": "The condition instance for method chaining."
+              },
+              "examples": {
+                "python": "condition = rule.get_condition(0)\ncondition.set_priority(10)",
+                "typescript": "const condition = rule.getCondition(0);\ncondition.setPriority(10);"
+              },
+              "exampleOutput": {
+                "settings": { "priority": 10 }
+              }
+            },
+            {
+              "name": "enable",
+              "description": "Enable this condition so it will be evaluated.",
+              "parameters": [],
+              "returns": {
+                "type": "Condition",
+                "description": "The condition instance for method chaining."
+              },
+              "examples": {
+                "python": "condition = rule.get_condition(0)\ncondition.enable()",
+                "typescript": "const condition = rule.getCondition(0);\ncondition.enable();"
+              },
+              "exampleOutput": {
+                "settings": { "enabled": true }
+              }
+            },
+            {
+              "name": "disable",
+              "description": "Disable this condition so it will be skipped during evaluation.",
+              "parameters": [],
+              "returns": {
+                "type": "Condition",
+                "description": "The condition instance for method chaining."
+              },
+              "examples": {
+                "python": "condition = rule.get_condition(0)\ncondition.disable()",
+                "typescript": "const condition = rule.getCondition(0);\ncondition.disable();"
+              },
+              "exampleOutput": {
+                "settings": { "enabled": false }
+              }
+            },
+            {
+              "name": "delete",
+              "description": "Remove this condition from its parent rule.",
+              "parameters": [],
+              "returns": {
+                "type": "void",
+                "description": "Nothing."
+              },
+              "examples": {
+                "python": "condition = rule.get_condition(0)\ncondition.delete()",
+                "typescript": "const condition = rule.getCondition(0);\ncondition.delete();"
+              },
+              "exampleOutput": null
+            }
+          ]
+        },
+        {
+          "name": "Fields",
+          "description": "Field types with operator methods for building conditions. Each field type has specific operators.",
+          "methods": [
+            {
+              "name": "NumberField.equals",
+              "description": "Check if the number equals a specific value.",
+              "parameters": [
+                {
+                  "name": "value",
+                  "type": "number | DynamicValue",
+                  "required": true,
+                  "description": "The value to compare against."
+                }
+              ],
+              "returns": {
+                "type": "OperatorResult",
+                "description": "Tuple of [operator_name, arguments] for use in conditions."
+              },
+              "examples": {
+                "python": "age = rule.add_number_field(\"age\")\nrule.when(age=age.equals(18))",
+                "typescript": "const age = rule.addNumberField(\"age\");\nrule.when({ age: age.equals(18) });"
+              },
+              "exampleOutput": ["equals", [18]]
+            },
+            {
+              "name": "NumberField.greaterThan",
+              "description": "Check if the number is greater than a value.",
+              "parameters": [
+                {
+                  "name": "value",
+                  "type": "number | DynamicValue",
+                  "required": true,
+                  "description": "The value to compare against."
+                }
+              ],
+              "returns": {
+                "type": "OperatorResult",
+                "description": "Tuple of [operator_name, arguments]."
+              },
+              "examples": {
+                "python": "rule.when(age=age.greater_than(18))",
+                "typescript": "rule.when({ age: age.greater_than(18) });"
+              },
+              "exampleOutput": ["greater than", [18]]
+            },
+            {
+              "name": "NumberField.between",
+              "description": "Check if the number is between two values (inclusive).",
+              "parameters": [
+                {
+                  "name": "start",
+                  "type": "number | DynamicValue",
+                  "required": true,
+                  "description": "The minimum value."
+                },
+                {
+                  "name": "end",
+                  "type": "number | DynamicValue",
+                  "required": true,
+                  "description": "The maximum value."
+                }
+              ],
+              "returns": {
+                "type": "OperatorResult",
+                "description": "Tuple of [operator_name, arguments]."
+              },
+              "examples": {
+                "python": "rule.when(age=age.between(18, 65))",
+                "typescript": "rule.when({ age: age.between(18, 65) });"
+              },
+              "exampleOutput": ["between", [18, 65]]
+            },
+            {
+              "name": "StringField.equals",
+              "description": "Check if the string equals a specific value.",
+              "parameters": [
+                {
+                  "name": "value",
+                  "type": "string | DynamicValue",
+                  "required": true,
+                  "description": "The value to compare against."
+                }
+              ],
+              "returns": {
+                "type": "OperatorResult",
+                "description": "Tuple of [operator_name, arguments]."
+              },
+              "examples": {
+                "python": "status = rule.add_string_field(\"status\")\nrule.when(status=status.equals(\"active\"))",
+                "typescript": "const status = rule.addStringField(\"status\");\nrule.when({ status: status.equals(\"active\") });"
+              },
+              "exampleOutput": ["equals", ["active"]]
+            },
+            {
+              "name": "StringField.contains",
+              "description": "Check if the string contains a substring.",
+              "parameters": [
+                {
+                  "name": "value",
+                  "type": "string | DynamicValue",
+                  "required": true,
+                  "description": "The substring to search for."
+                }
+              ],
+              "returns": {
+                "type": "OperatorResult",
+                "description": "Tuple of [operator_name, arguments]."
+              },
+              "examples": {
+                "python": "rule.when(email=email.contains(\"@company.com\"))",
+                "typescript": "rule.when({ email: email.contains(\"@company.com\") });"
+              },
+              "exampleOutput": ["contains", ["@company.com"]]
+            },
+            {
+              "name": "StringField.isIncludedIn",
+              "description": "Check if the string is one of the values in a list.",
+              "parameters": [
+                {
+                  "name": "values",
+                  "type": "string[] | DynamicValue",
+                  "required": true,
+                  "description": "List of allowed values."
+                }
+              ],
+              "returns": {
+                "type": "OperatorResult",
+                "description": "Tuple of [operator_name, arguments]."
+              },
+              "examples": {
+                "python": "rule.when(tier=tier.is_included_in([\"gold\", \"platinum\", \"diamond\"]))",
+                "typescript": "rule.when({ tier: tier.is_included_in([\"gold\", \"platinum\", \"diamond\"]) });"
+              },
+              "exampleOutput": ["is included in", [["gold", "platinum", "diamond"]]]
+            },
+            {
+              "name": "BooleanField.equals",
+              "description": "Check if the boolean equals true or false.",
+              "parameters": [
+                {
+                  "name": "value",
+                  "type": "boolean | DynamicValue",
+                  "required": true,
+                  "description": "The boolean value to check."
+                }
+              ],
+              "returns": {
+                "type": "OperatorResult",
+                "description": "Tuple of [operator_name, arguments]."
+              },
+              "examples": {
+                "python": "is_premium = rule.add_boolean_field(\"is_premium\")\nrule.when(is_premium=is_premium.equals(True))",
+                "typescript": "const isPremium = rule.addBooleanField(\"is_premium\");\nrule.when({ is_premium: isPremium.equals(true) });"
+              },
+              "exampleOutput": ["is true", []]
+            },
+            {
+              "name": "DateField.isPast",
+              "description": "Check if the date is in the past.",
+              "parameters": [],
+              "returns": {
+                "type": "OperatorResult",
+                "description": "Tuple of [operator_name, arguments]."
+              },
+              "examples": {
+                "python": "expiry = rule.add_date_field(\"expiry_date\")\nrule.when(expiry_date=expiry.is_past())",
+                "typescript": "const expiry = rule.addDateField(\"expiry_date\");\nrule.when({ expiry_date: expiry.is_past() });"
+              },
+              "exampleOutput": ["is in the past", []]
+            },
+            {
+              "name": "DateField.daysAgo",
+              "description": "Check if the date was exactly N days ago.",
+              "parameters": [
+                {
+                  "name": "days",
+                  "type": "number | DynamicValue",
+                  "required": true,
+                  "description": "Number of days ago."
+                }
+              ],
+              "returns": {
+                "type": "OperatorResult",
+                "description": "Tuple of [operator_name, arguments]."
+              },
+              "examples": {
+                "python": "rule.when(created_at=created_at.less_than_days_ago(30))",
+                "typescript": "rule.when({ created_at: createdAt.less_than_days_ago(30) });"
+              },
+              "exampleOutput": ["is less than N days ago", [30]]
+            },
+            {
+              "name": "ListField.contains",
+              "description": "Check if the list contains a specific value.",
+              "parameters": [
+                {
+                  "name": "value",
+                  "type": "any | DynamicValue",
+                  "required": true,
+                  "description": "The value to search for."
+                }
+              ],
+              "returns": {
+                "type": "OperatorResult",
+                "description": "Tuple of [operator_name, arguments]."
+              },
+              "examples": {
+                "python": "tags = rule.add_list_field(\"tags\")\nrule.when(tags=tags.contains(\"premium\"))",
+                "typescript": "const tags = rule.addListField(\"tags\");\nrule.when({ tags: tags.contains(\"premium\") });"
+              },
+              "exampleOutput": ["contains", ["premium"]]
+            },
+            {
+              "name": "ListField.isEmpty",
+              "description": "Check if the list is empty.",
+              "parameters": [],
+              "returns": {
+                "type": "OperatorResult",
+                "description": "Tuple of [operator_name, arguments]."
+              },
+              "examples": {
+                "python": "rule.when(tags=tags.is_empty())",
+                "typescript": "rule.when({ tags: tags.is_empty() });"
+              },
+              "exampleOutput": ["is empty", []]
+            }
+          ]
+        },
+        {
+          "name": "DynamicValues",
+          "description": "Reference and manage workspace dynamic values that can be used in rule conditions",
+          "methods": [
+            {
+              "name": "configure",
+              "description": "Configure DynamicValues with a workspace client to enable fetching values.",
+              "parameters": [
+                {
+                  "name": "client",
+                  "type": "RulebricksClient",
+                  "required": true,
+                  "description": "A configured Rulebricks client."
+                }
+              ],
+              "returns": {
+                "type": "void",
+                "description": "Nothing."
+              },
+              "examples": {
+                "python": "from rulebricks import Rulebricks\nfrom rulebricks.forge import DynamicValues\n\nclient = Rulebricks(api_key=\"YOUR_API_KEY\")\nDynamicValues.configure(client)",
+                "typescript": "import { DynamicValues } from \"@rulebricks/sdk/forge\";\n\nDynamicValues.configure(client);"
+              },
+              "exampleOutput": null
+            },
+            {
+              "name": "get",
+              "description": "Get a reference to a dynamic value by name for use in conditions.",
+              "parameters": [
+                {
+                  "name": "name",
+                  "type": "string",
+                  "required": true,
+                  "description": "Name of the dynamic value in your workspace."
+                }
+              ],
+              "returns": {
+                "type": "DynamicValue",
+                "description": "A DynamicValue reference that can be used in conditions."
+              },
+              "examples": {
+                "python": "# Get a dynamic value reference\nmax_discount = DynamicValues.get(\"max_discount\")\n\n# Use in conditions\nrule.when(\n    discount=discount.less_than(max_discount)\n).then(\n    approved=True\n)",
+                "typescript": "// Get a dynamic value reference\nconst maxDiscount = await DynamicValues.get(\"max_discount\");\n\n// Use in conditions\nrule.when({\n    discount: discount.less_than(maxDiscount)\n}).then({\n    approved: true\n});"
+              },
+              "exampleOutput": {
+                "id": "dv-123",
+                "$rb": "globalValue",
+                "name": "max_discount"
+              }
+            },
+            {
+              "name": "set",
+              "description": "Create or update dynamic values in your workspace.",
+              "parameters": [
+                {
+                  "name": "values",
+                  "type": "object",
+                  "required": true,
+                  "description": "Dictionary of name-value pairs to set."
+                },
+                {
+                  "name": "accessGroups",
+                  "type": "string[]",
+                  "required": false,
+                  "description": "Optional list of access groups for the values."
+                }
+              ],
+              "returns": {
+                "type": "void",
+                "description": "Nothing."
+              },
+              "examples": {
+                "python": "# Set multiple dynamic values at once\nDynamicValues.set({\n    \"max_discount\": 25,\n    \"min_order_amount\": 100,\n    \"free_shipping_threshold\": 50\n})",
+                "typescript": "// Set multiple dynamic values at once\nawait DynamicValues.set({\n    max_discount: 25,\n    min_order_amount: 100,\n    free_shipping_threshold: 50\n});"
+              },
+              "exampleOutput": null
+            }
+          ]
+        }
+      ]
     }
   ]
 }
