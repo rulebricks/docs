@@ -4,6 +4,78 @@ metaDescription: Track the latest updates, improvements, and bug fixes to the Ru
 
 ![SDK Banner](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/changelog-banner-dark.png)
 
+## December 26, 2025 - January 7, 2026 🚀
+
+### New Features
+
+#### Flow Editor Enhancements
+
+- **Notification Nodes**: Send alerts to PagerDuty directly from flows with configurable severity levels and routing keys
+- **Result Terminations**: New flow termination options for clearer workflow endings
+- **Clearer If/Else UI**: Redesigned conditional node interface for better readability and easier configuration
+- **New Node Types**: Added annotation, group, and container nodes to better organize complex flows
+
+#### Import & Export
+
+- **API-First Import/Export**: New API endpoints for programmatically exporting and importing rules, flows, and complete project manifests
+- **Dependency-Aware Export**: Export projects with all dependencies automatically included
+
+#### Performance & Developer Experience
+
+- **Non-Blocking Logging**: Improved API response times with asynchronous logging using fire-and-forget patterns
+- **API Standardization**: SDK and API responses now consistently use snake_case naming conventions
+- **SDK Upgrade**: Updated @rulebricks/sdk to version 2.5.0
+
+### Bug Fixes
+
+- Fixed React hook ordering issue in rule editor that could cause rendering problems
+- Improved error filtering in Sentry integration for cleaner error tracking
+
+_Now available in `rulebricks/app:1.2.37`_
+
+---
+
+## December 9-25, 2025 🎄
+
+### New Features
+
+#### Single Sign-On (SSO)
+
+- **Enterprise SSO Support**: Connect your identity provider for seamless authentication across your organization
+- **Branded Login Screens**: Self-hosted deployments can now display custom branding on login pages
+- **SSO Email Confirmations**: Streamlined email confirmation flow for SSO users
+
+#### Data Modeling
+
+- **Context & Facts**: Rebranded "Entity Models" to "Context & Facts" for clearer terminology and improved documentation
+- **Workspace Objects**: New organizational primitive for managing shared data across rules and flows
+
+#### Templates & Onboarding
+
+- **Redesigned Template Picker**: Browse templates by category with improved hierarchical organization
+- **Remote Template System**: Templates now load from a remote source for faster updates and broader selection
+
+#### Website & Mobile Experience
+
+- **Redesigned Home Page**: Fresh animated landing experience with 3D elements and smooth scroll interactions
+- **Mobile Optimization**: Improved touch interactions and responsive layouts across all screen sizes
+- **Blog Redesign**: Updated blog interface with better readability and navigation
+
+#### Private Deployment
+
+- **Embedded Mode**: New configuration option for embedding Rulebricks within other applications
+- **Enhanced Branding**: Dashboard navbar now caches branding for faster load times
+
+### Bug Fixes
+
+- Fixed flow importing issues that could cause errors with certain flow configurations
+- Improved import conflict detection to prevent duplicate assets
+- Resolved entity diagram rendering issues
+
+_Now available in `rulebricks/app:1.2.23`_
+
+---
+
 ## November 13 - December 8, 2025 🎄
 
 ### New Features
@@ -495,4 +567,4 @@ _Now available in `rulebricks/app:0.0.11`_
 
 ---
 
-_Last updated: December 8, 2025_
+_Last updated: January 7, 2026_
