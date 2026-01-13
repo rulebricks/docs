@@ -1,0 +1,99 @@
+---
+metaDescription: Create your first Context in Rulebricks and see progressive rule execution in action.
+---
+
+# Getting Started with Contexts
+
+Let's build a loan approval Context that collects data from multiple sources and automatically runs your approval rule when everything's ready.
+
+import { Steps } from 'nextra/components'
+
+<Steps>
+
+### Create a Context
+
+Go to **Dashboard → Contexts** and click **Create Context**.
+
+![Context Tab](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/contexts/context-tab.png)
+
+Name it "Loan Application" and set `application_id` as the identity fact—this is what uniquely identifies each loan application flowing through the system.
+
+### Define Your Facts
+
+In the Context Editor, add the facts your approval decision needs:
+
+![Define Facts](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/contexts/define-facts.png)
+
+| Fact | Type | Required |
+|------|------|----------|
+| `application_id` | string | Yes |
+| `credit_score` | number | Yes |
+| `annual_income` | number | Yes |
+| `employment_verified` | boolean | Yes |
+| `approval_decision` | string | No (output) |
+
+Mark facts as **required** if rules can't execute without them. Mark `approval_decision` as **output only**—your rule will write to it, not external systems.
+
+### Add a Derived Fact (Optional)
+
+Derived facts calculate automatically from other facts. Add a debt-to-income ratio:
+
+![Derived Facts](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/contexts/derived-facts.png)
+
+```javascript
+monthly_debt / (annual_income / 12)
+```
+
+This updates whenever `monthly_debt` or `annual_income` changes.
+
+### Bind Your Rule
+
+Open your loan approval rule, set its input schema to **From Context**, and select the Loan Application context. The rule will now read from context facts and write its decision back.
+
+### Test It
+
+Use the **Console** tab to simulate data arriving:
+
+![Context Console](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/contexts/context-console.png)
+
+Submit facts one at a time and watch the `have`/`need` arrays update. When you submit the last required fact, your rule executes automatically and writes `approval_decision` back to the context.
+
+</Steps>
+
+## Using the API
+
+Submit facts to a context instance via POST:
+
+```bash
+curl -X POST "https://api.rulebricks.com/api/v1/contexts/loan-application/APP-12345" \
+  -H "x-api-key: YOUR_API_KEY" \
+  -d '{ "credit_score": 720 }'
+```
+
+The response shows current state:
+
+```json
+{
+  "status": "pending",
+  "have": ["application_id", "credit_score"],
+  "need": ["annual_income", "employment_verified"]
+}
+```
+
+When the final required fact arrives, the response includes the rule execution:
+
+```json
+{
+  "status": "complete",
+  "cascaded": [{
+    "rule": "loan-approval",
+    "result": { "approval_decision": "approved", "max_loan_amount": 250000 }
+  }]
+}
+```
+
+## Next Steps
+
+- **[Facts and Schema](/contexts/core-concepts/facts-and-schema)** — Derived facts, history tracking, and schema design
+- **[Progressive Execution](/contexts/core-concepts/progressive-execution)** — How auto-execution and cascades work
+- **[Binding Rules](/contexts/guides/binding-rules)** — Connect rules to read from and write to contexts

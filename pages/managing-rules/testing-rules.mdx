@@ -1,59 +1,51 @@
 ---
-metaDescription: Testing rules is a critical part of the rule development process. Rulebricks provides powerful testing capabilities that allow you to ensure your rules are working as expected before you publish them.
+metaDescription: Test your rules before publishing with Try mode for quick checks and Suite mode for regression testing.
 ---
 
 # Testing Rules
 
-Testing rules is a critical part of the rule development process. Rulebricks provides powerful testing capabilities that allow you to ensure your rules are working as expected before you publish them.
+Test your rules before they hit production. Rulebricks gives you two modes: **Try** for quick single-request testing, and **Suite** for regression testing across multiple scenarios.
 
-Testing rules is extremely straightforward, since we're really only asking one question: _Given certain input data, does the rule return the expected output?_
+import { Steps, Callout } from 'nextra/components'
 
-## Testing in the Rulebricks Editor
+## Try Mode
 
-import { Steps } from 'nextra/components'
+Open the **Test** tab in the rule editor and select **Try**.
 
-<Steps>
+![Find Test Tab](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/testing-rules/find-test-tab.png)
 
-### Open the rule editor
+![Try Tab](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/testing-rules/try-tab.png)
 
-To test a rule, open the rule you want to test in the Rulebricks editor, open the sidebar, and click the "Test" tab.
+Paste a request object and click **Test**. The decision table lights up:
+- **Green cells** — Conditions that matched
+- **Red cells** — Conditions that didn't match
+- **Blue/Yellow cells** — The results returned
 
-![Rule Editor](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/managing-rules/testing-rules-1.png)
+This visual feedback shows exactly which row matched and why.
 
-You'll notice there are two test modes available: "Single Request", and "Suite".
+<Callout>
+If you get an error, your rule doesn't handle that input. Check for missing conditions or add a catch-all row.
+</Callout>
 
-### Single Request
+## Suite Mode
 
-In "Single Request" mode, you can test your rule with a single request object. This is useful for testing your rule with a specific set of data, particularly as you're building out your rule.
+Switch to **Suite** mode to run multiple test cases at once.
 
-To test your rule with a single request object, simply paste a particular request object you're interested in handling into the JSON text editor, and click "Test".
+![Test Suite](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/testing-rules/test-suite.png)
 
-![Single Request](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/managing-rules/testing-rules-single-request.png)
+Build your suite by saving tests from Try mode. When a test produces the expected result, save it. Mark tests as **Critical** if they should block publishing when they fail.
 
-You'll see the result of the rule displayed in the "Results" section, along with a detailed breakdown of the rule execution represented visually on the decision table.
+<Callout type="info">
+For large test suites, use the API to bulk upload test cases programmatically.
+</Callout>
 
-Cells that are green represent conditions that were met, while cells that are red represent conditions that were not met. Yellow cells represent the results of the rule that your rule returned.
+## Continuous Testing
 
-It is possible at this step you encounter an error, which likely means you do not handle the data you provided in your rule.
+Enable **Continuous Testing** in rule settings to run your test suite automatically before every publish.
 
-### Suite – Regression Testing
+When enabled, you'll see a test score next to every published version—the percentage of tests that passed. Critical tests prevent publishing if they fail; non-critical tests report results but don't block.
 
-In "Suite" mode, you can test your rule with multiple request objects at once. This is useful for testing your rule with a variety of data, and ensuring it behaves as expected in a variety of scenarios.
+## Next Steps
 
-This mode is particularly useful for regression testing, where you want to ensure that changes you make to your rule don't break existing functionality.
-
-Because you may want to upload a large number of test cases at once, we have API endpoints available to assist with mounting test cases into any Rulebricks rule or flow.
-
-![Suite](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/managing-rules/testing-rules-suite.png)
-
-Otherwise, a quick way to build out a testing suite is to copy and paste a variety of request objects into the JSON text editor under "Single Request", click "Test", copy the result, and save a new test case in Suite mode using the results, alternating between the two modes to generate payloads.
-
-#### Continuous Testing
-
-You can ensure all tests in your rule/flow run automatically before publishing new releases of your rule by enabling "Continuous Testing" in the "Settings" menu of your rule/flow found by clicking the gear icon from within the rule/flow editor at the top right. Tests in your suite marked as "Critical" will then prevent new versions of assets from being published if they fail.
-
-When this feature is enabled, you will also see a score next to every published version of an asset. This score is a percentage of tests that passed in the suite for that version, and helps you understand the integrity/coverage of every given version of your rule/flow.
-
-![Scores](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/managing-rules/continuous-tests.webp)
-
-</Steps>
+- **[Publishing Rules](/managing-rules/publishing-rules)** — Deploy your tested rule
+- **[Decision Logs](/managing-rules/rule-logging)** — Monitor execution in production

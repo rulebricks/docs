@@ -1,0 +1,66 @@
+---
+metaDescription: Get notified when contexts are solved or expire via webhook callbacks.
+---
+
+# Webhooks
+
+Contexts can call your endpoints when something happens—a rule executes, a context expires, or an error occurs.
+
+import { Callout } from 'nextra/components'
+
+## Events
+
+| Event | When it fires |
+|-------|--------------|
+| `context.solved` | A bound rule executed successfully |
+| `context.expired` | The context's TTL elapsed |
+| `context.error` | A rule execution failed |
+
+## Configuration
+
+In the Context Editor, add a webhook URL and select which events to send.
+
+Rulebricks signs each request with your webhook secret (available in settings). Verify the `X-Rulebricks-Signature` header to ensure requests are authentic.
+
+## Payload Structure
+
+**context.solved:**
+
+```json
+{
+  "event": "context.solved",
+  "context": "loan-application",
+  "identity": "APP-12345",
+  "rule": "credit-check",
+  "result": {
+    "risk_tier": "low",
+    "approved": true
+  },
+  "timestamp": "2024-01-15T10:30:00Z"
+}
+```
+
+**context.expired:**
+
+```json
+{
+  "event": "context.expired",
+  "context": "loan-application",
+  "identity": "APP-12345",
+  "final_state": {
+    "have": ["application_id", "credit_score"],
+    "need": ["employment_verified"]
+  },
+  "timestamp": "2024-01-22T10:30:00Z"
+}
+```
+
+<Callout>
+The `final_state` on expiration shows what was still missing—useful for understanding why a decision couldn't be made.
+</Callout>
+
+## Retry Behavior
+
+Failed deliveries (non-2xx response) retry with exponential backoff: 1 minute, 5 minutes, 30 minutes, then hourly for up to 24 hours.
+
+After 24 hours of failures, the webhook is disabled and you'll receive an email notification.

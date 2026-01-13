@@ -20,8 +20,12 @@
   "video-introduction": "Video Introduction",
   "getting-started": "Getting Started",
   "advanced-features": "Advanced Features",
+  "objects": "Objects",
   "managing-rules": "Managing Rules",
   "integrating-rules": "Integrating Rules",
+  "contexts": "Contexts",
+  "analysis-tools": "Analysis Tools",
+  "warnings": "Rule Warnings",
   "building-forms": "Building Forms",
   "workspace-management": "Team Management",
   "---": {

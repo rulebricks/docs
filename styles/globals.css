@@ -218,6 +218,15 @@ nav {
   font-weight: 500 !important;
 }
 
+.nx-font-semibold > strong {
+  font-weight: 500 !important;
+}
+
+b,
+strong {
+  font-weight: 600;
+}
+
 .nx-rounded,
 .nx-rounded-lg,
 .nx-rounded-md,

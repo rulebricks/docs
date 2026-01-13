@@ -1,0 +1,72 @@
+---
+metaDescription: Rules automatically execute when their inputs are ready. Understand auto-execution and cascading rule chains in Contexts.
+---
+
+# Progressive Execution
+
+The magic of Contexts: **rules run automatically when their inputs are ready.**
+
+import { Callout } from 'nextra/components'
+
+You don't schedule rule execution. You don't poll for completeness. You submit facts as they arrive, and the rules that can run will run.
+
+## How It Works
+
+When you bind a rule to a context, Rulebricks knows what inputs that rule needs. When you submit a fact:
+
+1. All derived facts that depend on it recalculate
+2. The system checks if any bound rules now have all their required inputs
+3. Rules that are ready execute automatically
+4. Their outputs write back to the context as new facts
+
+This happens in a single API response—you submit `employment_verified: true`, and you get back the approval decision your rule computed.
+
+## Cascading Execution
+
+Rules can write facts that other rules depend on. This creates automatic chains:
+
+```
+Submit: credit_score = 720
+        ↓
+  [Risk Assessment Rule] executes
+        ↓
+Writes: risk_tier = "low"
+        ↓
+  [Pricing Rule] executes (was waiting for risk_tier)
+        ↓
+Writes: rate = 4.5, max_amount = 500000
+```
+
+You submitted one fact. Three derived values appeared. This cascade happens within a single request—no webhooks, no polling, no orchestration code.
+
+The response tells you what ran:
+
+```json
+{
+  "status": "complete",
+  "cascaded": [
+    { "rule": "risk-assessment", "result": { "risk_tier": "low" } },
+    { "rule": "pricing", "result": { "rate": 4.5, "max_amount": 500000 } }
+  ]
+}
+```
+
+## Execution Modes
+
+When binding a rule to a context, choose how it executes:
+
+| Mode | When it runs |
+|------|-------------|
+| **Enabled** | Automatically when all inputs are present |
+| **Manual** | Only when you explicitly call `/solve` |
+| **Disabled** | Won't run (useful for staged rollouts) |
+
+<Callout>
+Manual mode is useful when you want to control timing precisely—for example, waiting for human approval before running a disbursement rule.
+</Callout>
+
+## Deterministic Order
+
+When multiple rules can execute, they run in dependency order—a rule that writes `risk_tier` always runs before a rule that reads it. If rules have no dependencies, execution order is stable but arbitrary.
+
+If a rule fails, the cascade stops and the error is returned. Other facts already written in that request remain—partial progress is preserved.

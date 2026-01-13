@@ -4,13 +4,13 @@ metaDescription: Rule Flows are a powerful way to chain together multiple rules,
 
 # Rule Flows
 
-![Rule Flows](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/integrating-rules/flow-reactivity.gif)
+![Flow Header](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/flows/flow-header.png)
 
 Rule Flows are a powerful way to chain together multiple rules, alongside calls to external services, and create complex decision-making workflows.
 
-Rule Flows are particularly useful when you have a series of decisions that need to be made in a specific order, or when you'd like to separate logic into multiple rules for easier maintenance of your decision-making logic.
+import { Steps, Callout } from 'nextra/components'
 
-import { Steps } from 'nextra/components'
+Rule Flows are particularly useful when you have a series of decisions that need to be made in a specific order, or when you'd like to separate logic into multiple rules for easier maintenance of your decision-making logic.
 
 ## Creating a Rule Flow
 
@@ -18,127 +18,169 @@ import { Steps } from 'nextra/components'
 
 ### Navigate to the Flows tab
 
-Open the Rulebricks dashboard, and click the "Flows" tab.
-
-![Flows Tab](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/integrating-rules/flows-tab.png)
+Open the Rulebricks dashboard and click the **Flows** tab.
 
 ### Create a new flow
 
-Click the "Create Flow" button to create a new Rule Flow. **Note that in order to create a Rule Flow, you must have at least one rule created and published in your workspace** to use as a starting point for your flow.
+Click the **Create Flow** button to create a new Rule Flow.
 
-![Create Flow](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/integrating-rules/create-flow.png)
+![Create Flow Modal](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/flows/create-flow-modal-origin.png)
 
-Upon creating a new flow, you'll be taken to the Rule Flow editor, where you can drag and drop other published rules in your workspace from the sidebar onto the canvas, and connect them together to create a flow.
+<Callout type="warning">
+  You must have at least one published rule in your workspace to use as a
+  starting point for your flow.
+</Callout>
 
-There are a few other nodes you can add to your flow as well, such as the code execution node, which allows you to make calls to external services, amongst other things, and an important **Result Object** node, which is the final output of your flow.
+### Build your flow
 
-![Rule Flow Editor](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/integrating-rules/flow-start.png)
+You'll be taken to the Flow editor where you can:
+
+- Drag and drop published rules from the sidebar onto the canvas
+- Add flow functions (code execution, API calls, etc.)
+- Connect nodes together to define the execution order
+
+![Flow Editor Entry](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/flows/flow-editor-entry.png)
 
 ### Connect your nodes
 
-Try adding a few rules to your flow, and connecting them together. You can drag and drop the nodes around the canvas, and connect them together by dragging from an output handle of one node to the input of another.
+Drag from an output handle of one node to the input of another to connect them. Data flows through the connections.
 
-![Rule Flow Editor](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/integrating-rules/flow-edit.png)
+![Try Connecting](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/flows/try-connecting.png)
 
 </Steps>
 
----
+## Flow Reactivity
 
-### Flow Reactivity
+The Rulebricks Flow editor is **reactive**—as you make changes to rule input fields, the editor automatically updates results in real-time. This makes it easy to see how your flow behaves as you build it.
 
-The Rulebricks Flow editor is "reactive", meaning that as you make changes to rule input fields in your flow, the editor will automatically update the results of your flow in real-time. This makes it easy to see how your flow behaves as you build it out.
-
-Reactivity applies to all sequences of nodes until code execution nodes are reached, at which point the flow will pause and wait for you to manually run the code execution node using the button on it before continuing. This is to ensure any external services you're calling are only called when you're ready and are not spammed with requests.
-
----
+Reactivity applies to all sequences of nodes until a code execution node is reached. Code nodes pause execution until you manually click the run button, preventing accidental spam to external services.
 
 ## Flow Functions
 
-There are several "Flow Functions" available in Rulebricks, which are special operations that can be used in your Rule Flows to perform various actions that may prove valuable integrating Rulebricks into your existing processes.
+Flow functions are special operations you can use in your flows to perform various actions beyond rule execution.
 
-![Flow Functions](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/integrating-rules/flow-functions.png)
+![Flow Functions](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/flows/flow-functions.png)
 
-We'll cover each of these functions in more detail below.
+![More Flow Functions](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/flows/more-flow-functions.png)
 
-### **Continue If**
+### Continue If
 
-![If/Else](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/integrating-rules/continue-if.png)
+![Continue If](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/integrating-rules/continue-if.png)
 
-The Continue If node allows you to proceed based on one of four selectable conditions:
+Proceed based on one of four selectable conditions:
 
- - If a specific property is "truthy" (not empty, non-zero, non-null)
- - If a specific property is `true` (exactly a boolean that equals true)
- - If a specific property is `false` (exactly a boolean that equals false)
- - If a specific property is "falsy" (an empty list, a number that equals zero, null, or otherwise false).
+- If a specific property is **"truthy"** (not empty, non-zero, non-null)
+- If a specific property is exactly **`true`**
+- If a specific property is exactly **`false`**
+- If a specific property is **"falsy"** (empty list, zero, null, or false)
 
- If the condition is met, the flow will continue along the edges exiting the node. This flow function is useful if you would like to only execute specific branches of rules/actions. Simply use two "Continue If" nodes to model if/else logic. __Note that all data you would like to proceed with in your flow after this node must be wired in as inputs.__
+If the condition is met, the flow continues along the exiting edges. Use two "Continue If" nodes to model if/else logic.
 
-### **Result Object**
+<Callout>
+  All data you want to proceed with after a Continue If node must be wired in as
+  inputs.
+</Callout>
 
-![Result](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/integrating-rules/result.png)
+### Result Object
 
-The Result Object node is the final output of your flow. It collects the results of all the nodes that precede it in the flow and returns the final output of your flow. You may use multiple Result Object nodes in your flow, as long as they contain unique keys in which to store the results.
+![Result Object](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/integrating-rules/result.png)
 
- __You must use a Result Object node at the end of your flow, as it is the only way to return results from your flow. If you do not use a Result Object node, your flow will not return any results.__
+The final output of your flow. It collects results from all preceding nodes and returns them as the flow's response.
 
-### **Lookup Table**
+- You can use multiple Result Object nodes with unique keys
+- **Required**: Every flow must end with at least one Result Object node
+
+### Lookup Table
 
 ![Lookup Table](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/integrating-rules/lookup-table.png)
 
-The Lookup Table node allows you to look up a value in a table and return a corresponding value if an exact match is found. Lookup Tables can work well with If/Else nodes by returning true or false based on the lookup result.
+Look up a value in a table and return a corresponding value if an exact match is found. Works well with Continue If nodes by returning true/false based on lookup results.
 
-### **Run Code**
+### Run Code
 
-![Code](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/integrating-rules/code.png)
+![Run Code](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/integrating-rules/code.png)
 
-The Run Code node allows you to run custom Javascript code in your flow, using data from inside your flow. This is useful if you need to make calls to external services, perform complex calculations, or perform other custom operations that are not supported by the other flow functions.
+Run custom JavaScript code using data from your flow. Useful for:
 
-For ease of use, we offer certain standard libaries in this node, such as `fetch`, `moment`, `lodash`, and more.
+- Making calls to external services
+- Performing complex calculations
+- Custom string formatting or data transformation
 
-You can access values from connected nodes in the Run Code node by reading data in the `inputs` dictionary, and you can return arbitrary values from the Run Code node by updating the `outputs` dictionary. Global values and variables outside of the `outputs` dictionary will not be returned.
+Available libraries: `fetch`, `moment`, `lodash`, and more.
 
-### **Database Query**
+Access connected values via the `inputs` dictionary and return values via the `outputs` dictionary.
 
-![DB Query](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/integrating-rules/db.png)
+```javascript
+// Example: Calculate discount
+const total = inputs.subtotal
+const discount = total > 100 ? total * 0.1 : 0
+outputs.discount = discount
+outputs.final_total = total - discount
+```
 
-The Database Query node allows you to query a PostgreSQL database table and return the results. This is useful if you need to retrieve data from a database table and use it in your flow, or if you need to update data in a database table based on the results of your flow. Variables from your flow can be used in the query, and the results of the query can be used in subsequent nodes in your flow.
+### Database Query
 
-You can operate further on the `rows` returned from the query by using a For Each node (described below), or you can send the results directly to a Result Object node.
+![Database Query](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/integrating-rules/db.png)
 
-This node comes with built-in support for 1-minute caching, so you can increase the performance of your flow endpoints. Expand the node settings panel to configure this.
+Query a PostgreSQL database and return results. Variables from your flow can be used in the query.
 
-### **API Request**
+Features:
+
+- Use `rows` with a For Each node or send directly to Result Object
+- Built-in 1-minute caching for performance
+
+### API Request
 
 ![API Request](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/integrating-rules/api.png)
 
-The API Request node allows you to make an HTTP request to an external API and return the results. This is useful if you need to retrieve data from an external API and use it in your flow, or if you need to update data in an external API based on the results of your flow. Variables from your flow can be used in the request URL, headers, and body, and the results of the request can be used in subsequent nodes in your flow.
+Make HTTP requests to external APIs. Variables from your flow can be used in the URL, headers, and body.
 
-This node comes with built-in support for 1-minute caching, so you can increase the performance of your flow endpoints. Expand the node settings panel to configure this.
+Features:
 
-### **For Each**
+- GET, POST, PUT, DELETE methods
+- Custom headers and authentication
+- Built-in 1-minute caching
+
+### For Each
 
 ![For Each](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/integrating-rules/for-each.png)
 
-The For Each node allows you to iterate over a list of items and apply a rule to each item in the list. This is useful when your use-case for Rulebricks involves transforming collections of objects, such as a list of orders, a list of users, or a list of products.
+Iterate over a list of items and apply a rule to each one. Perfect for:
 
-If your list contains objects/values, For Each nodes will automatically explode the object into individual fields that can you can use in your flow. **If your list is empty, the For Each node will not know what values to iterate over and will remain empty and unusable.**
+- Transforming collections of objects
+- Processing lists of orders, users, or products
+- Batch operations
 
-For Each nodes must culminate in a Result Object node, which will collect the results of each iteration and be used to return a transformed list of items.
+<Callout type="warning">
+  For Each nodes must culminate in a Result Object node. Values inside the loop
+  cannot connect to parts of the flow outside that loop (indicated by different
+  edge colors).
+</Callout>
 
-**Note that because values in the For Each node are being iterated over and within a specific loop, they cannot connect to parts of your flow that are not within or downstream of that same loop.** This is intentional and indicated by a change in the color of connecting edges emitted from the For Each node.
-
-### **AI Inference**
+### AI Inference
 
 ![AI Inference](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/integrating-rules/ai-inference.png)
 
-The AI Inference node allows you extract structured data to execute rules on from text using OpenAI's latest model. This is extremely useful if you'd like to extract specific information from things like emails and reports, and use that information in your flow, all natively within Rulebricks.
+Extract structured data from text using OpenAI. Useful for:
 
-To use the AI Inference node, just connect a text input into the node on the left, define the structured data you'd like to extract in the node UI by clicking "+ Add Target Label", and click "Run Inference".
+- Parsing emails and reports
+- Extracting specific information from documents
+- NLP preprocessing before rule execution
 
-### **Vault**
+To use:
+
+1. Connect a text input
+2. Define target labels to extract
+3. Click "Run Inference"
+
+### Vault
 
 ![Vault](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/integrating-rules/vault.png)
 
-The Vault node allows you to securely retrieve sensitive information, such as API keys, passwords, and other secrets from any major cloud secrets manager. This is useful if you need to use sensitive information in your flow without exposing it outside your workspace.
+Securely retrieve sensitive information from cloud secrets managers (AWS, GCP, Azure).
 
-Unless you explicitly surface the secrets output from Vault nodes in your flow (and there are safeguards that prevent you from doing so outside of the "Run Code" node) they will never appear or be stored in clear text in your flow, logged, or returned as part of the flow output.
+Security features:
+
+- Secrets never appear in clear text in the flow
+- Cannot be logged or returned in output
+- Only accessible within Run Code nodes

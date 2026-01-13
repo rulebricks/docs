@@ -1,0 +1,52 @@
+---
+metaDescription: Contexts hold your decision together while data arrives from different sources at different times. Progressive rule execution for async business processes.
+---
+
+# Contexts
+
+A loan application arrives on Monday. The credit check comes back Wednesday. Employment verification finishes Friday. By the time you have everything you need to make a decision, where did Monday's data go?
+
+import { Callout } from 'nextra/components'
+
+**Contexts hold your decision together while the pieces arrive.**
+
+![Contexts Tab](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/contexts/context-tab.png)
+
+Instead of building infrastructure to track what data you have, what's missing, and when to run your rules, Contexts handle it for you. Define the facts you need, submit them as they arrive from different sources, and your rules execute automatically when everything's ready.
+
+```javascript
+// Credit score arrives from bureau webhook
+POST /api/v1/contexts/loan-application/APP-12345
+{ "credit_score": 720 }
+
+// Response tells you what's still missing
+{
+  "status": "pending",
+  "have": ["applicant_id", "credit_score"],
+  "need": ["annual_income", "employment_verified"]
+}
+
+// When the last piece arrives, rules auto-execute
+{
+  "status": "complete",
+  "state": {
+    "approval_decision": "approved",  // Written by your rule
+    "max_loan_amount": 250000
+  }
+}
+```
+
+<Callout>
+**Contexts vs Objects:** Objects define data structures for your rules. Contexts track decision-relevant facts as they arrive over time. If you have all your data upfront, use Objects. If data arrives progressively from different sources, use Contexts.
+</Callout>
+
+## When to Use Contexts
+
+- Data arrives from multiple sources at unpredictable times (webhooks, user actions, third-party APIs)
+- You want rules to execute automatically when their inputs are ready
+- Your decision process spans hours, days, or weeks
+- You need to track what's been collected vs what's still missing
+
+## Getting Started
+
+Head to the **[Getting Started guide](/contexts/getting-started)** to create your first Context and see progressive execution in action.

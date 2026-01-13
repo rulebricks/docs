@@ -1,0 +1,69 @@
+---
+metaDescription: Objects are reusable schema definitions that provide field suggestions when building rules and contexts. Define once, use everywhere.
+---
+
+# Objects in Rulebricks
+
+You've got a customer object with `tier`, `credit_score`, and `lifetime_value`. You'll use those fields in a dozen rules. Do you really want to type them out each time?
+
+import { Callout } from 'nextra/components'
+
+Objects are team-level schema definitions that provide field suggestions when you create rules or contexts. Define your data structure once, and every rule you build can pull from it.
+
+![Objects Team Tab](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/objects/objects-team-tab.png)
+
+## What Objects Give You
+
+**Field suggestions** — When building a rule, select an Object and its fields appear in the schema editor. No retyping, no typos.
+
+![Map Fields from Object](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/objects/map-fields-from-object.png)
+
+**Automatic Dynamic Values** — If your Object uses JSON Schema with `enum` fields, Rulebricks extracts those values and creates dropdown options in your rule conditions.
+
+![Enum Benefits](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/objects/mapping-fields-enums-benefits.png)
+
+**Consistency** — When everyone builds rules from the same Objects, field names stay consistent across your workspace.
+
+## Two Schema Formats
+
+**JSON Schema** — Full schema definitions with types, validation rules, and enums:
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "customer_tier": {
+      "type": "string",
+      "enum": ["bronze", "silver", "gold", "platinum"]
+    },
+    "credit_score": {
+      "type": "number",
+      "minimum": 300,
+      "maximum": 850
+    }
+  }
+}
+```
+
+**JSON Object** — Plain example objects when you just want field suggestions without full validation:
+
+```json
+{
+  "customer_id": "cust_12345",
+  "order_total": 299.99,
+  "is_priority": true
+}
+```
+
+Rulebricks auto-detects which format you're using.
+
+<Callout>
+  **Objects vs Contexts:** Objects define data structures. Contexts track data
+  as it arrives over time and execute rules progressively. If you have all your
+  data upfront, use Objects to define your schema. If data arrives from multiple
+  sources at different times, use [Contexts](/contexts).
+</Callout>
+
+## Getting Started
+
+See **[Creating Objects](/objects/creating-objects)** for three ways to add Objects to your workspace—manual creation, AI-powered import from existing documentation, or pre-built templates.

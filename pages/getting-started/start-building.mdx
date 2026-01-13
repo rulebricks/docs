@@ -4,44 +4,11 @@ metaDescription: Build your first rule in Rulebricks. Learn how to create a rule
 
 # Build your first rule
 
-Let’s get started building a rule. First, go to the [dashboard](https://rulebricks.com/dashboard). If this is your first time creating a rule, it will look something like this:
+Let's get started building a rule. First, go to the [dashboard](https://rulebricks.com/dashboard). If this is your first time creating a rule, it will look something like this:
 
-![1670951979.png](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/Build%20your%20first%20rule/1670951979.png)
+![Dashboard Entry](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/start-building/app-entry.png)
 
-## Start Building
-
-import { Steps } from 'nextra/components'
-
-<Steps>
-
-### Create a new rule
-
-Click the “Create Rule” button in the top right. You’ll be presented with a dialog; fill out the request.
-
-![1670952087.png](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/Build%20your%20first%20rule/1670952087.png)
-
-### Open the editor
-
-Your rule will be created, and you’ll be dropped into the **rule editor**. Some sample data has been loaded for you.
-
-![1670952129.png](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/Build%20your%20first%20rule/1670952129.png)
-
-</Steps>
-
-Let’s go over the sections of the editor.
-
-## The Rule Table
-
-The **rule table** is the table view in the left-center area. This contains the data that defines your rule.
-
-The rule table is split into two sections, **request** and **response.** You can always tell which section a column is in by the labels above the table. They scroll horizontally with the table.
-
-At the top of each column is the **column header**. In black, the column’s name is listed. By default, this name is automatically generated from the column key. As you know, each column corresponds to a key in the rule’s request or its response. The key is included in the header cell for each column in light gray. The column header also includes an icon indicating the type.
-
-Rulebricks supports several types of data that are commonly used in decision-making.
-
-import { Tabs } from 'nextra/components'
-import { Callout } from 'nextra/components'
+import { Steps, Tabs, Callout } from 'nextra/components'
 import {
   IconBrackets,
   IconCalendar,
@@ -51,234 +18,297 @@ import {
   IconMathFunction,
 } from '@tabler/icons-react'
 
+## Creating Your First Rule
+
+<Steps>
+
+### Create a new rule
+
+Click the **Create Rule** button in the top right. You'll be presented with a dialog to configure your new rule.
+
+![Create Rule Modal](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/start-building/create-new-rule-modal.png)
+
+Choose **From Scratch** to build a rule from the ground up.
+
+![From Scratch](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/start-building/from-scratch.png)
+
+### Open the editor
+
+Your rule will be created, and you'll be dropped into the **rule editor**. This is where you'll define your decision logic.
+
+![Table Editor Entry](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/start-building/table-editor-entry.png)
+
+</Steps>
+
+## Understanding the Rule Table
+
+The **rule table** is the main area where you define your decision logic. It's split into two sections:
+
+- **Request (Conditions)**: The left side contains the conditions that determine which row matches
+- **Response (Results)**: The right side contains the values returned when a row matches
+
+At the top of each column is the **column header** showing the column name and data type icon.
+
+### Data Types
+
+Rulebricks supports several types of data commonly used in decision-making:
+
 <Tabs items={['List', 'Number', 'Date', 'Text', 'Boolean', 'Function']}>
-  <Tabs.Tab>
+<Tabs.Tab>
 
-    <IconBrackets size={64} className="bg-sky-100 text-sky-800 rounded-md border border-sky-300 p-2"/>
+<IconBrackets size={64} className="bg-sky-100 text-sky-800 rounded-md border border-sky-300 p-2"/>
 
-    A list is a collection of items. Each item in the list can be of a different type. For example, a list of numbers could contain the numbers 1, 2, and 3.
+A list is a collection of items. Each item in the list can be of a different type.
 
-    Example:
+```jsx
+[1, 2, 3]
+["apple", "banana", "cherry"]
+```
 
-        ```jsx
-        [1, 2, 3]
-        ```
+Example operations: Checking if a list contains a value, checking if a list is empty, checking length.
 
-    Example operations on lists: Checking if a list contains a value, checking if a list is empty, and checking if a list has a certain length, among others.
+</Tabs.Tab>
+<Tabs.Tab>
 
-  </Tabs.Tab>
-  <Tabs.Tab>
+<Icon123 size={64} className="bg-red-100 text-red-800 rounded-md border border-red-300 p-2"/>
 
-{' '}
+A number is a numerical value—integer or floating-point.
 
-<Icon123
-  size={64}
-  className="bg-red-100 text-red-800 rounded-md border border-red-300 p-2"
-/>
+```jsx
+3.14
+42
+-100
+```
 
-A number is a numerical value. It can be an integer or a floating-point number. For example, the number 3.14 is a floating-point number.
+Example operations: Greater than, less than, equal to, within range.
 
-Example:
+</Tabs.Tab>
+<Tabs.Tab>
 
-      ```jsx
-      3.14
-      ```
+<IconCalendar size={64} className="bg-orange-200 text-orange-500 rounded-md border border-orange-500 p-2"/>
 
-Example operations on numbers: Checking if a number is greater than another number, checking if a number is less than another number, and checking if a number is equal to another number, among others.
+A date is a calendar date and time in ISO 8601 format.
 
-  </Tabs.Tab>
-  <Tabs.Tab>
-  
-  <IconCalendar size={64} className="bg-orange-200 text-orange-500 rounded-md border border-orange-500 p-2"/>
+```jsx
+"2024-01-15T10:30:00Z"
+```
 
-A date is a calendar date and time. For example, the date and time December 6, 2022, at 6:43:38 PM UTC can be represented as 2022-12-06T18:43:38+0000.
+Example operations: Before, after, within last N days.
 
-Example:
+</Tabs.Tab>
+<Tabs.Tab>
 
-      ```jsx
-      "2022-12-06T18:43:38+0000"
-      ```
+<IconAlphabetLatin size={64} className="bg-green-200 text-green-500 rounded-md border border-green-500 p-2"/>
 
-Example operations on dates: Checking if a date is before another date, checking if a date is after another date, and checking if a date is within the last 30 days, among others.
+Text is a string of characters.
 
-  </Tabs.Tab>
-  <Tabs.Tab>
-  
-  <IconAlphabetLatin size={64} className="bg-green-200 text-green-500 rounded-md border border-green-500 p-2"/>
+```jsx
+"Hello, world!"
+"approved"
+```
 
-Text is a string of characters. For example, the text "Hello, world!" is a string.
+Example operations: Equals, contains, starts with, is valid email.
 
-Example:
+</Tabs.Tab>
+<Tabs.Tab>
 
-      ```jsx
-      "Hello, world!"
-      ```
+<IconCheckbox size={64} className="bg-purple-200 text-purple-500 rounded-md border border-purple-500 p-2"/>
 
-Example operations on text: Checking if a text contains another text, checking if some text is equal to another text, and checking if text is a valid email, among others.
+A boolean is a logical value: true or false.
 
-  </Tabs.Tab>
-  <Tabs.Tab>
-  
-  <IconCheckbox size={64} className="bg-purple-200 text-purple-500 rounded-md border border-purple-500 p-2"/>
+```jsx
+true
+false
+```
 
-A boolean is a logical value that can be either true or false. For example, the value true represents the logical value of true.
+Example operations: Is true, is false.
 
-Example:
+</Tabs.Tab>
+<Tabs.Tab>
 
-      ```jsx
-      true
-      ```
+<IconMathFunction size={64} className="bg-neutral-200 text-neutral-500 rounded-md border border-neutral-500 p-2"/>
 
-Example operations on booleans: Checking if a boolean is true or false.
-
-  </Tabs.Tab>
-  <Tabs.Tab>
-  <IconMathFunction size={64} className="bg-neutral-200 text-neutral-500 rounded-md border border-neutral-500 p-2"/>
-
-A function is a mathematical expression or a piece of code that can be evaluated to produce a value. For example, the function `x + 2` can be evaluated to produce a value.
-
-{' '}
+A function is a mathematical expression that computes a value.
 
 <Callout>
-  Note that functions can only be used in the response section of a rule, to
-  compute a value based on the request that the rule should return.
+Functions can only be used in the response section to compute values based on request data.
 </Callout>
 
-Example:
+```jsx
+price * 1.08  // Add 8% tax
+```
 
-      ```jsx
-      x + 2
-      ```
-
-  </Tabs.Tab>
+</Tabs.Tab>
 </Tabs>
 
+## Setting Up Your Schema
+
+The schema defines what data your rule accepts (request) and returns (response).
+
+<Steps>
+
+### Open the Schema Editor
+
+Click on the **Schema** button to open the schema editor. This is where you define your input and output fields.
+
+![Schema Editor](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/start-building/schema-editor.png)
+
+You can also use **JSON mode** to paste a sample request object directly:
+
+![Schema Editor JSON Mode](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/start-building/schema-editor-json-mode.png)
+
+### Configure the Request Schema
+
+Let's create a simple pricing rule. Set up your request schema with:
+
+```json
+{
+  "price": 40,
+  "date_purchased": "2024-01-15T10:30:00Z",
+  "gift": false
+}
+```
+
+Click **Set Schema** to apply the changes.
+
+![Set Schema](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/start-building/set-schema.png)
+
+### View Column Details
+
+You can click on any column header to see and edit its details, including type and display name.
+
+![Column Details](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/start-building/column-details.png)
+
+### Save the Schema
+
+Click **Save** to apply your schema changes.
+
+![Save Schema](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/start-building/save-schema.png)
+
+### Set Up the Response Schema
+
+Configure what your rule returns. For our example:
+
+```json
+{
+  "result": true
+}
+```
+
+![Set Response Schema](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/start-building/set-save-response-schema.png)
+
+</Steps>
+
+## Adding Conditions and Results
+
+Now let's add the actual decision logic to your rule.
+
+<Steps>
+
+### Add a condition
+
+Click on a condition cell in the **price** column and add a condition. Let's check if the price is greater than 10.
+
+![Create Price Condition](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/start-building/create-price-condition.png)
+
+### Set the result
+
+Click on the result cell in the **result** column and set the value to **true**.
+
+![Create Result](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/start-building/create-result.png)
+
+</Steps>
+
+## Testing Your Rule
+
+<Steps>
+
+### Open the Test tab
+
+Click on the **Test** tab in the sidebar to test your rule locally.
+
+![Test Rule](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/start-building/test-rule.png)
+
+### Test with matching data
+
+Enter a test request:
+
+```json
+{
+  "price": 20
+}
+```
+
+Click **Test**. You should see the row highlight in green (conditions matched) and blue (result returned), with a 200 OK response.
+
+### Test with non-matching data
+
+Try a price that doesn't match:
+
+```json
+{
+  "price": 5
+}
+```
+
+![Nothing Hit](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/start-building/nothing-hit.png)
+
+Since the price is not greater than 10, no row matches, and you'll get a 400 error.
+
+</Steps>
+
+## Adding a Catch-All Row
+
+To handle cases where no specific condition matches, add a catch-all row.
+
+<Steps>
+
+### Add a new row
+
+Click **Add Row** in the toolbar to add a blank row.
+
+![Add Catch All](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/start-building/add-catch-all.png)
+
+### Leave conditions as "Any"
+
+The new row will have **Any** for all conditions, meaning it matches any input that doesn't match earlier rows.
+
+### Set the catch-all result
+
+Set the result to **false** for the catch-all row.
+
+### Test again
+
+Test with the price of 5 again:
+
+![Catch All Hit](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/start-building/catch-all-hit.png)
+
+Now the catch-all row matches, returning `result: false` with a 200 OK response.
+
+</Steps>
+
+## Final Rule State
+
+Your completed rule should look like this:
+
+![Final Rule State](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/start-building/final-rule-state.png)
+
+**Row 1**: If price > 10 → result: true
+**Row 2**: Catch-all → result: false
+
+## How Row Matching Works
+
+Rulebricks evaluates rows **top to bottom**:
+
+1. For each row, all conditions in the request section are checked
+2. If **all** conditions in a row pass, that row "matches"
+3. The **first matching row** determines the response
+4. If **no rows match**, an error is returned (unless you have a catch-all)
+
+<Callout>
+Cells highlighted in **green** indicate conditions that passed. Cells highlighted in **red** indicate conditions that failed. Cells highlighted in **blue** show the result that was returned.
+</Callout>
+
 ---
 
-Below the table headers are the **condition rows**. Those contain the conditions that define your rule (in the request section) and the values that the rule returns (in the response section). You can edit any cell by clicking the pencil icon that appears when you hover over the cell, or by double-clicking the cell.
-
-## The Sidebar
-
-On the right side is the **sidebar**. It has three tabs: the **request tab**, **response tab**, and **test tab**. Let’s go over these one by one, while building out our first rule.
-
-<Steps>
-
-### Edit the request object
-
-The **request tab** allows you to edit the schema for requests. This will modify the columns, including their names and types. To provide a sample request object, open the disclosure labeled **Request Format**.
-
-![1670953366.png](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/Build%20your%20first%20rule/1670953366.png)
-
-A sample JSON object has been provided, but you can replace it with your own. For example, try pasting the following JSON object:
-
-```jsx
-{
-	"price": 40,
-	"date_purchased": "2022-12-06T18:43:38+0000",
-	"gift": false,
-}
-```
-
-### Updating columns
-
-Then, press **Update Columns**. The table will update to reflect this object by creating three columns corresponding to the three keys, **price**, **date_purchased**, and **gift**. Notice that the types were automatically inferred from the object. **Note:** **removing a column from the JSON schema will delete all of the data in its cells**.
-
-To edit a specific column, you can select its key in the dropdown under the **Edit Columns** header.
-
-![1670973054.png](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/Build%20your%20first%20rule/1670973054.png)
-
-Here, you can change the column’s name, type, and default value. Changing the type of a column will clear any data stored in that column.
-
-You can also set whether the column is visible or not. Columns that have data in them cannot be hidden, and if there’s only one column in the section, you can’t hide it either.
-
-### Edit the response object
-
-The **response tab** works pretty much like the request tab. The only difference is that you can’t hide response columns. If you’re following along with this guide, try pasting the following JSON and hitting **Update Columns.**
-
-```jsx
-{
-	"result": true
-}
-```
-
-### Adding a condition
-
-The **test tab** allows you to _locally_ test your rule against a particular request. That is, it will not test that the rule is actually available online- it just evaluates your conditions within your web browser.
-
-If you pasted the two JSON values above and updated your table schema, your table should look like this:
-
-![1670973460.png](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/Build%20your%20first%20rule/1670973460.png)
-
-<Steps>
-
-#### Part 1
-
-Try adding a condition to the price column on the left, checking if the price is greater than 10.
-
-![1670973658.png](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/Build%20your%20first%20rule/1670973658.png)
-
-#### Part 2
-
-Finally, add the value **true** to the result column on the right.
-
-![1670973705.png](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/Build%20your%20first%20rule/1670973705.png)
-
-Now the table looks like this:
-
-![1670973749.png](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/Build%20your%20first%20rule/1670973749.png)
-
-</Steps>
-
-### Testing your rule
-
-<Steps>
-
-#### Part 1
-
-Great, you’re ready to test the rule. Open the test tab and paste the following JSON object. Then press the **Test** button.
-
-```jsx
-{
-	"price": 20
-}
-```
-
-Your screen should now look like this. In the sidebar, you can see the response object that Rulebricks generated along with the HTTP status code returned with the request. In this case, the test JSON matched the first row, which is why all three cells in the request section are highlighted in green. Then, since that row succeeded, Rulebricks used the response section of that row to generate the response JSON— that’s why the cell with **true** in it is highlighted in blue.
-
-![1670973843.png](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/Build%20your%20first%20rule/1670973843.png)
-
-#### Part 2
-
-Now, let’s try a different price. Replace the value **20** with **5** in the test JSON object, and press **Test** again.
-
-![1670974082.png](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/Build%20your%20first%20rule/1670974082.png)
-
-</Steps>
-
-### Fixing your rule
-
-Oops! Since the price was not greater than 10, the first cell in the first row did not succeed, and the row as a whole failed. Since no rows succeeded, Rulebricks could not generate a response object. In this case, an HTTP 400 error is returned.
-
-<Steps>
-
-#### Part 1
-
-To fix this issue, click the **Add Row** button in the navbar. This adds a blank row.
-
-![1670974242.png](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/Build%20your%20first%20rule/1670974242.png)
-
-#### Part 2
-
-Now, replace the value in the result column of the second row with **false**. Press **Test** again.
-
-![1670974308.png](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/Build%20your%20first%20rule/1670974308.png)
-
-</Steps>
-
-This time, the first row failed, but the second row succeeded! This is because **Any** will match any value. Then, Rulebricks used the response section of the second row to generate the response. Since at least one row was successful, the HTTP code is 200 OK.
-
-</Steps>
-
----
-
-That’s it! You’ve built and tested your first rule. Continue to the next section to learn how to deploy the rule to the cloud.
+That's it! You've built and tested your first rule. Continue to the next section to learn how to [publish your rule](/managing-rules/publishing-rules) and call it from your application.

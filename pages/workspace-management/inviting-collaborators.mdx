@@ -1,17 +1,38 @@
 ---
-metaDescription: Invite collaborators to your Rulebricks workspace to collaborate on rules and decisions. Collaborators have full access to your workspace, with the exception of editing the team as an administrator.
+metaDescription: Invite team members to your Rulebricks workspace and manage their access levels.
 ---
 
 # Inviting Collaborators
 
-You can invite collaborators to your workspace by navigating to the "Team" tab in your Rulebricks dashboard and inviting them by email.
+import { Steps, Callout } from 'nextra/components'
 
-![Invite Collaborators](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/workspace-management/inviting-new-members.png)
+Navigate to the **Team** tab to see your current team members and invite new ones.
 
-It's important to note that collaborators will have full access to your workspace, with the sole exception of editing the team as an administrator (you), including the ability to create, edit, and delete rules, view your API key, as well as view logs and other workspace settings.
+![View Team](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/inviting-collaborators/view-team.png)
 
-Collaborators will not be able to view or edit your billing information, or change your subscription plan.
+<Steps>
 
-Once you've invited a collaborator, they will receive an email inviting them to join your workspace. They will need to accept the invitation to gain access. You will then see them listed in the "Team" tab of your workspace.
+### Click Invite
 
-![Collaborator List](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/workspace-management/workspace-team-view-2.png)
+Click the **Invite** button to open the invitation dialog.
+
+![Invite Modal](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/inviting-collaborators/invite-modal.png)
+
+### Enter email and select role
+
+Enter their email address and choose a role:
+
+- **Developer** — Full access to rules, flows, API keys, logs, and settings
+- **Editor** — Can view and edit existing rules only
+
+### Send invitation
+
+They'll receive an email with instructions to join. Once accepted, they appear in your team list and can immediately access your workspace.
+
+</Steps>
+
+<Callout type="info">
+For more granular control, create [custom roles](/workspace-management/assigning-roles) with specific permissions.
+</Callout>
+
+Collaborators cannot edit team membership, view billing, or remove the workspace owner—those are admin-only.

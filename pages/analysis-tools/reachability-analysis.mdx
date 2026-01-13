@@ -1,0 +1,61 @@
+---
+metaDescription: See which rows in your decision table are actually being matched by production traffic. Find dead code and optimization opportunities.
+---
+
+# Reachability Analysis
+
+Your rule has 47 rows. Which ones actually matter?
+
+import { Tabs, Callout } from 'nextra/components'
+
+Reachability Analysis shows you exactly which rows are being hit by real traffic—and which ones might be dead weight. It analyzes your execution logs to surface usage patterns you wouldn't otherwise see.
+
+![Reachability Analysis](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/rule-analysis-tools/reachability-analysis.png)
+
+## What It Shows
+
+<Tabs items={['Row Hits', 'Condition Denials', 'Condition Passes']}>
+<Tabs.Tab>
+
+Which rows are doing the heavy lifting:
+
+- Rows sorted by hit frequency, most matched at top
+- Percentages showing traffic distribution
+- Rows that were **never hit** flagged as potential dead code
+
+</Tabs.Tab>
+<Tabs.Tab>
+
+Which conditions are blocking matches. This helps you understand why certain rows aren't being reached—maybe a condition is too restrictive, or an earlier row is catching everything.
+
+</Tabs.Tab>
+<Tabs.Tab>
+
+Which conditions pass most frequently, revealing your typical traffic patterns and the "happy path" through your rule.
+
+![Condition Acceptance View](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/rule-analysis-tools/reachability-condition-acceptance-view.png)
+
+</Tabs.Tab>
+</Tabs>
+
+The panel header shows summary stats: how many requests matched at least one row, how many matched nothing, and how many rows have zero hits.
+
+<Callout type="warning">
+High "no match" counts mean inputs are falling through without being handled. You probably need a catch-all row or broader conditions.
+</Callout>
+
+## Finding Dead Rows
+
+A row with 0% hits over 30 days is probably:
+
+- **Unreachable** — an earlier catch-all row blocks it
+- **Obsolete** — handles an edge case that never actually occurs
+- **Safe to remove** — cleaning up your rule table
+
+Before deleting, check *why* it's not being hit. Some rows handle rare but critical cases—you don't want to remove your fraud detection row just because it only fires twice a month.
+
+## Performance Optimization
+
+If one row handles 80% of your traffic but sits at the bottom of your table, moving it up can meaningfully improve evaluation speed at scale. Rulebricks evaluates top-to-bottom, so putting your high-traffic rows near the top reduces unnecessary condition checks.
+
+Use [Impact Analysis](/analysis-tools/impact-analysis) afterward to verify that reordering didn't change your rule's behavior.

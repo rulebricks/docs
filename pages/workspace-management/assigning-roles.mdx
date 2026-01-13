@@ -1,49 +1,56 @@
 ---
-metaDescription: There are three user roles in Rulebricks you can use to enable different levels of access to your workspace– Administrator, Developer, and Editor. Learn more about managing roles in Rulebricks.
+metaDescription: Control workspace access with system roles and custom roles with fine-grained permissions.
 ---
 
 # Assigning Roles
 
-You can assign roles to users in your workspace by navigating to the "Team" tab in your Rulebricks dashboard and selecting the role you'd like to assign to a user.
+import { Steps, Callout } from 'nextra/components'
 
-import { Steps } from 'nextra/components'
+Roles control what users can access and modify. Assign them from the **Team** tab by clicking the pencil icon next to any user's current role.
 
-<Steps>
+![Assigning Roles](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/roles/assigning-roles.png)
 
-### Open the role dialog
+## System Roles
 
-To assign a role to a user, find the user in the "Team" tab of your Rulebricks dashboard and click on the pencil icon next to their role.
+**Developer** — Full access to rules, flows, API keys, logs, Dynamic Values, and settings. Cannot edit team membership or billing.
 
-![Assigning Roles](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/workspace-management/workspace-change-role.png)
+**Editor** — Can view and edit existing rules. Cannot create/delete rules, access API keys, logs, flows, or settings.
 
-### Select a role
-
-A dialog will appear where you can select the role you'd like to assign to the user. You can assign one of two built-in system roles: Developer, and Editor– the Administrator role is reserved exclusively for the workspace owner, and cannot be assigned to other users. If you've created any custom role, you can select among them here as well.
-
-![Role Dialog](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/workspace-management/workspace-role-dialog.png)
-
-</Steps>
-
-## System Role Overviews
-
-### Developer
-
-Developers have full access to your workspace, with the exception of editing the team as an administrator, or viewing/modifying billing settings. Developers can otherwise create, edit, and delete rules, view your API key, as well as view logs and other workspace settings.
-
-Users who are assigned this role should be fully trusted, internal team members who need full access to your workspace.
-
-### Editor
-
-Editors have highly limited access to your workspace, with the ability to view & edit pre-existing rules, view dynamic values, and a list of other team members. Editors do not have access to your API key, and cannot view or edit billing, team, and rule settings. Editors also do not have access to workspace logs, and Rulebricks Flows.
-
-Users who are assigned this role should be external collaborators or clients who still need to view and propose changes rules.
+**Administrator** — Complete control including team management and billing. Reserved for the workspace owner.
 
 ## Custom Roles
 
-![Custom Role Dialog](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/workspace-management/editing-custom-roles.png)
+For granular control, create custom roles with exactly the permissions you need.
 
-In addition to the default roles, you can create custom roles with specific permissions to nearly any aspect of your workspace.
+<Steps>
 
-![Role Entitlements](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/workspace-management/custom-role-entitlements.png)
+### Create the role
 
-Custom roles can be assigned to users who require more granular access control. This can be incredibly useful for tailoring Rulebricks to specific end-users when embedded in your applications or served to external clients.
+Go to **Team → Roles** and click **Create Custom Role**.
+
+![Create Custom Roles](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/roles/create-custom-roles.png)
+
+### Configure permissions
+
+Select which capabilities this role should have:
+
+![Fine-Grained Permissions](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/roles/fine-grained.png)
+
+**Rules & Flows** — View, edit, create, delete, publish
+
+**Data & Settings** — API keys, logs, Dynamic Values, settings
+
+**Team** — View members, invite members, manage roles
+
+### Save
+
+Name it descriptively and save.
+
+</Steps>
+
+<Callout type="info">
+  Custom roles combine with [User
+  Groups](/workspace-management/creating-tenants) for precise scoping– roles
+  control what Rulebricks functionality they can use, and user groups control
+  what data they see.
+</Callout>

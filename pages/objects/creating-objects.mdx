@@ -1,0 +1,68 @@
+---
+metaDescription: Three ways to create Objects in Rulebricks—manual creation, AI-powered Smart Import, or pre-built templates.
+---
+
+# Creating Objects
+
+import { Tabs, Callout } from 'nextra/components'
+
+<Tabs items={['Manual', 'Smart Import', 'Templates']}>
+<Tabs.Tab>
+
+Go to **Team → Objects** and click **Add Object**.
+
+![Objects Team Tab](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/objects/objects-team-tab.png)
+
+Enter a name and paste or write your JSON. Rulebricks detects whether it's a JSON Schema or plain JSON Object automatically.
+
+Good for quick definitions when you know exactly what structure you need.
+
+</Tabs.Tab>
+<Tabs.Tab>
+
+Let AI generate a schema from your existing documentation.
+
+Click **Smart Import** and provide:
+
+- **Name and description** of what you're modeling
+- **Attachments** — PDFs, spreadsheets, SQL DDL files, images, or URLs
+- **Notes** — Additional context or constraints
+
+Click **Generate** and Rulebricks creates a complete JSON Schema.
+
+**Supported files:** PDF, Excel, CSV, Word, JSON, SQL/DDL, images (with OCR), and web URLs.
+
+Good for converting existing specs, database schemas, or documentation without manual translation.
+
+</Tabs.Tab>
+<Tabs.Tab>
+
+Pre-built schemas for common use cases.
+
+![Object Templates](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/objects/object-templates.png)
+
+Click **Use Template**, browse categories or search, preview the schema, and click **Add to Workspace**. Templates are pretty good for getting started quickly with industry-standard data structures.
+
+</Tabs.Tab>
+</Tabs>
+
+## Using Objects in Rules
+
+When creating a rule, click **From Object** to pull fields from an existing Object:
+
+![Create Rule Using Object](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/objects/create-rule-using-object.png)
+
+Select the fields you need and they're added to your rule's schema—correctly typed and named.
+
+## Automatic Dynamic Values
+
+When you save a JSON Schema with `enum` fields, Rulebricks extracts those values and creates Dynamic Values:
+
+![Objects Create Values](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/objects/objects-create-values.png)
+
+These appear as dropdown options in your rule conditions, so instead of typing `"gold"` you select it from a list. Fewer typos, faster rule building.
+
+<Callout>
+  Objects can be used to inform rules and contexts. Update the Object and you
+  have a single source of truth for that data structure.
+</Callout>

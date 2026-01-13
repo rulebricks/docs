@@ -1,60 +1,76 @@
 ---
-metaDescription: Dynamic values and functions in Rulebricks allow you to store and reference values and custom code in your rules. Learn how to set them up here.
+metaDescription: Store reusable values and write custom JavaScript functions to use across your rules.
 ---
 
-# Dynamic Values & Functions
+# Dynamic Values
 
-## Dynamic Values
+import { Steps, Callout } from 'nextra/components'
 
-When you're building your rules, you might find certain numbers/strings particularly repetitive. For example, you might have a rule that calculates the price of a product, and you want to use the same tax rate across multiple rules.
+Your tax rate appears in twelve rules. When it changes from 8% to 8.5%, do you want to update twelve rules—or one value?
 
-Simply writing in the tax rate every time you need it can be a bit of a pain, and causes headaches every time you need to update it. Instead, you can use **dynamic values** to store these values in one place, and reference them in your rules.
+Dynamic Values store numbers, strings, and other data types centrally. Reference them in any rule, update them in one place.
 
-![Dynamic Values](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/advanced-features/values-1.png)
-
-Dynamic values are great not only because they make your rules easier to maintain, but also because they make your rules more readable. Instead of seeing a number like `0.08` and wondering what it means, you can see a neat label like `Tax Rate` and know exactly what it's for.
-
-import { Steps } from 'nextra/components'
+## Ad-hoc values
 
 <Steps>
 
-### Navigate to the Values tab
+### Create a value
 
-To create a dynamic value, open the Rulebricks dashboard, and click the "Values" tab.
+Go to **Team → Values** and click **Create New Value**.
 
-![Values Tab](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/advanced-features/dynamic-values-tab.png)
+![Values Tab](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/values-and-functions/values-tab.png)
 
-### Create a new value
+### Fill in the value's details
 
-Scroll down to the "Dynamic Values" section, and click "Create New Value". Fill in a name, select a data type, and enter a value.
+![Create Value Modal](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/values-and-functions/create-value-modal.png)
 
-![New Value](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/advanced-features/creating-values.png)
+### Use it in a rule
 
-### Use the value in your rule
+In the rule editor, click a condition or result cell. Toggle to **variable mode** and select your value from the dropdown.
 
-Now, you can reference this value in your rules. Simply click a comparison cell in your rule (matching the data type of the value), and click the variable mode toggle on the right of the little popup. You'll see a list of all the dynamic values you've created, and you can select the one you want to use.
+Note that you'll only see your value if it's the right type of data for the operator the cell is using. For example, if your operator is "Greater than", then you'll only see your Values of type number.
 
-![Use Value](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/advanced-features/values-1.png)
+![Values in Dropdowns](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/values-and-functions/values-dropdowns-rule.png)
 
 </Steps>
 
-### Bulk Importing Values
+## Bulk importing
 
-If you have a lot of values to create at once, you can use the [Dynamic Values API](https://rulebricks.com/docs/api-reference#tag/dynamic-values) to bulk import them. This is especially useful if you're migrating from another system, or if you just have a lot of business terminology to reference in your rules.
+You'll often want to bring in a large number of values at once to start using codes/vocabulary from your business right away. Rulebricks offers you three ways to do this quickly:
 
-import { Callout } from 'nextra/components'
+First, our values UI allows you to simply import large, potentially nested JSON dictionaries that simply contain key value pairs.
 
-<Callout type="info">
-Bulk import is currently only available through the API. If you need help with this, feel free to reach out to us over discord (link in the top bar) or at [support@rulebricks.com](mailto:support@rulebricks.com).Soon you'll also be able to bulk import & update values from a spreadsheet or CSV file directly in the Rulebricks dashboard.
-</Callout>
+Use the "From JSON" tab to continue with this option.
+
+![Bulk Import Values](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/values-and-functions/bulk-import-values.png)
+
+Second, an API endpoint is also available to create and update dynamic values. Start by looking at our [Dynamic Values API](https://rulebricks.com/docs/api-reference#tag/values).
+
+Finally, if you have JSON Schema on hand, or even a DDL or other similar schema artifact, you can upload your schema as an Object (or use smart import if you're brining a DDL/non-standard format).
+Rulebricks will automatically scan your schema for enums/ranges, and create values based on them in your workspace.
 
 ## Functions
 
-Functions are one of the most powerful features in Rulebricks. They combine Rulebricks with the power of JavaScript, allowing you to write custom code that can be used in your rules to calculate results in your rules.
+Functions let you write JavaScript that computes results dynamically, calculating results based on input and other output values.
 
-The reason functions are listed alongside dynamic values is because they're treated similarly in the Rulebricks editor. You can create a function in the same place, and then reference it in your rules. But there are two key differences:
+Functions should be authored here as arrow expressions. Some libraries are available to assist with complex operations.
 
-1. Functions can only be used in "Response" columns of your rules, as outputs of your rules.
-2. To reference functions, instead of using the variable mode toggle, you create a "Function" type column, and type "$" to see a list of all the functions you've created and can use in the decision table editor.
+```javascript
+((quantity, price) => (quantity > 100 ? price * 0.9 : price))
+```
 
-![Functions](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/advanced-features/values-2.png)
+<Steps>
+
+### Create a function
+
+Go to **Dashboard → Values** and click **Create New Value**– functions are just a kind of Dynamic Value.
+
+Select the function type, and write a JavaScript arrow expression.
+
+### Use it in a rule
+
+Add a **Function** type column to your rule's **response**, or update an existing column's type accordingly. Type `$` to see available functions.
+
+![Using Functions](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/values-and-functions/using-functions.png)
+
+</Steps>

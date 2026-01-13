@@ -1,13 +1,30 @@
 ---
-metaDescription: Separate your Rulebricks workspace into different groups to manage different projects or teams. Selectively grant users access to specific groups ensuring that they only have access to the decisions they care about.
+metaDescription: Partition your workspace into isolated User Groups for different teams, clients, or projects.
 ---
 
-# Creating Tenants
+# User Groups
 
-Each instance of Rulebricks comes with the ability to create **unlimited** "tenants" within your workspace, called "User Groups". User Groups leverage database-level policies to selectively grant users access to specific assets in your account, ensuring that they only have access to the decisions they care about.
+import { Steps, Callout } from 'nextra/components'
 
-User Groups are editable via the dashboard by the workspace owner/administrator, or via the API. Leveraging our API to invite users, create new groups, and add users to these groups can be particularly powerful for provisioning Rulebricks internally.
+User Groups partition your workspace into isolated sections. Users only see rules and flows in their assigned groups—useful for multi-team organizations, client isolation, or separating environments.
 
-In essence, this could mean the number of unique Rulebricks workspaces you are limited to creating is simply the number of users your plan supports. On our unlimited plan, you could have as many unique Rulebricks workspaces as your business requires within a single plan with no proration at all.
+![Team Tenants Tab](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/creating-tenants/team-tenants-tab.png)
 
-![Role Dialog](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/workspace-management/user-groups.webp)
+<Steps>
+
+### Create a group
+
+Go to **Team → User Groups** and click **Create User Group**. Give it a name and description.
+
+### Assign users
+
+Add users to the group. Users can belong to multiple groups. Their [role permissions](/workspace-management/assigning-roles) apply within their group scope.
+
+</Steps>
+
+Administrators & Developers, by default, see all groups and data within. Everyone else sees only their assigned groups, and data explicitly assigned to that group.
+
+<Callout type="info">
+  User Groups are unlimited on all plans—create as many as you need at no
+  additional cost.
+</Callout>

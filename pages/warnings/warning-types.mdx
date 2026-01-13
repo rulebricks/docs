@@ -1,0 +1,130 @@
+---
+metaDescription: Detailed explanations of each warning type in Rulebricks, including what causes them and how to fix them.
+---
+
+# Warning Types
+
+import { Callout } from 'nextra/components'
+
+## Errors
+
+### Catch-All Blocking
+
+**Message:** "Row X is a catch-all. Rows Y, Z will never be reached."
+
+A row with "any" for all conditions matches everything, blocking all rows below it.
+
+```
+Row 1: If tier = "gold" → Discount 20%
+Row 2: If any → Discount 0%  ← Catch-all
+Row 3: If tier = "platinum" → Discount 30%  ← Never reached!
+```
+
+**Fix:** Move the catch-all to the bottom.
+
+```
+Row 1: If tier = "gold" → Discount 20%
+Row 2: If tier = "platinum" → Discount 30%
+Row 3: If any → Discount 0%  ← Now at the bottom
+```
+
+### Unreachable Row
+
+**Message:** "Row X is unreachable because it is fully covered by Row Y."
+
+Every input that would match Row X is already caught by an earlier row.
+
+```
+Row 1: If score >= 700 → Approved
+Row 2: If score >= 750 → Premium  ← Unreachable!
+```
+
+Any score >= 750 also satisfies >= 700, so Row 1 catches it first.
+
+**Fix:** Reorder so the more specific condition comes first:
+
+```
+Row 1: If score >= 750 → Premium
+Row 2: If score >= 700 → Approved
+```
+
+## Warnings
+
+### Partial Overlap
+
+**Message:** "Row X partially overlaps with Row Y."
+
+Some inputs match both rows, but not all. The earlier row wins for the overlap.
+
+```
+Row 1: If tier = "gold" AND score > 600 → Plan A
+Row 2: If score > 700 → Plan B
+```
+
+A gold-tier customer with score 750 matches both, but gets Plan A.
+
+**Fix:** If unintentional, make conditions mutually exclusive. If intentional, document why and ignore the warning.
+
+<Callout>
+  Partial overlaps aren't always bugs—sometimes you want earlier rows to take
+  precedence.
+</Callout>
+
+### Coverage Gap
+
+**Message:** "Column 'X' has a coverage gap: values in [a, b] have no explicit handling."
+
+There's a range of values that won't match any row.
+
+```
+Row 1: If age < 18 → Minor rate
+Row 2: If age > 65 → Senior rate
+← Gap: Ages 18-65 have no explicit handling
+```
+
+**Fix:** Add a row for the missing range, or verify your catch-all handles it correctly.
+
+### Boundary Gap
+
+**Message:** "Exact value X = 100 has no explicit handling."
+
+Adjacent conditions leave a specific value unhandled.
+
+```
+Row 1: If score < 100 → Fail
+Row 2: If score > 100 → Pass
+← Gap: Exactly 100 falls through!
+```
+
+**Fix:** Use inclusive operators:
+
+```
+Row 1: If score < 100 → Fail
+Row 2: If score >= 100 → Pass
+```
+
+## Info
+
+### Incomplete Coverage
+
+**Message:** "No catch-all row exists. Some inputs may not match any row."
+
+Without a catch-all, unmatched inputs return an error.
+
+**Fix:** Add a final row with "any" for all conditions if you want a default result. Leave it out if you want unhandled cases to error.
+
+<Callout>
+  This is informational—intentionally omitting a catch-all is valid when you
+  want unhandled cases flagged as errors.
+</Callout>
+
+---
+
+<Callout type="error">
+  It is important to note that warnings aren't always available. Warnings don't
+  appear when your rule uses row groups with priorities, individual row
+  priorities, or OR rows. These features change evaluation semantics in ways
+  static analysis can't predict—use [Reachability
+  Analysis](/analysis-tools/reachability-analysis) for runtime validation
+  instead.
+</Callout>

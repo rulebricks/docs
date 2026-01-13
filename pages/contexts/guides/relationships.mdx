@@ -1,0 +1,76 @@
+---
+metaDescription: Link contexts together with has_many and belongs_to relationships for complex decision models.
+---
+
+# Relationships
+
+Contexts can relate to each other. A customer context can have many order contexts. An order context can belong to a customer. These relationships let you build decisions that span multiple entities.
+
+import { Callout } from 'nextra/components'
+
+## The Pattern
+
+**Customer** (one) → **Orders** (many)
+
+A customer context tracks lifetime data: total spend, order count, loyalty tier. Each order context tracks a single transaction. When an order completes, you might want to update the customer's lifetime stats.
+
+![Context Relations](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/contexts/context-relations.png)
+
+## Defining Relationships
+
+In the Context Editor, add a relationship field:
+
+**On the Customer context:**
+```
+orders: has_many(Order, 'customer_id')
+```
+
+**On the Order context:**
+```
+customer_id: string (foreign key)
+```
+
+Now orders link to their customer, and customers can reference their orders.
+
+## Using Relationships in Derived Facts
+
+The power shows up in derived facts. On the Customer context:
+
+```javascript
+// Total spend across all orders
+total_spend: sum($relations.orders, 'total')
+
+// Number of completed orders
+order_count: count($relations.orders, 'status == "complete"')
+
+// Most recent order date
+last_order_date: max($relations.orders, 'created_at')
+```
+
+These recalculate automatically when any related order changes.
+
+## Cascading Across Relationships
+
+When an order is marked complete, it can trigger rules on the customer context:
+
+1. Order context receives `status: "complete"`
+2. Customer's `order_count` derived fact recalculates
+3. If `order_count` crosses a threshold, a loyalty tier rule executes
+4. Customer's `loyalty_tier` fact updates
+
+This cascade happens automatically based on the relationships and rule bindings you've defined.
+
+<Callout>
+Relationship queries (`$relations.orders`) only include live, non-expired context instances. Expired orders won't appear in aggregations.
+</Callout>
+
+## Navigating the Other Direction
+
+From an order, access the parent customer:
+
+```javascript
+// Get customer's tier for order-level pricing
+customer_tier: $relations.customer.loyalty_tier
+```
+
+This creates a dependency—the order context waits for the customer's `loyalty_tier` before derived facts using it can calculate.

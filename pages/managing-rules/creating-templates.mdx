@@ -1,41 +1,57 @@
 ---
-metaDescription: Team templates in Rulebricks allow you to create reusable rules for your end-users to bootstrap new decision models. Create a template from an existing rule to instantly make it available to your team via the create menu.
+metaDescription: Create reusable rule templates for your team. Templates share proven schemas and decision patterns across your organization.
 ---
 
 # Team Templates
 
-Team templates in Rulebricks are powerful ways to share common schemas and decision models with your end-users to help them bootstrap new projects. Templates are created from existing rules and are instantly available to anyone on your team via the create menu.
+Templates let you capture a well-designed rule and make it available for your whole team to reuse. When someone creates a new rule from a template, they get the schema, sample conditions, settings, and test cases—ready to customize.
 
-import { Steps } from 'nextra/components'
-import { Callout } from 'nextra/components'
+import { Steps, Callout } from 'nextra/components'
+
+## Creating a Template
 
 <Steps>
 
-### Create a new rule
+### Build the rule you want to share
 
-First, create a new rule in the Rulebricks editor, and set it up as you'd like your template to appear. Note that any settings you apply to your rule, including workflow settings like defining an approver and adding tests, will be carried directly over to the template.
+Create a rule with the schema, conditions, and settings you want others to start from. Include test cases if you want them copied to new rules.
 
-### Publish the template
+### Save as template
 
-In the top menu bar inside the decision table editor, you'll see a "Create Template" button. Click this button to create a new template from your rule.
+Navigate to **Team → Templates** and click **Create Template**, or use the **Create Template** button in the rule editor.
 
-![Create Template](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/managing-rules/create-template.webp)
+![Team Templates Tab](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/templates/team-templates-tab.png)
 
-### Using the template
+You can also upload `.rbm` files directly to your templates.
 
-All published templates are available to your team in the "Create Rule" menu, under the templates tab. Administrator and Developer role users are able to delete templates to ensure an organized and up-to-date list of templates for your team.
-
-![Find Template](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/managing-rules/find-template.webp)
+![Upload RBM File](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/templates/upload-rbm-file.png)
 
 </Steps>
 
----
+## Using a Template
 
-Be sure to give your template a strongly identifying name and description to help your team understand its purpose. Templates are a great way to standardize your decision-making logic across your team and ensure consistency across rules.
+When creating a new rule, click the **Templates** tab in the create dialog.
 
-<Callout emoji="">
-  Note that templates are accessible to all users on your team, irrespective of
-  their User Group. If this behavior is undesirable, another way to accomplish a
-  similar goal is simply to create an example rule within a group, and have
-  future end-users simply duplicate the rule to create their own version.
+![Find Team Templates](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/templates/find-team-templates.png)
+
+Select a template and you'll get a new rule with:
+- Schema (request and response fields)
+- Sample conditions and results
+- Settings and configurations
+- Test cases (if any were included)
+
+Customize from there.
+
+## Managing Templates
+
+- **Administrators** and **Developers** can create and delete templates
+- All team members can view and use templates
+- Templates can't be edited—create a new version with a clear name like `"Credit Check - v2"`
+
+<Callout>
+Templates are accessible to all users on your team regardless of User Group. For group-specific starting points, create example rules within each group that users can duplicate.
 </Callout>
+
+## When to Use Duplicate Instead
+
+If templates feel heavyweight for your needs, users can always open an existing rule and click **Duplicate**. This works well for quick iterations or one-off copies within a User Group.

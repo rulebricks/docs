@@ -1,0 +1,37 @@
+---
+metaDescription: Rulebricks automatically analyzes your decision tables and warns you about potential issues before they cause problems in production.
+---
+
+# Rule Warnings
+
+Rulebricks analyzes your decision tables and warns you about structural issues—rows that can never be reached, conditions that shadow later rows, gaps where inputs might fall through.
+
+import { Callout } from 'nextra/components'
+
+![Warning Detection](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/warnings/warning-detection.png)
+
+Warnings appear in the rule editor footer. Click to see details and jump to the affected rows.
+
+<Callout type="info">
+  Warnings use **static analysis**—they examine your rule structure without
+  needing production data. For runtime analysis based on actual traffic, use
+  [Analysis Tools](/analysis-tools).
+</Callout>
+
+## Severity Levels
+
+**Error (Red)** — Definite problems that will cause incorrect behavior. Unreachable rows, catch-alls blocking everything below them. Fix these before publishing.
+
+**Warning (Yellow)** — Likely issues that deserve attention. Partial overlaps, coverage gaps, unhandled boundary values. Review to ensure the behavior is intentional.
+
+**Info (Blue)** — Informational notices. Missing catch-all row, incomplete coverage suggestions. Consider whether these apply to your use case.
+
+## Common Issues
+
+**Catch-All Blocking:** A row with "any" for all conditions matches everything, blocking all rows below it. Move catch-alls to the bottom.
+
+**Unreachable Rows:** Every input that would match a row is already caught by an earlier row. Reorder so more specific conditions come first.
+
+**Coverage Gaps:** A range of values won't match any row. Add handling for the missing range, or verify your catch-all covers it.
+
+See **[Warning Types](/warnings/warning-types)** for detailed explanations and fixes for each warning.

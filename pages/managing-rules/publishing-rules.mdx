@@ -1,52 +1,56 @@
 ---
-metaDescription: Publishing a rule in Rulebricks makes it available for use in your applications. Learn how to publish a rule here.
+metaDescription: Publishing a rule in Rulebricks makes it available for use in your applications. Learn how to publish, version, and compare rules.
 ---
 
-# Publishing rules
+# Publishing Rules
 
-Once you've created a rule, you will need to publish it to make it available for use in your applications. Publishing a rule enables you to run it via the Rulebricks API, turn it into a Rulebricks form, and unlock it for use in Rule Flows.
+Publishing makes your rule available via the API, in Forms, and in Rule Flows. Every publish creates a new version—you can target specific versions, compare changes, and roll back if needed.
 
-Every time you publish a rule, a new version is created, and the changes you've made since your last publish are saved. You may publish and unpublish your rule as many times as you like.
-
-import { Steps } from 'nextra/components'
-import { Callout } from 'nextra/components'
+import { Steps, Callout } from 'nextra/components'
 
 <Steps>
 
 ### Open the publish menu
 
-To publish your rule, open the rule you want to publish in the Rulebricks editor. In the top right corner of the rule editor, you'll see a "Publish" button. Click this button to open the publish menu.
+Click the **Publish** button in the top right corner of the rule editor.
 
 ![Publish Button](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/managing-rules/publishing-rules-1.png)
 
 ### Publish your rule
 
-In the publish menu, you'll see a history of prior versions.
-
-When you're ready, click the "Publish" button to publish your rule.
+You'll see a history of prior versions. Click **Publish** to create a new version.
 
 ![Publish Menu](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/managing-rules/publishing-rules-2.png)
 
-#### Rule versioning
-
-Publishing your rule creates a new version, as you'll see appear on the "History" section of the Publish menu. Versions are simply annotated by an increasing number, like v1, v2, etc. 
-
-Differences between each versions are precisely tracked and can both be reviewed visually, by clicking the colored tags that appear in the details for each version, as well as be used to reconstruct your rule at a prior version as an API target.
-
-To target specific prior versions of your rule, use the slugs that appear on the right side of each version in the history– simply append the number to the URL. For example, in the image from above, rather than targeting the rule using the slug "hlDPsJMVGQ", which would target the latest version of the rule, I'd simply use "hlDPsJMVGQ/2" to target the second version of the rule. Incorporating version numbers directly into rule slugs allows you to create development & release processes around your rules.
-
-<Callout emoji="">
-  To the far right of each version listed in the history UI, you'll notice a clock icon– this allows you to "rollback" a rule to a prior version. It is important to bear in mind this can be a highly destructive operation– any versions between your current edits and the version you're rolling back to will permanently be lost as targets.
-</Callout>
-
 </Steps>
 
----
+## Versioning
 
-That's all there is to it. Note that any further changes you make to your rule in the editor will not be reflected in the published version until you publish another version. You are free to publish and unpublish your rule as many times as you like.
+Each publish creates a numbered version (v1, v2, etc.). Target specific versions by appending the number to the rule slug:
 
-<Callout emoji="">
-  Note that new versions of your rule will take effect roughly 1 minute after
-  you publish them. This is because we'll need to update our caches to reflect
-  the latest version of your rule.
+- `hlDPsJMVGQ` → latest version
+- `hlDPsJMVGQ/2` → version 2 specifically
+
+This lets you build deployment workflows around your rules—test against a specific version while developing the next one.
+
+<Callout>
+The clock icon next to each version lets you **roll back**. This is destructive—versions between your current state and the rollback target are permanently lost as API targets.
+</Callout>
+
+## Comparing Versions
+
+Before publishing, compare your working changes against any previous version to see exactly what's different.
+
+Click **Compare Versions** in the rule editor header:
+
+![Compare Versions Button](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/comparing-rules/find-compare-button.png)
+
+The comparison view shows your working changes side-by-side with the selected version. Added rows, removed rows, and modified conditions are highlighted:
+
+![Rule Compare View](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/comparing-rules/rule-compare-view.png)
+
+Use this to review changes before publishing, or to understand what changed between versions when investigating unexpected behavior.
+
+<Callout type="info">
+New versions take effect roughly 1 minute after publishing while caches update.
 </Callout>

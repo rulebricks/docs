@@ -1,0 +1,51 @@
+---
+metaDescription: Rulebricks provides analysis tools to help you understand how your rules perform in production and how changes might affect outcomes.
+---
+
+# Analysis Tools
+
+Rulebricks provides two powerful analysis tools in the rule editor to help you understand how your rules perform in production and how changes might affect outcomes.
+
+import { Cards, Card } from 'nextra/components'
+import { Callout } from 'nextra/components'
+
+## Available Tools
+
+### Impact Analysis
+
+Test how changes to your rule conditions would affect outputs **before deploying**. Impact analysis replays historical requests through modified conditions to show you exactly what would change.
+
+![Impact Analysis](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/rule-analysis-tools/impact-analysis.png)
+
+**Use it when:**
+
+- You're considering changing a condition value
+- You want to compare the current rule version against a previous one
+- You need to understand the downstream effects of a rule change
+
+[Learn more about Impact Analysis →](/analysis-tools/impact-analysis)
+
+### Reachability Analysis
+
+See which rows in your decision table are actually being matched by production traffic. Reachability analysis shows you hit frequencies and helps identify dead code or optimization opportunities.
+
+![Reachability Analysis](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/rule-analysis-tools/reachability-analysis.png)
+
+**Use it when:**
+
+- You suspect some rows are never being matched
+- You want to optimize rule evaluation order
+- You need to understand which conditions are causing the most rejections
+
+[Learn more about Reachability Analysis →](/analysis-tools/reachability-analysis)
+
+## Accessing the Tools
+
+Both tools are available in the **footer bar** of the rule editor. Click **Impact** or **Reachability** to open the respective analysis panel.
+
+<Callout type="info">
+  Results are based on your rule's execution logs, so you'll need some
+  production traffic before the analysis becomes meaningful.
+</Callout>
+
+For static analysis of rule structure (without production data), see [Rule Warnings](/warnings)—which examines your rule for potential issues like unreachable rows and coverage gaps.

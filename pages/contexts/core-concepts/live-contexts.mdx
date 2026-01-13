@@ -1,0 +1,65 @@
+---
+metaDescription: Understanding context instances, their lifecycle, and the have/need pattern for tracking data collection progress.
+---
+
+# Live Contexts
+
+When you submit data to a Context, you create a **live context**—an instance that accumulates facts over time until rules can execute.
+
+import { Callout } from 'nextra/components'
+
+Think of it like this:
+- **Context** = the schema definition (what facts you need for loan approval)
+- **Live context** = a specific instance (loan application APP-12345's data)
+
+## Lifecycle
+
+A live context is created when you first submit data for a new identity:
+
+```bash
+POST /api/v1/contexts/loan-application/APP-12345
+{ "annual_income": 85000 }
+```
+
+It persists as you submit more facts over time. Each submission merges into the existing state—new fields are added, existing fields are updated, missing fields are left alone.
+
+When all required facts are present, the status changes from `pending` to `complete`, and bound rules can execute.
+
+Eventually, live contexts expire based on their TTL (time-to-live) setting. Expired contexts are no longer accessible—POST requests to that identity create a fresh instance.
+
+## The Have/Need Pattern
+
+Every API response tells you exactly where you stand:
+
+```json
+{
+  "status": "pending",
+  "have": ["application_id", "credit_score", "annual_income"],
+  "need": ["employment_verified"],
+  "expires_at": "2024-01-22T10:30:00Z"
+}
+```
+
+- `have` — facts with values
+- `need` — required facts still missing
+- `status` — `pending` until `need` is empty, then `complete`
+
+This makes it easy to show progress in your UI, decide what to fetch next, or debug why a rule isn't executing.
+
+## TTL and Expiration
+
+Set TTL when creating your context (1 hour to 30 days). The clock starts when the instance is created, not when it's last updated.
+
+<Callout>
+When a context expires, you can configure a webhook to fire—useful for cleaning up related resources or notifying users that their process timed out.
+</Callout>
+
+## Fetching State
+
+Get the current state of any live context:
+
+```bash
+GET /api/v1/contexts/loan-application/APP-12345
+```
+
+The response includes all facts (base and derived), the have/need arrays, timestamps, and expiration time.

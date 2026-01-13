@@ -1,0 +1,86 @@
+---
+metaDescription: Connect rules to Contexts so they read from context facts and write their outputs back automatically.
+---
+
+# Binding Rules
+
+Binding connects a rule to a Context. Once bound, the rule reads its inputs from context facts and writes its outputs back—no API calls required on your end.
+
+import { Steps, Callout } from 'nextra/components'
+
+## How Binding Works
+
+When you bind a rule to a context:
+
+1. The rule's **request schema** maps to context facts it reads
+2. The rule's **response schema** maps to context facts it writes
+3. The rule executes **automatically** when all its inputs are present (unless set to manual mode)
+
+This is what makes progressive execution work—you submit facts, rules run when ready, results appear as new facts.
+
+## Binding a Rule
+
+<Steps>
+
+### Open the Rule
+
+Navigate to your rule in the dashboard and open the **Settings** tab.
+
+### Set Input Source
+
+Under **Input Source**, select **From Context** and choose the context to bind to.
+
+The rule's request schema fields will map to context facts with matching names. If names don't match exactly, you can configure field mappings.
+
+### Set Output Destination
+
+Under **Output Destination**, select **To Context**. 
+
+The rule's response fields will write to context facts with matching names. These should be marked as **output only** in the context schema so external systems can't overwrite rule decisions.
+
+### Choose Execution Mode
+
+Select when the rule should execute:
+
+| Mode | Behavior |
+|------|----------|
+| **Enabled** | Runs automatically when all inputs are present |
+| **Manual** | Only runs when you call `/solve` explicitly |
+| **Disabled** | Won't run (useful for staged rollouts) |
+
+### Save
+
+Click **Save**. The rule is now bound and will participate in progressive execution.
+
+</Steps>
+
+<Callout>
+You can bind multiple rules to the same context. They'll execute in dependency order—a rule that reads `risk_tier` waits for the rule that writes it.
+</Callout>
+
+## Cascading Rules
+
+When Rule A writes a fact that Rule B needs, B executes automatically after A:
+
+```
+Facts arrive: credit_score, annual_income
+       ↓
+[Credit Check Rule] executes → writes: risk_tier
+       ↓
+[Pricing Rule] now has all inputs → executes → writes: rate, max_amount
+```
+
+This happens within a single API response. The `cascaded` array shows what ran:
+
+```json
+{
+  "cascaded": [
+    { "rule": "credit-check", "result": { "risk_tier": "low" } },
+    { "rule": "pricing", "result": { "rate": 4.5, "max_amount": 500000 } }
+  ]
+}
+```
+
+## Viewing Bound Rules
+
+From the Context dashboard, the **Rules** tab shows all bound rules, their execution mode, and which facts they read/write.
