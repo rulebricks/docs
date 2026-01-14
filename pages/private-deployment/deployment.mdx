@@ -8,6 +8,8 @@ import { Callout } from 'nextra/components'
 
 This guide describes the minimum configuration values you need to provide to deploy Rulebricks.
 
+In any case, we recommend consulting the [Changelog](/changelog), and using the `rulebricks/app` tag containing the latest fixes/features. The `rulebricks/hps` tag should also match.
+
 ### Quick Start (Development/Testing)
 
 Minimal configuration for evaluation purposes. Self-hosts Supabase.
@@ -120,16 +122,4 @@ external-dns:
   azure:
     resourceGroup: 'your-resource-group'
     subscriptionId: 'your-subscription-id'
-```
-
-## Uninstallation
-
-```bash
-# Remove release (keeps PVCs)
-helm uninstall rulebricks -n rulebricks
-
-# Full cleanup including data
-helm uninstall rulebricks -n rulebricks
-kubectl delete pvc --all -n rulebricks
-kubectl delete namespace rulebricks
 ```

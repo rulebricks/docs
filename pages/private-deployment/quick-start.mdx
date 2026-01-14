@@ -22,7 +22,7 @@ Our unified Helm chart deploys Rulebricks and all its dependencies to your Kuber
 ### Quick Start
 
 ```bash
-# 1. Create your values file (see Configuration below)
+# 1. Create your values file
 # 2. Install the chart
 helm install rulebricks oci://ghcr.io/rulebricks/charts/stack \
   --namespace rulebricks \
@@ -59,59 +59,6 @@ See [Deployment Modes](/private-deployment/deployment) for minimal configuration
 
 You're deploying a complete Rulebricks stack to your existing Kubernetes cluster. The chart installs multiple integrated services, pre-configured for production workloads.
 
-```mermaid
-flowchart TD
-    LB("Load Balancer<br/>Cloud Provider LB") --> Traefik("Traefik Ingress<br/>TLS Termination & Routing")
-
-    Traefik --> RB("Rulebricks App<br/>API & Management")
-    Traefik -.-> SB("Supabase Dashboard<br/>Optional Admin UI")
-    Traefik -.-> GF("Grafana Dashboard<br/>Optional Monitoring")
-
-    RB --> Redis[("Redis<br/>Cache Layer")]
-    RB --> PG[("PostgreSQL<br/>Primary Database")]
-    Redis -.->|"Cache miss<br/>fallback"| PG
-    SB -.-> PG
-
-    %% Rule execution flow
-    RB -->|"Rule Execution<br/>Requests"| Kafka("Kafka Cluster<br/>Event Streaming & Job Queue")
-
-    %% Worker scaling and execution
-    KEDA("KEDA<br/>Auto Scaler") -.->|"Scales based on<br/>Kafka queue depth"| WorkerPool
-
-    subgraph WorkerPool [" "]
-        direction LR
-        W1("Worker 1<br/>Rule Executor")
-        W2("Worker 2<br/>Rule Executor")
-        W3("Worker N<br/>Rule Executor")
-    end
-
-    Kafka -->|"Consumes execution<br/>requests"| WorkerPool
-
-    %% Logging flows
-    RB -->|"Rule execution<br/>logs & metrics"| Vector("Vector<br/>Log Processing & Forwarding")
-    Kafka -->|"Event logs<br/>(with lag)"| Vector
-
-    %% Simplified sinks
-    Vector --> Sinks("External Log Sinks<br/>S3, Elasticsearch, Datadog, etc.")
-
-    %% Styling
-    classDef primary fill:#e3f2fd,stroke:#1976d2,stroke-width:3px,color:#000
-    classDef secondary fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,color:#000
-    classDef storage fill:#e8f5e8,stroke:#388e3c,stroke-width:2px,color:#000
-    classDef processing fill:#fff8e1,stroke:#f57c00,stroke-width:2px,color:#000
-    classDef scaling fill:#fce4ec,stroke:#c2185b,stroke-width:2px,color:#000
-    classDef optional stroke-dasharray: 5 5,color:#fff
-
-    class LB,Traefik primary
-    class RB secondary
-    class PG,Redis,Kafka,Sinks storage
-    class WorkerPool,W1,W2,W3,Vector processing
-    class KEDA scaling
-    class SB,GF optional
-```
-
-### Components Deployed
-
 | Component        | Purpose                                      | Enabled by Default |
 | :--------------- | :------------------------------------------- | :----------------: |
 | **Rulebricks**   | Core application and high-performance solver |         ✓          |
@@ -134,45 +81,21 @@ flowchart TD
 
 ## Troubleshooting
 
+### Check Database Migration
+
 ```bash
-# Check pod status
-kubectl get pods -n rulebricks
-
-# View events for issues
-kubectl get events -n rulebricks --sort-by='.lastTimestamp'
-
-# Check specific component logs
-kubectl logs -n rulebricks -l app.kubernetes.io/name=rulebricks --tail=100
-
 # Check migration job status
 kubectl get jobs -n rulebricks
 kubectl logs job/rulebricks-db-migrate-1 -n rulebricks
 ```
 
-### Common Issues
-
-**Pods stuck in Pending:**
-
-- Check node resources: `kubectl describe nodes`
-- Verify StorageClass exists: `kubectl get storageclass`
-
-**Certificate not issuing:**
-
-- Verify DNS resolves to your LoadBalancer
-- Check cert-manager logs: `kubectl logs -n cert-manager -l app=cert-manager`
-- View certificate status: `kubectl describe certificate -n rulebricks`
-
-**Database connection errors:**
-
-- Wait for PostgreSQL to be ready (can take 2-3 minutes)
-- Check database pod: `kubectl logs -n rulebricks -l app.kubernetes.io/name=supabase-db`
-
 ### Clean Reinstall
 
 ```bash
-# Uninstall and clean up
+# Full cleanup including data
 helm uninstall rulebricks -n rulebricks
 kubectl delete pvc --all -n rulebricks
+kubectl delete namespace rulebricks
 
 # Reinstall
 helm install rulebricks oci://ghcr.io/rulebricks/charts/stack \
