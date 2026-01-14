@@ -1,5 +1,6 @@
 {
   "rule-flows": "Rulebricks Flows",
+  "flow-capabilities": "Flow Capabilities",
   "zapier": {
     "title": "Zapier Integration ↗",
     "type": "page",

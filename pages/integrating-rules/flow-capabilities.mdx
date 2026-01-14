@@ -1,0 +1,269 @@
+---
+metaDescription: Flows are a powerful way to chain together multiple rules, alongside calls to external services, and structure complex decision-making workflows. Explore their latest capabilities here.
+---
+
+# Flow Functions
+
+import { Steps, Callout } from 'nextra/components'
+import FlowNodeCard from '../../components/FlowNodeCard'
+import {
+  IconRouteAltRight,
+  IconBraces,
+  IconBrandCitymapper,
+  IconCode,
+  IconDatabase,
+  IconApiApp,
+  IconBracketsContain,
+  IconSparkles,
+  IconLock,
+  IconCloud,
+  IconFocusCentered,
+  IconBell,
+} from '@tabler/icons-react'
+
+While your configurable rules are undoubtedly the most valuable pieces Flows expose, we offer several built-in functions to help your team collect data from external sources and run logic conditionally.
+
+We call these "flow functions"– special operations you can use in your flows to perform various actions beyond rule execution. Below are all the available flow function node types– but do try our application or reach out to get information on our latest capabilities.
+
+## Continue If
+
+<FlowNodeCard
+  colorScheme="orange"
+  icon={<IconRouteAltRight className="w-3 h-3 rotate-90" />}
+  name="Continue If"
+  description="Evaluate if an input property is true/truthy and only proceed with specific data if so."
+/>
+
+![Continue If](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/integrating-rules/continue-if.png)
+
+Proceed based on one of four selectable conditions:
+
+- If a specific property is **"truthy"** (not empty, non-zero, non-null)
+- If a specific property is exactly **`true`**
+- If a specific property is exactly **`false`**
+- If a specific property is **"falsy"** (empty list, zero, null, or false)
+
+If the condition is met, the flow continues along the exiting edges. Use two "Continue If" nodes to model if/else logic.
+
+<Callout>
+  All data you want to proceed with after a Continue If node must be wired in as
+  inputs.
+</Callout>
+
+## Result Object
+
+<FlowNodeCard
+  colorScheme="amber"
+  icon={<IconBraces className="w-3 h-3" />}
+  name="Result Object"
+  description="Nest data in a result object within a specific key to better organize the final output of your flow."
+/>
+
+![Result Object](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/integrating-rules/result.png)
+
+The final output of your flow. It collects results from all preceding nodes and returns them as the flow's response.
+
+- You can use multiple Result Object nodes with unique keys
+- **Required**: Every flow must end with at least one Result Object node
+
+## Lookup Table
+
+<FlowNodeCard
+  colorScheme="green"
+  icon={<IconBrandCitymapper className="w-3 h-3" />}
+  name="Lookup Table"
+  description="Map an input 'key' to any output 'value' based on a table of key & value pairs."
+/>
+
+![Lookup Table](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/integrating-rules/lookup-table.png)
+
+Look up a value in a table and return a corresponding value if an exact match is found. Works well with Continue If nodes by returning true/false based on lookup results.
+
+## Run Code
+
+<FlowNodeCard
+  colorScheme="sky"
+  icon={<IconCode className="w-3 h-3" />}
+  name="Run Code"
+  description="Execute custom JavaScript to perform operations like computing data, making API calls, or integrating with external services."
+/>
+
+![Run Code](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/integrating-rules/code.png)
+
+Run custom JavaScript code using data from your flow. Useful for:
+
+- Making calls to external services
+- Performing complex calculations
+- Custom string formatting or data transformation
+
+Available libraries: `fetch`, `moment`, `lodash`, and more.
+
+Access connected values via the `inputs` dictionary and return values via the `outputs` dictionary.
+
+```javascript
+// Example: Calculate discount
+const total = inputs.subtotal
+const discount = total > 100 ? total * 0.1 : 0
+outputs['discount'] = discount
+outputs['final_total'] = total - discount
+```
+
+## SOAP Request
+
+<FlowNodeCard
+  colorScheme="cyan"
+  icon={<IconCloud className="w-3 h-3" />}
+  name="SOAP Request"
+  description="Connect to SOAP/XML web services using WSDL to call operations on enterprise systems."
+/>
+
+Connect to SOAP/XML web services to integrate with legacy enterprise systems. Upload a WSDL file to auto-discover available operations.
+
+Features:
+
+- WSDL-based service discovery
+- Support for complex XML request/response structures
+- Built-in authentication options
+
+## Database Query
+
+<FlowNodeCard
+  colorScheme="blue"
+  icon={<IconDatabase className="w-3 h-3" />}
+  name="Database Query"
+  description="Query a PostgreSQL database to fetch data from an external resource and use it in this flow."
+/>
+
+![Database Query](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/integrating-rules/db.png)
+
+Query a PostgreSQL, MSSQL, or MySQL database, and return results. Variables from your flow can be used in the query.
+
+Features:
+
+- Use `rows` with a For Each node or send directly to Result Object
+- Built-in 1-minute caching for performance
+
+## API Request
+
+<FlowNodeCard
+  colorScheme="indigo"
+  icon={<IconApiApp className="w-3 h-3" />}
+  name="API Request"
+  description="Make an HTTP request to any API to fetch & send data from/to external resources."
+/>
+
+![API Request](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/integrating-rules/api.png)
+
+Make HTTP requests to external APIs. Variables from your flow can be used in the URL, headers, and body.
+
+Features:
+
+- GET, POST, PUT, DELETE methods
+- Custom headers and authentication
+- Built-in 1-minute caching, customizable cache key
+
+## For Each
+
+<FlowNodeCard
+  colorScheme="red"
+  icon={<IconBracketsContain className="w-3 h-3" />}
+  name="For Each"
+  description="Perform following operations on each available item in a non-empty list of values/objects, and return a list of results."
+/>
+
+![For Each](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/integrating-rules/for-each.png)
+
+Iterate over a list of items and apply a rule to each one. Perfect for:
+
+- Transforming collections of objects
+- Processing lists of orders, users, or products
+- Batch operations
+
+<Callout type="warning">
+  For Each nodes must culminate in a Result Object node. Values inside the loop
+  cannot connect to parts of the flow outside that loop (indicated by different
+  edge colors).
+</Callout>
+
+## AI Inference
+
+<FlowNodeCard
+  colorScheme="fuchsia"
+  icon={<IconSparkles className="w-3 h-3" />}
+  name="AI Inference"
+  description="Intelligently parse out structured properties from text using AI models to evaluate rules against."
+/>
+
+![AI Inference](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/integrating-rules/ai-inference.png)
+
+Extract structured data from text using OpenAI. Useful for:
+
+- Parsing emails and reports
+- Extracting specific information from documents
+- NLP preprocessing before rule execution
+
+To use:
+
+1. Connect a text input
+2. Define target labels to extract
+3. Click "Run Inference"
+
+## Vault
+
+<FlowNodeCard
+  colorScheme="slate"
+  icon={<IconLock className="w-3 h-3" />}
+  name="Vault"
+  description="Connect to secure key vaults to retrieve secrets at runtime without exposing credentials."
+/>
+
+![Vault](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/integrating-rules/vault.png)
+
+Securely retrieve sensitive information from cloud secrets managers (AWS, GCP, Azure).
+
+Security features:
+
+- Secrets never appear in clear text in the flow
+- Cannot be logged or returned in output
+- Only accessible within Run Code nodes
+
+## Context Operation
+
+<FlowNodeCard
+  colorScheme="violet"
+  icon={<IconFocusCentered className="w-3 h-3" />}
+  name="Context Operation"
+  description="Read, update, or delete context data. Use for stateful context data operations within flows."
+/>
+
+Interact with [Rulebricks Contexts](/contexts) directly from your flow. Perfect for:
+
+- Reading entity data to use in rule evaluation
+- Updating context properties based on flow outcomes
+- Deleting or archiving context records
+
+<Callout type="info">
+  Context Operations require a configured Context in your workspace. See the
+  [Contexts documentation](/contexts) for setup instructions.
+</Callout>
+
+## Send Notification
+
+<FlowNodeCard
+  colorScheme="neutral"
+  icon={<IconBell className="w-3 h-3" />}
+  name="Send Notification"
+  description="Send multi-channel alerts via Email, Slack, Discord, or PagerDuty based on flow data."
+/>
+
+Trigger notifications to your team or external systems based on flow outcomes. Supports multiple channels:
+
+- **Email**: Send templated emails with flow data
+- **Slack**: Post messages to channels or DMs
+- **Discord**: Send webhook messages to Discord servers
+- **PagerDuty**: Create incidents for on-call alerting
+
+<Callout>
+  Configure notification channels in your workspace settings before using this
+  node.
+</Callout>

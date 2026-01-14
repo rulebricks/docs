@@ -1,24 +1,60 @@
 ---
-metaDescription: Rule Flows are a powerful way to chain together multiple rules, alongside calls to external services, and structure complex decision-making workflows. Learn how to create a Rule Flow here.
+metaDescription: Flows in Rulebricks are a powerful way to chain together multiple rules, alongside calls to external services, and structure complex decision-making workflows. Learn how to create a Rule Flow here.
 ---
 
-# Rule Flows
+# Flows in Rulebricks
 
 ![Flow Header](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/flows/flow-header.png)
 
-Rule Flows are a powerful way to chain together multiple rules, alongside calls to external services, and structure complex decision-making workflows.
+Flows are a powerful way to chain together multiple rules, alongside calls to external services, and structure complex decision-making workflows.
 
 import { Steps, Callout } from 'nextra/components'
+import FlowNodeCard from '../../components/FlowNodeCard'
+import {
+  IconRouteAltRight,
+  IconBraces,
+  IconBrandCitymapper,
+  IconCode,
+  IconDatabase,
+  IconApiApp,
+  IconBracketsContain,
+  IconSparkles,
+  IconLock,
+  IconCloud,
+  IconFocusCentered,
+  IconBell,
+} from '@tabler/icons-react'
 
-Flows are particularly useful when you have a series of decisions that need to be made in a specific order, or when you'd like to separate logic into multiple rules for easier maintenance of your decision-making logic.
+These are particularly useful when you have a series of decisions that need to be made in a specific order, or when you'd like to separate logic into multiple rules for easier maintenance of your decision-making logic.
+
+<Callout type="info">
+  Flows are built with external data and massive scale in mind, and can help you
+  easily cache data consumed from external sources within to support uniquely
+  low latencies and high throughput.
+</Callout>
 
 ## Flow Reactivity
 
-Unlike most other workflow builders, the Rulebricks Flow editor is **reactive**— as you make changes to rule input fields, the editor automatically visualizes your data flow in real-time. This makes it incredibly easy to see how your flow behaves _as you build it_ without repeated build/test cycles.
+Unique to Rulebricks, the Rulebricks Flow editor is **reactive**— as you make changes to rule input fields, the editor automatically visualizes your data flow in real-time. This makes it incredibly easy to see how your flow behaves _as you build it_ without repeated end-to-end build/test cycles.
+
+<div className="rounded-lg my-8 shadow-lg">
+  <video
+    width="1920"
+    height="1080"
+    autoPlay
+    muted
+    loop
+    preload="auto"
+    className="rounded-lg"
+  >
+    <source src="https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/integrating-rules/flow-reactivity.m4v" />
+    Your browser does not support the video tag
+  </video>
+</div>
 
 Reactivity applies to all sequences of nodes until certain execution or query nodes are reached. These nodes pause execution until you manually click the run button, preventing accidental spam to external services.
 
-While this feature exists to help you model your flow while understanding what is happening to the actual data as it moves through, _it is not a guarantee of Flow data_– for that, simply use the "Try" or "Test" tabs, available in the sidebar.
+While this feature exists to help you model your flow while understanding what is happening to the actual data as it moves through, it is not a perfect guarantee of how your Flow will behave _end-to-end_– for that, simply use the "Try" or "Test" tabs, available in the sidebar.
 
 ## Creating a Rule Flow
 
@@ -56,133 +92,3 @@ Drag from an output handle of one node to the input of another to connect them. 
 ![Try Connecting](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/flows/try-connecting.png)
 
 </Steps>
-
-## Flow Functions
-
-Flow functions are special operations you can use in your flows to perform various actions beyond rule execution.
-
-![Flow Functions](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/flows/flow-functions.png)
-
-![More Flow Functions](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/flows/more-flow-functions.png)
-
-### Continue If
-
-![Continue If](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/integrating-rules/continue-if.png)
-
-Proceed based on one of four selectable conditions:
-
-- If a specific property is **"truthy"** (not empty, non-zero, non-null)
-- If a specific property is exactly **`true`**
-- If a specific property is exactly **`false`**
-- If a specific property is **"falsy"** (empty list, zero, null, or false)
-
-If the condition is met, the flow continues along the exiting edges. Use two "Continue If" nodes to model if/else logic.
-
-<Callout>
-  All data you want to proceed with after a Continue If node must be wired in as
-  inputs.
-</Callout>
-
-### Result Object
-
-![Result Object](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/integrating-rules/result.png)
-
-The final output of your flow. It collects results from all preceding nodes and returns them as the flow's response.
-
-- You can use multiple Result Object nodes with unique keys
-- **Required**: Every flow must end with at least one Result Object node
-
-### Lookup Table
-
-![Lookup Table](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/integrating-rules/lookup-table.png)
-
-Look up a value in a table and return a corresponding value if an exact match is found. Works well with Continue If nodes by returning true/false based on lookup results.
-
-### Run Code
-
-![Run Code](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/integrating-rules/code.png)
-
-Run custom JavaScript code using data from your flow. Useful for:
-
-- Making calls to external services
-- Performing complex calculations
-- Custom string formatting or data transformation
-
-Available libraries: `fetch`, `moment`, `lodash`, and more.
-
-Access connected values via the `inputs` dictionary and return values via the `outputs` dictionary.
-
-```javascript
-// Example: Calculate discount
-const total = inputs.subtotal
-const discount = total > 100 ? total * 0.1 : 0
-outputs['discount'] = discount
-outputs['final_total'] = total - discount
-```
-
-### Database Query
-
-![Database Query](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/integrating-rules/db.png)
-
-Query a PostgreSQL database and return results. Variables from your flow can be used in the query.
-
-Features:
-
-- Use `rows` with a For Each node or send directly to Result Object
-- Built-in 1-minute caching for performance
-
-### API Request
-
-![API Request](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/integrating-rules/api.png)
-
-Make HTTP requests to external APIs. Variables from your flow can be used in the URL, headers, and body.
-
-Features:
-
-- GET, POST, PUT, DELETE methods
-- Custom headers and authentication
-- Built-in 1-minute caching
-
-### For Each
-
-![For Each](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/integrating-rules/for-each.png)
-
-Iterate over a list of items and apply a rule to each one. Perfect for:
-
-- Transforming collections of objects
-- Processing lists of orders, users, or products
-- Batch operations
-
-<Callout type="warning">
-  For Each nodes must culminate in a Result Object node. Values inside the loop
-  cannot connect to parts of the flow outside that loop (indicated by different
-  edge colors).
-</Callout>
-
-### AI Inference
-
-![AI Inference](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/integrating-rules/ai-inference.png)
-
-Extract structured data from text using OpenAI. Useful for:
-
-- Parsing emails and reports
-- Extracting specific information from documents
-- NLP preprocessing before rule execution
-
-To use:
-
-1. Connect a text input
-2. Define target labels to extract
-3. Click "Run Inference"
-
-### Vault
-
-![Vault](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/integrating-rules/vault.png)
-
-Securely retrieve sensitive information from cloud secrets managers (AWS, GCP, Azure).
-
-Security features:
-
-- Secrets never appear in clear text in the flow
-- Cannot be logged or returned in output
-- Only accessible within Run Code nodes
