@@ -10,11 +10,11 @@ import { Callout } from 'nextra/components'
 
 ## Events
 
-| Event | When it fires |
-|-------|--------------|
-| `context.solved` | A bound rule executed successfully |
-| `context.expired` | The context's TTL elapsed |
-| `context.error` | A rule execution failed |
+| Event             | When it fires                      |
+| ----------------- | ---------------------------------- |
+| `context.solved`  | A bound rule executed successfully |
+| `context.expired` | The context's TTL elapsed          |
+| `context.error`   | A rule execution failed            |
 
 ## Configuration
 
@@ -56,11 +56,6 @@ Rulebricks signs each request with your webhook secret (available in settings). 
 ```
 
 <Callout>
-The `final_state` on expiration shows what was still missing—useful for understanding why a decision couldn't be made.
+  The `final_state` on expiration shows what was still missing—useful for
+  understanding why a decision couldn't be made.
 </Callout>
-
-## Retry Behavior
-
-Failed deliveries (non-2xx response) retry with exponential backoff: 1 minute, 5 minutes, 30 minutes, then hourly for up to 24 hours.
-
-After 24 hours of failures, the webhook is disabled and you'll receive an email notification.

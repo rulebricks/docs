@@ -6,6 +6,8 @@ metaDescription: Publishing a rule in Rulebricks makes it available for use in y
 
 Publishing makes your rule available via the API, in Forms, and in Rule Flows. Every publish creates a new version—you can target specific versions, compare changes, and roll back if needed.
 
+## Create a new version
+
 import { Steps, Callout } from 'nextra/components'
 
 <Steps>
@@ -22,6 +24,11 @@ You'll see a history of prior versions. Click **Publish** to create a new versio
 
 ![Publish Menu](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/managing-rules/publishing-rules-2.png)
 
+<Callout type="info">
+  You can click on the colored tags in this menu ("Conditions", "Request
+  Schema", etc.) to see a summary of what changed between versions.
+</Callout>
+
 </Steps>
 
 ## Versioning
@@ -31,10 +38,12 @@ Each publish creates a numbered version (v1, v2, etc.). Target specific versions
 - `hlDPsJMVGQ` → latest version
 - `hlDPsJMVGQ/2` → version 2 specifically
 
-This lets you build deployment workflows around your rules—test against a specific version while developing the next one.
+This lets you build highly stable and customizable deployment workflows around your rules while developing future versions.
 
 <Callout>
-The clock icon next to each version lets you **roll back**. This is destructive—versions between your current state and the rollback target are permanently lost as API targets.
+  The clock icon next to each version lets you **roll back**. This is
+  destructive—versions between your current state and the rollback target are
+  permanently lost as API targets.
 </Callout>
 
 ## Comparing Versions
@@ -52,5 +61,6 @@ The comparison view shows your working changes side-by-side with the selected ve
 Use this to review changes before publishing, or to understand what changed between versions when investigating unexpected behavior.
 
 <Callout type="info">
-New versions take effect roughly 1 minute after publishing while caches update.
+  New versions take effect roughly 1 minute after publishing while caches
+  update.
 </Callout>

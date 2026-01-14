@@ -14,6 +14,12 @@ import { Callout } from 'nextra/components'
 
 Instead of building infrastructure to track what data you have, what's missing, and when to run your rules, Contexts handle it for you. Define the facts you need, submit them as they arrive from different sources, and your rules execute automatically when everything's ready.
 
+## A Useful Reframing
+
+You should use rules directly when your business already has all the data you need upfront, and you've just been missing the rule piece until now. You should use Contexts when you don't have all the data right away, but you do know the rules that will apply to that data.
+
+Contexts allow you to think about rules and decisions from the perspective of _updates to business entities_, which becomes somewhat apparent when you look at how to use the contexts API:
+
 ```javascript
 // Credit score arrives from bureau webhook
 POST /api/v1/contexts/loan-application/APP-12345
@@ -36,8 +42,22 @@ POST /api/v1/contexts/loan-application/APP-12345
 }
 ```
 
+As opposed to:
+
+```javascript
+// Assumes we have all the data upfront
+POST /api/v1/solve/approval-rule
+{ "credit_score": 720, "annual_income": 120000, "employment_verified": true }
+
+// Manual write-back/result storage
+// ...
+```
+
 <Callout>
-**Contexts vs Objects:** Objects define data structures for your rules. Contexts track decision-relevant facts as they arrive over time. If you have all your data upfront, use Objects. If data arrives progressively from different sources, use Contexts.
+  **Contexts vs Objects:** Objects define data structures for your rules.
+  Contexts track decision-relevant facts as they arrive over time. If you have
+  all your data upfront, use Objects. If data arrives progressively from
+  different sources, use Contexts.
 </Callout>
 
 ## When to Use Contexts
@@ -46,7 +66,3 @@ POST /api/v1/contexts/loan-application/APP-12345
 - You want rules to execute automatically when their inputs are ready
 - Your decision process spans hours, days, or weeks
 - You need to track what's been collected vs what's still missing
-
-## Getting Started
-
-Head to the **[Getting Started guide](/contexts/getting-started)** to create your first Context and see progressive execution in action.

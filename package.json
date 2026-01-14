@@ -5,6 +5,7 @@
   "author": "Sid Garimella <sid@rulebricks.com>",
   "homepage": "https://rulebricks.com",
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.71.2",
     "@scalar/api-reference": "^1.22.17",
     "@scalar/api-reference-react": "^0.1.59",
     "@tabler/core": "^1.0.0-beta20",
@@ -26,11 +27,14 @@
     "raw-loader": "^4.0.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1",
     "yarn": "^1.22.22"
   },
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "node scripts/build-docs-index.js && next build",
+    "build:index": "node scripts/build-docs-index.js",
     "start": "next start",
     "postinstall": "patch-package",
     "postbuild": "next-sitemap"

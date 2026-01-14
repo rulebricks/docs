@@ -1,0 +1,151 @@
+---
+metaDescription: Understanding base facts, derived facts, and the identity fact in Rulebricks Contexts.
+---
+
+# Facts and Schema
+
+A Context's schema defines what data it collects. There are three kinds of facts: base facts (the raw data you submit), derived facts (computed automatically), and one special identity fact (what uniquely identifies each instance).
+
+import { Callout } from 'nextra/components'
+
+## Base Facts
+
+Base facts are the data points you collect—things like `credit_score`, `annual_income`, or `employment_verified`. They come from API calls, webhooks, user input, or anywhere else in your system.
+
+Each fact has a type (string, number, boolean, date, list, or object) and can be marked as:
+
+- **Required** — Must be present before rules can execute
+- **Output only** — Can only be written by rules, not submitted externally
+- **Track history** — Stores previous values for temporal queries
+
+## The Identity Fact
+
+One fact must be the **identity fact**—the unique identifier for each context instance. For a loan application context, this might be `application_id`. For transaction processing, `transaction_id`.
+
+The identity appears in your API URLs:
+
+```
+POST /api/v1/contexts/loan-application/APP-12345
+                                       ↑ identity value
+```
+
+<Callout>
+  Identity facts must be strings or numbers, must be required, and can't be
+  output-only. Once set, they shouldn't change.
+</Callout>
+
+## Derived Facts
+
+Derived facts compute automatically from other facts using expressions:
+
+```javascript
+// Debt-to-income ratio
+monthly_debt / (annual_income / 12)
+
+// Risk category based on score
+ifelse(
+  credit_score >= 750,
+  'low',
+  ifelse(credit_score >= 650, 'medium', 'high')
+)
+
+// Aggregate from related contexts
+sum($relations.transaction, 'total')
+
+// Available functions are listed directly in app UI
+```
+
+They update whenever their dependencies change—no manual recalculation needed.
+
+## Relationships
+
+Contexts can relate to each other. A customer context can have many transaction contexts. An transaction context can belong to a customer. These relationships let you build decisions that span multiple entities.
+
+### The Pattern
+
+**Customer** (one) → **Transactions** (many)
+
+A customer context tracks lifetime data: total spend, transaction count, loyalty tier. Each transaction context tracks a single transaction. When an transaction completes, you might want to update the customer's lifetime stats.
+
+![Context Relations](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/contexts/context-relations.png)
+
+### Defining Relationships
+
+In the Context Editor, add a relationship field:
+
+**On the Customer context:**
+
+```
+transactions: has_many(Transaction, 'customer_id')
+```
+
+**On the Transaction context:**
+
+```
+customer_id: string (foreign key)
+```
+
+Now transactions link to their customer, and customers can reference their transactions.
+
+### Using Relationships
+
+Derived facts are required for you to expose and use data from related Contexts.
+
+For example, on a Customer context, I might use:
+
+```javascript
+// Total spend across all transactions
+total_spend: sum($relations.transaction, 'total')
+
+// Number of completed transactions
+transaction_count: count($relations.transaction, 'status == "complete"')
+
+// Most recent transaction date
+last_transaction_date: max($relations.transaction, 'created_at')
+```
+
+These recalculate automatically when any related transaction changes.
+
+### Cascading Across Relationships
+
+When an transaction is marked complete, it can trigger rules on the customer context:
+
+1. Transaction context receives `status: "complete"`
+2. Customer's `transaction_count` derived fact recalculates
+3. If `transaction_count` crosses a threshold, a loyalty tier rule executes
+4. Customer's `loyalty_tier` fact updates
+
+This cascade happens automatically based on the relationships and rule bindings you've defined.
+
+<Callout>
+  Relationship queries (`$relations.transaction`) only include live, non-expired
+  context instances– expired transactions won't appear in aggregations. If this
+  is an issue, consider maintaining a running statistic in your systems and
+  sending it into the Context via a base fact– we still consider this a data
+  concern rather than a Rulebricks problem.
+</Callout>
+
+### Navigating the Other Direction
+
+From an transaction, access the parent customer:
+
+```javascript
+// Get customer's tier for transaction-level pricing
+customer_tier: $relations.customer.loyalty_tier
+```
+
+This creates a dependency—the transaction context waits for the customer's `loyalty_tier` before derived facts using it can calculate.
+
+## Solvability
+
+A context instance is "solvable" when all required facts are present. The API always tells you where you stand:
+
+```json
+{
+  "status": "pending",
+  "have": ["application_id", "credit_score"],
+  "need": ["annual_income", "employment_verified"]
+}
+```
+
+When `need` is empty, `status` becomes `complete` and bound rules can execute.

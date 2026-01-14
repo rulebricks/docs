@@ -4,7 +4,11 @@ metaDescription: Create reusable rule templates for your team. Templates share p
 
 # Team Templates
 
-Templates let you capture a well-designed rule and make it available for your whole team to reuse. When someone creates a new rule from a template, they get the schema, sample conditions, settings, and test cases—ready to customize.
+Templates let you capture a well-designed rule and make it available for your whole team to reuse, or for customers to use as a starting point.
+
+When someone creates a new rule from a template, they get the schema, sample conditions, settings, and test cases, ready for them to customize.
+
+While exported RBM files do save and contain the histories of exported decision assets, users importing them as Team Templates will not receive these histories.
 
 import { Steps, Callout } from 'nextra/components'
 
@@ -20,27 +24,19 @@ Create a rule with the schema, conditions, and settings you want others to start
 
 Navigate to **Team → Templates** and click **Create Template**, or use the **Create Template** button in the rule editor.
 
-![Team Templates Tab](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/templates/team-templates-tab.png)
+![Team Templates Tab](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/templates/team-templates-tab-2.png)
 
 You can also upload `.rbm` files directly to your templates.
 
-![Upload RBM File](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/templates/upload-rbm-file.png)
+![Upload RBM File](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/templates/upload-rbm-file-2.png)
 
 </Steps>
 
 ## Using a Template
 
-When creating a new rule, click the **Templates** tab in the create dialog.
+When creating a new rule, click the **Templates** tab in the create dialog. Team Templates should appear by default. If you're not seeing them, it's possible the template has been assigned to a specific User Group, and you may not be part of it.
 
 ![Find Team Templates](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/templates/find-team-templates.png)
-
-Select a template and you'll get a new rule with:
-- Schema (request and response fields)
-- Sample conditions and results
-- Settings and configurations
-- Test cases (if any were included)
-
-Customize from there.
 
 ## Managing Templates
 
@@ -49,9 +45,12 @@ Customize from there.
 - Templates can't be edited—create a new version with a clear name like `"Credit Check - v2"`
 
 <Callout>
-Templates are accessible to all users on your team regardless of User Group. For group-specific starting points, create example rules within each group that users can duplicate.
+  Templates can have tenancy– if a template is assigned to a particular user
+  group, only users belonging to that group will see it. Developers (usually
+  unassigned to any user group) will only see templates that do not have any
+  user group.
 </Callout>
 
-## When to Use Duplicate Instead
+## Or, Duplicate
 
-If templates feel heavyweight for your needs, users can always open an existing rule and click **Duplicate**. This works well for quick iterations or one-off copies within a User Group.
+If templates feel heavyweight for your needs, users can always find an existing rule and click **Duplicate**. This works well for quick iterations or one-off copies.

@@ -8,7 +8,6 @@ When you submit data to a Context, you create a **live context**—an instance t
 
 import { Callout } from 'nextra/components'
 
-Think of it like this:
 - **Context** = the schema definition (what facts you need for loan approval)
 - **Live context** = a specific instance (loan application APP-12345's data)
 
@@ -51,7 +50,8 @@ This makes it easy to show progress in your UI, decide what to fetch next, or de
 Set TTL when creating your context (1 hour to 30 days). The clock starts when the instance is created, not when it's last updated.
 
 <Callout>
-When a context expires, you can configure a webhook to fire—useful for cleaning up related resources or notifying users that their process timed out.
+  When a context expires, you can configure a webhook to fire—useful for
+  cleaning up related resources or notifying users that their process timed out.
 </Callout>
 
 ## Fetching State

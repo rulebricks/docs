@@ -19,7 +19,7 @@
   },
   "video-introduction": "Video Introduction",
   "getting-started": "Getting Started",
-  "advanced-features": "Advanced Features",
+  "advanced-features": "Modeling Rules",
   "objects": "Objects",
   "managing-rules": "Managing Rules",
   "integrating-rules": "Integrating Rules",
@@ -28,12 +28,23 @@
   "warnings": "Rule Warnings",
   "building-forms": "Building Forms",
   "workspace-management": "Team Management",
-  "---": {
+  "---for-developers": {
     "type": "separator"
+  },
+  "for-developers": {
+    "type": "separator",
+    "title": "Developer Guides"
   },
   "private-deployment": "Private Deployment",
   "embedding-rulebricks": "Embedding Rulebricks",
   "security": "Security",
+  "---updates": {
+    "type": "separator"
+  },
+  "updates": {
+    "type": "separator",
+    "title": "Updates"
+  },
   "changelog": "Changelog",
   "product-updates": "Product Updates",
   "Book a Demo": {

@@ -9,7 +9,8 @@ Every rule execution is logged with the full request, response, and which condit
 import { Tabs, Callout } from 'nextra/components'
 
 <Callout type="info">
-Logs are retained for 15 days on most plans and appear in the dashboard within seconds of execution.
+  Logs are retained for up to 90 days on most plans and appear in the dashboard
+  within seconds of execution.
 </Callout>
 
 ## Viewing Logs
@@ -19,6 +20,7 @@ Navigate to the **Logs** tab in the dashboard.
 ![Logs Tab](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/logs/view-logs-tab.png)
 
 Each entry shows:
+
 - Request and response payloads
 - Which conditions matched or failed
 - HTTP status, IP address, timestamp, and duration
@@ -27,7 +29,9 @@ Filter by rule, status code, or date range to narrow down what you're looking fo
 
 ## Searching with DDQL
 
-Decision Data Query Language lets you search by the actual data in your requests and responses—not just metadata.
+Decision Data Query Language lets you search by the actual data in your requests and responses.
+
+For example, if I wanted to pull rule executions for a particular `application_id`, I might do the following:
 
 ![Query Logs with DDQL](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/logs/query-logs-ddql.png)
 
@@ -42,12 +46,12 @@ tier:gold OR tier:platinum
 
 ### Operators
 
-| Operator | Description | Example |
-|----------|-------------|---------|
-| `=` | Exact match | `status=approved` |
-| `!=` | Not equals | `status!=rejected` |
-| `:` | Contains (strings) or equals | `name:Smith` |
-| `<` `<=` `>` `>=` | Comparisons | `score>=700` |
+| Operator          | Description                  | Example            |
+| ----------------- | ---------------------------- | ------------------ |
+| `=`               | Exact match                  | `status=approved`  |
+| `!=`              | Not equals                   | `status!=rejected` |
+| `:`               | Contains (strings) or equals | `name:Smith`       |
+| `<` `<=` `>` `>=` | Comparisons                  | `score>=700`       |
 
 Combine with `AND` and `OR`. Use parentheses for precedence:
 

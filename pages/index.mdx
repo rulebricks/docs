@@ -3,6 +3,7 @@ metaDescription: Rulebricks is a decision automation platform that helps you mod
 ---
 
 import FeatureCard from '../components/FeatureCard'
+import AISearchBar from '../components/AISearchBar'
 import {
   IconCube,
   IconHammer,
@@ -25,11 +26,13 @@ import {
 
 </div>
 
+<AISearchBar />
+
 <div className="feature-cards-grid shadow-sm">
   <FeatureCard
     icon={<IconCube size={64} strokeWidth={0.5} />}
     title="What is a rule?"
-    description="Understand the building blocks of decision automation."
+    description="The building blocks of decision automation."
     href="/getting-started/what-is-a-rule"
   />
   <FeatureCard
@@ -47,7 +50,7 @@ import {
   <FeatureCard
     icon={<IconPlug size={64} strokeWidth={0.5} />}
     title="Integration guide"
-    description="Connect rules to any application."
+    description="How to use the rules you've built."
     href="/getting-started/integration"
   />
   <FeatureCard

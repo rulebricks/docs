@@ -12,21 +12,51 @@ Objects are team-level schema definitions that provide field suggestions when yo
 
 ![Objects Team Tab](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/objects/objects-team-tab.png)
 
-## What Objects Give You
+Rulebricks Admins can find this tab within the **Team** tab on your dashboard.
 
-**Field suggestions** — When building a rule, select an Object and its fields appear in the schema editor. No retyping, no typos.
+## Data Clarity
+
+### Field suggestions
+
+When building a rule, select an Object and its fields appear in the schema editor. No retyping, no typos.
 
 ![Map Fields from Object](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/objects/map-fields-from-object.png)
 
-**Automatic Dynamic Values** — If your Object uses JSON Schema with `enum` fields, Rulebricks extracts those values and creates dropdown options in your rule conditions.
+### Automatic Dynamic Values
+
+If your Object uses JSON Schema with `enum` fields, Rulebricks extracts those values and creates dropdown options in your rule conditions.
 
 ![Enum Benefits](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/objects/mapping-fields-enums-benefits.png)
 
-**Consistency** — When everyone builds rules from the same Objects, field names stay consistent across your workspace.
+### Consistency
 
-## Two Schema Formats
+When everyone builds rules from the same Objects, field names stay consistent across your workspace. This way, you'll never run into issues where rule one may have a schema like:
 
-**JSON Schema** — Full schema definitions with types, validation rules, and enums:
+```json
+{
+  "customer_id": "cust_12345",
+  "order_total": 299.99,
+  "is_priority": true
+}
+```
+
+And rule two, designed elsewhere, uses:
+
+```json
+{
+  "customerId": "cust_12345",
+  "total": 299.99,
+  "priority": true
+}
+```
+
+## Accepted Formats
+
+Objects can be defined using both JSON Schemas, or just an example JSON object. If you're planning to use our objects feature, it's worth noting using JSON Schemas has substantial benefits across our platform that may not be immediately obvious.
+
+Even if you don't have a unified JSON schema anywhere, we make it really easy to make one using our "Smart Import" tool.
+
+**JSON Schema** — Full schema definitions with types, validation rules, and enums
 
 ```json
 {
@@ -45,7 +75,7 @@ Objects are team-level schema definitions that provide field suggestions when yo
 }
 ```
 
-**JSON Object** — Plain example objects when you just want field suggestions without full validation:
+**JSON Object** — Plain example objects when you just want field suggestions without full validation
 
 ```json
 {
@@ -55,15 +85,12 @@ Objects are team-level schema definitions that provide field suggestions when yo
 }
 ```
 
-Rulebricks auto-detects which format you're using.
+Rulebricks will automatically detect which format you're using.
 
-<Callout>
-  **Objects vs Contexts:** Objects define data structures. Contexts track data
-  as it arrives over time and execute rules progressively. If you have all your
-  data upfront, use Objects to define your schema. If data arrives from multiple
-  sources at different times, use [Contexts](/contexts).
-</Callout>
+## Objects vs. Contexts
 
-## Getting Started
+Two features that may initially appear somewhat similar on our platform are _Objects_ and _Contexts_.
 
-See **[Creating Objects](/objects/creating-objects)** for three ways to add Objects to your workspace—manual creation, AI-powered import from existing documentation, or pre-built templates.
+The _Objects_ described here are designed for bringing the shape and fields of business objects that may live elsewhere into Rulebricks for consistency.
+
+The _Contexts_ feature, discussed later in this documentation, while able to create a view of your data relevant for decision making in a similar way, is designed exclusively for decisions where data arrives over time. Contexts are stateful and have lifespans associated with them.

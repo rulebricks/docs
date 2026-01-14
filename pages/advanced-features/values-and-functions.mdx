@@ -8,7 +8,9 @@ import { Steps, Callout } from 'nextra/components'
 
 Your tax rate appears in twelve rules. When it changes from 8% to 8.5%, do you want to update twelve rules—or one value?
 
-Dynamic Values store numbers, strings, and other data types centrally. Reference them in any rule, update them in one place.
+Dynamic Values solve this problem for you by storing numbers, strings, and other data types centrally. Reference them in any rule, and update them in one place.
+
+Changes to values propagate instantly, and using values doesn't detract from how performant your rules are because values are deeply integrated into our caching infrastructure.
 
 ## Ad-hoc values
 
@@ -36,7 +38,7 @@ Note that you'll only see your value if it's the right type of data for the oper
 
 ## Bulk importing
 
-You'll often want to bring in a large number of values at once to start using codes/vocabulary from your business right away. Rulebricks offers you three ways to do this quickly:
+You'll often want to bring in a large number of values at once to start using vocabulary from your business right away. Rulebricks offers you three ways to do this quickly.
 
 First, our values UI allows you to simply import large, potentially nested JSON dictionaries that simply contain key value pairs.
 
@@ -46,14 +48,14 @@ Use the "From JSON" tab to continue with this option.
 
 Second, an API endpoint is also available to create and update dynamic values. Start by looking at our [Dynamic Values API](https://rulebricks.com/docs/api-reference#tag/values).
 
-Finally, if you have JSON Schema on hand, or even a DDL or other similar schema artifact, you can upload your schema as an Object (or use smart import if you're brining a DDL/non-standard format).
+Finally, if you have JSON Schema on hand, or even a DDL or other similar schema artifact, you can upload your schema as an Object (or use smart import if you're bringing a DDL/non-standard format).
 Rulebricks will automatically scan your schema for enums/ranges, and create values based on them in your workspace.
 
 ## Functions
 
 Functions let you write JavaScript that computes results dynamically, calculating results based on input and other output values.
 
-Functions should be authored here as arrow expressions. Some libraries are available to assist with complex operations.
+Functions can be authored here as arrow expressions. Some libraries are available to assist with complex operations.
 
 ```javascript
 ((quantity, price) => (quantity > 100 ? price * 0.9 : price))
@@ -63,13 +65,13 @@ Functions should be authored here as arrow expressions. Some libraries are avail
 
 ### Create a function
 
-Go to **Dashboard → Values** and click **Create New Value**– functions are just a kind of Dynamic Value.
+Go to **Dashboard → Values** and click **Create New Value** – functions are just a kind of Dynamic Value.
 
-Select the function type, and write a JavaScript arrow expression.
+Select the function type, and write in a JavaScript arrow expression.
 
 ### Use it in a rule
 
-Add a **Function** type column to your rule's **response**, or update an existing column's type accordingly. Type `$` to see available functions.
+Add a **Function** type column to your rule's **response**, or update an existing column's type accordingly. Type `$` to see available functions, including the one you've just made.
 
 ![Using Functions](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/values-and-functions/using-functions.png)
 

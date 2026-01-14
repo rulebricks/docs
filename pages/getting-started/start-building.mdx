@@ -28,7 +28,9 @@ Click the **Create Rule** button in the top right. You'll be presented with a di
 
 ![Create Rule Modal](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/start-building/create-new-rule-modal.png)
 
-Choose **From Scratch** to build a rule from the ground up.
+### Select "From Scratch"
+
+Choose **From Scratch** to build a rule from the ground up (just for this tutorial– we actually recommend using our wizard or a template if you'd like to skip to seeing what things look like in Rulebricks right away).
 
 ![From Scratch](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/start-building/from-scratch.png)
 
@@ -53,58 +55,19 @@ At the top of each column is the **column header** showing the column name and d
 
 Rulebricks supports several types of data commonly used in decision-making:
 
-<Tabs items={['List', 'Number', 'Date', 'Text', 'Boolean', 'Function']}>
+<Tabs items={['Text', 'Boolean', 'Number', 'Date', 'List', 'Function']}>
 <Tabs.Tab>
 
-<IconBrackets size={64} className="bg-sky-100 text-sky-800 rounded-md border border-sky-300 p-2"/>
-
-A list is a collection of items. Each item in the list can be of a different type.
-
-```jsx
-[1, 2, 3]
-["apple", "banana", "cherry"]
-```
-
-Example operations: Checking if a list contains a value, checking if a list is empty, checking length.
-
-</Tabs.Tab>
-<Tabs.Tab>
-
-<Icon123 size={64} className="bg-red-100 text-red-800 rounded-md border border-red-300 p-2"/>
-
-A number is a numerical value—integer or floating-point.
-
-```jsx
-3.14
-42
--100
-```
-
-Example operations: Greater than, less than, equal to, within range.
-
-</Tabs.Tab>
-<Tabs.Tab>
-
-<IconCalendar size={64} className="bg-orange-200 text-orange-500 rounded-md border border-orange-500 p-2"/>
-
-A date is a calendar date and time in ISO 8601 format.
-
-```jsx
-"2024-01-15T10:30:00Z"
-```
-
-Example operations: Before, after, within last N days.
-
-</Tabs.Tab>
-<Tabs.Tab>
-
-<IconAlphabetLatin size={64} className="bg-green-200 text-green-500 rounded-md border border-green-500 p-2"/>
+<IconAlphabetLatin
+  size={64}
+  className="bg-green-200 text-green-500 rounded-md border border-green-500 p-2"
+/>
 
 Text is a string of characters.
 
 ```jsx
-"Hello, world!"
-"approved"
+'Hello, world!'
+'approved'
 ```
 
 Example operations: Equals, contains, starts with, is valid email.
@@ -112,7 +75,10 @@ Example operations: Equals, contains, starts with, is valid email.
 </Tabs.Tab>
 <Tabs.Tab>
 
-<IconCheckbox size={64} className="bg-purple-200 text-purple-500 rounded-md border border-purple-500 p-2"/>
+<IconCheckbox
+  size={64}
+  className="bg-purple-200 text-purple-500 rounded-md border border-purple-500 p-2"
+/>
 
 A boolean is a logical value: true or false.
 
@@ -126,20 +92,77 @@ Example operations: Is true, is false.
 </Tabs.Tab>
 <Tabs.Tab>
 
-<IconMathFunction size={64} className="bg-neutral-200 text-neutral-500 rounded-md border border-neutral-500 p-2"/>
+<Icon123
+  size={64}
+  className="bg-red-100 text-red-800 rounded-md border border-red-300 p-2"
+/>
+
+A number is a numerical value—integer or floating-point.
+
+```jsx
+3.14
+42 - 100
+```
+
+Example operations: Greater than, less than, equal to, within range.
+
+</Tabs.Tab>
+<Tabs.Tab>
+
+<IconCalendar
+  size={64}
+  className="bg-orange-200 text-orange-500 rounded-md border border-orange-500 p-2"
+/>
+
+A date is a calendar date and time in ISO 8601 format.
+
+```jsx
+'2024-01-15T10:30:00Z'
+```
+
+Example operations: Before, after, within last N days.
+
+</Tabs.Tab>
+
+<Tabs.Tab>
+
+<IconBrackets
+  size={64}
+  className="bg-sky-100 text-sky-800 rounded-md border border-sky-300 p-2"
+/>
+
+A list is a collection of items. Each item in the list can be of a different type.
+
+```jsx
+[1, 2, 3]
+['apple', 'banana', 'cherry']
+```
+
+Example operations: Checking if a list contains a value, checking if a list is empty, checking length.
+
+</Tabs.Tab>
+<Tabs.Tab>
+
+<IconMathFunction
+  size={64}
+  className="bg-neutral-200 text-neutral-500 rounded-md border border-neutral-500 p-2"
+/>
 
 A function is a mathematical expression that computes a value.
 
 <Callout>
-Functions can only be used in the response section to compute values based on request data.
+  Functions can only be used in the response section to compute values based on
+  request data.
 </Callout>
 
 ```jsx
-price * 1.08  // Add 8% tax
+price * 1.08 // Add 8% tax
 ```
 
 </Tabs.Tab>
 </Tabs>
+
+Want to see a full list of the operators supported for each type on Rulebricks? Check out our [Operator Index](https://rulebricks.com/operators).
 
 ## Setting Up Your Schema
 
@@ -151,11 +174,20 @@ The schema defines what data your rule accepts (request) and returns (response).
 
 Click on the **Schema** button to open the schema editor. This is where you define your input and output fields.
 
+<Tabs items={['Simple', 'JSON Mode']}>
+<Tabs.Tab>
+
+Simple mode gives you a clear view of your inputs. Click the colored type icons on each item to change its type.
+
 ![Schema Editor](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/start-building/schema-editor.png)
 
+</Tabs.Tab>
+<Tabs.Tab>
 You can also use **JSON mode** to paste a sample request object directly:
 
 ![Schema Editor JSON Mode](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/start-building/schema-editor-json-mode.png)
+</Tabs.Tab>
+</Tabs>
 
 ### Configure the Request Schema
 
@@ -306,7 +338,9 @@ Rulebricks evaluates rows **top to bottom**:
 4. If **no rows match**, an error is returned (unless you have a catch-all)
 
 <Callout>
-Cells highlighted in **green** indicate conditions that passed. Cells highlighted in **red** indicate conditions that failed. Cells highlighted in **blue** show the result that was returned.
+  Cells highlighted in **green** indicate conditions that passed. Cells
+  highlighted in **red** indicate conditions that failed. Cells highlighted in
+  **blue** show the result that was returned.
 </Callout>
 
 ---

@@ -16,7 +16,8 @@ Open the **Test** tab in the rule editor and select **Try**.
 
 ![Try Tab](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/testing-rules/try-tab.png)
 
-Paste a request object and click **Test**. The decision table lights up:
+Paste a request object and click the orange button. The decision table lights up:
+
 - **Green cells** — Conditions that matched
 - **Red cells** — Conditions that didn't match
 - **Blue/Yellow cells** — The results returned
@@ -24,19 +25,25 @@ Paste a request object and click **Test**. The decision table lights up:
 This visual feedback shows exactly which row matched and why.
 
 <Callout>
-If you get an error, your rule doesn't handle that input. Check for missing conditions or add a catch-all row.
+  If you get an error, your rule doesn't handle that input. Check for missing
+  conditions or add a catch-all row at the bottom.
 </Callout>
 
 ## Suite Mode
 
-Switch to **Suite** mode to run multiple test cases at once.
+Switch to **Test Suite** mode to run multiple test cases at once.
 
 ![Test Suite](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/testing-rules/test-suite.png)
 
 Build your suite by saving tests from Try mode. When a test produces the expected result, save it. Mark tests as **Critical** if they should block publishing when they fail.
 
+### Rapid Test Generation
+
+We find writing tests boring, and we thought you might too– a powerful AI feature here allows you to create many tests very quickly given one or two examples. Just build and name one test case in the Suite, and click "Generate Tests" to instantly get coverage over your entire rule.
+
 <Callout type="info">
-For large test suites, use the API to bulk upload test cases programmatically.
+  For large test suites, we offer a simple API to bulk upload test cases
+  programmatically.
 </Callout>
 
 ## Continuous Testing
@@ -44,8 +51,3 @@ For large test suites, use the API to bulk upload test cases programmatically.
 Enable **Continuous Testing** in rule settings to run your test suite automatically before every publish.
 
 When enabled, you'll see a test score next to every published version—the percentage of tests that passed. Critical tests prevent publishing if they fail; non-critical tests report results but don't block.
-
-## Next Steps
-
-- **[Publishing Rules](/managing-rules/publishing-rules)** — Deploy your tested rule
-- **[Decision Logs](/managing-rules/rule-logging)** — Monitor execution in production

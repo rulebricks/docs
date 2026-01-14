@@ -33,24 +33,32 @@ Let’s look at those one more time:
 }
 ```
 
-## Inputs
+## Inputs → "Request Columns"
 
-**To begin configuring any rule in Rulebricks, you require a Request Object**. Rulebricks uses the attributes available in the JSON object provided to initialize the columns of an empty decision table. Most applications will document examples of objects their platform outputs from various API endpoints and integrations on their website, but we’re working on direct integrations with tools like Zapier to automatically grab these for you and configure a table.
+**To begin configuring any rule in Rulebricks, you require a Request Object**.
 
-The fresh decision table initialized in Rulebricks using this request object might look like:
+Rulebricks uses the attributes available in the JSON object provided to initialize the columns of an empty decision table. Most applications will document examples of objects their platform outputs from various API endpoints and integrations on their website, but you're also free to create your own example objects/formats based on your needs for a particular decision point.
 
-### **Conditions**
+Each property in the JSON object corresponds with a column in your decision table, either as a "Request" column, within which you can define conditions against data, or a "Response" column within which you can define outcome data.
+
+A fresh decision table initialized in Rulebricks using the request object a bit above might look like:
+
+### **Request Columns**
 
 | Industry `industry` | Company Size `company_size` | Location City `location.city` | Location State `location.state` | Location Country `location.country` | Date Form Completed `date_form_completed` |
 | ------------------- | --------------------------- | ----------------------------- | ------------------------------- | ----------------------------------- | ----------------------------------------- |
 |                     |                             |                               |                                 |                                     |                                           |
 
-Something that isn’t shown here is that the table also figures out what kind of data is in each column, determining whether it contains text, numbers, dates, or lists.
+Something that isn’t shown here is that the table also identifies what kind of data is in each column, determining whether it contains text, numbers, booleans, dates, or lists.
 
-From here, you’re able to hide columns you’d like to ignore, rename columns to make information more meaningful, add \*\*\*\*data transformations to columns, and set default values for information that is missing from future request objects.
+From here, you’re able to hide columns you’d like to ignore, rename columns to make information more meaningful, and set default values for information that is missing from future request objects.
 
-## Outputs
+## Outputs → "Response Columns"
 
-**To receive any information from a rule, you require a Response Object.** Just like the request object, Rulebricks will initialize columns to match any attributes you provide in this object. Unlike the request object, the response object doesn’t come from anywhere– you have to create it, and you’re free to add or remove any fields to the response based on what you'd like your rule to actually decide on.
+**To receive any information from a rule, you require a Response Object.**
 
-Also like the request object, you’re able to configure each column to return a default value when no rows of conditions matching data are found. You’re also able to return computed data in results– which is an advanced piece of functionality but can enable you to return computed outputs for a particular column based on a matched result in the table, and/or any item in the request data.
+Much like the request object, Rulebricks will initialize columns to match any attributes you provide in this object. Unlike the request object, the response object doesn’t come from anywhere– you probably have to create it based on what you're trying to use rules to determine, and you’re free to add or remove any fields as they come to mind.
+
+#### Functions
+
+Response columns can uniquely also be "Function" type, which is a powerful type that essentially lets you create Excel-style formulas that can calculate using any of the input data or other output data. For example, if we override the price response column type in our running example to be a Function type column, we can simply type in something like `50 + company_size / 1.2` into cells in the price response columns.

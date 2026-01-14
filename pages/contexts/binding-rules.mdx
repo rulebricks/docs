@@ -1,0 +1,77 @@
+---
+metaDescription: Connect rules to Contexts so they read from context facts and write their outputs back automatically.
+---
+
+# Linking Rules & Flows to Contexts
+
+Once your Context(s) are ready, you're ready to create rules & flows that are "bound" to them, priming them to automatically run when your live contexts start receiving data.
+
+Once bound, the rule reads its inputs from context facts and writes its outputs back—no API calls required on your end. All flows that start from that rule are also considered bound and will fire automatically upon associated context updates.
+
+Flow write-back into contexts is accomplished slightly more explicitly via an "Context Operations" step you can find easily from the flow editor.
+
+import { Steps, Callout } from 'nextra/components'
+
+## Create a Bound Rule
+
+<Steps>
+
+### Open the Rule
+
+Click the "Create rule" button in the dashboard and open the **From Context** tab, which only appears when you have Contexts available.
+
+Provide a name and description for your rule, then click **Continue**.
+
+### Select Context Facts
+
+You will be presented with an interface to select facts from your associated Context as inputs _and outputs_ to this particular rule. If your rule requires data or outputs data you cannot find, update the associated Context by adding the missing fact(s) and return here.
+
+Fields you select as inputs cannot also be selected as outputs. Certain fields may not be eligible for selection as inputs.
+
+![Map Fields](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/contexts/map-fields.png)
+
+As indicated, the rule's request schema fields will map to context facts with matching names, and the rule's response fields will write to context facts with matching names.
+
+### Create Rule
+
+Click the **Create from Context** button at the bottom of your modal, customize your rule, and publish it when you're ready.
+
+</Steps>
+
+<Callout>
+  To bind flows, simply create a new flow that uses a bound rule as its
+  origin/first rule.
+</Callout>
+
+<Callout>
+  You can bind multiple decision assets to the same context. They'll execute in
+  dependency order—a rule that reads `risk_tier` waits for the rule that writes
+  it.
+</Callout>
+
+## Cascading Rules
+
+When Rule A writes a fact that Rule B needs, B executes automatically after A:
+
+```
+Facts arrive: credit_score, annual_income
+       ↓
+[Credit Check Rule] executes → writes: risk_tier
+       ↓
+[Pricing Rule] now has all inputs → executes → writes: rate, max_amount
+```
+
+This happens within a single API response. The `cascaded` array shows what ran:
+
+```json
+{
+  "cascaded": [
+    { "rule": "credit-check", "result": { "risk_tier": "low" } },
+    { "rule": "pricing", "result": { "rate": 4.5, "max_amount": 500000 } }
+  ]
+}
+```
+
+## Viewing Bound Rules
+
+From the Context dashboard, the **Assets** tab shows all currently bound rules & flows, their execution modes, and which facts they read/write.

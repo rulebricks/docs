@@ -4,11 +4,11 @@ metaDescription: Rules automatically execute when their inputs are ready. Unders
 
 # Progressive Execution
 
-The magic of Contexts: **rules run automatically when their inputs are ready.**
+The magic of Contexts is that **decisions run automatically when their inputs are ready.**
 
 import { Callout } from 'nextra/components'
 
-You don't schedule rule execution. You don't poll for completeness. You submit facts as they arrive, and the rules that can run will run.
+You don't schedule rule execution or poll for completeness. Simply submit facts as they arrive, and the rules that can run will run.
 
 ## How It Works
 
@@ -37,8 +37,6 @@ Writes: risk_tier = "low"
 Writes: rate = 4.5, max_amount = 500000
 ```
 
-You submitted one fact. Three derived values appeared. This cascade happens within a single request—no webhooks, no polling, no orchestration code.
-
 The response tells you what ran:
 
 ```json
@@ -53,16 +51,16 @@ The response tells you what ran:
 
 ## Execution Modes
 
-When binding a rule to a context, choose how it executes:
+There are very specific situations where automatic decision evaluation on Contexts may be undesirable. While we make Automatic Execution a default, you can also turn it off, preferring to register pending rules/flows manually.
 
-| Mode | When it runs |
-|------|-------------|
+| Mode        | When it runs                              |
+| ----------- | ----------------------------------------- |
 | **Enabled** | Automatically when all inputs are present |
-| **Manual** | Only when you explicitly call `/solve` |
-| **Disabled** | Won't run (useful for staged rollouts) |
+| **Manual**  | Only when you explicitly call `/solve`    |
 
 <Callout>
-Manual mode is useful when you want to control timing precisely—for example, waiting for human approval before running a disbursement rule.
+  Manual mode is useful when you want to control timing precisely—for example,
+  waiting for human approval before running a disbursement rule.
 </Callout>
 
 ## Deterministic Order

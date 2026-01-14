@@ -1,16 +1,24 @@
 ---
-metaDescription: Rule Flows are a powerful way to chain together multiple rules, alongside calls to external services, and create complex decision-making workflows. Learn how to create a Rule Flow here.
+metaDescription: Rule Flows are a powerful way to chain together multiple rules, alongside calls to external services, and structure complex decision-making workflows. Learn how to create a Rule Flow here.
 ---
 
 # Rule Flows
 
 ![Flow Header](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/flows/flow-header.png)
 
-Rule Flows are a powerful way to chain together multiple rules, alongside calls to external services, and create complex decision-making workflows.
+Rule Flows are a powerful way to chain together multiple rules, alongside calls to external services, and structure complex decision-making workflows.
 
 import { Steps, Callout } from 'nextra/components'
 
-Rule Flows are particularly useful when you have a series of decisions that need to be made in a specific order, or when you'd like to separate logic into multiple rules for easier maintenance of your decision-making logic.
+Flows are particularly useful when you have a series of decisions that need to be made in a specific order, or when you'd like to separate logic into multiple rules for easier maintenance of your decision-making logic.
+
+## Flow Reactivity
+
+Unlike most other workflow builders, the Rulebricks Flow editor is **reactive**— as you make changes to rule input fields, the editor automatically visualizes your data flow in real-time. This makes it incredibly easy to see how your flow behaves _as you build it_ without repeated build/test cycles.
+
+Reactivity applies to all sequences of nodes until certain execution or query nodes are reached. These nodes pause execution until you manually click the run button, preventing accidental spam to external services.
+
+While this feature exists to help you model your flow while understanding what is happening to the actual data as it moves through, _it is not a guarantee of Flow data_– for that, simply use the "Try" or "Test" tabs, available in the sidebar.
 
 ## Creating a Rule Flow
 
@@ -48,12 +56,6 @@ Drag from an output handle of one node to the input of another to connect them. 
 ![Try Connecting](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/flows/try-connecting.png)
 
 </Steps>
-
-## Flow Reactivity
-
-The Rulebricks Flow editor is **reactive**—as you make changes to rule input fields, the editor automatically updates results in real-time. This makes it easy to see how your flow behaves as you build it.
-
-Reactivity applies to all sequences of nodes until a code execution node is reached. Code nodes pause execution until you manually click the run button, preventing accidental spam to external services.
 
 ## Flow Functions
 
@@ -114,8 +116,8 @@ Access connected values via the `inputs` dictionary and return values via the `o
 // Example: Calculate discount
 const total = inputs.subtotal
 const discount = total > 100 ? total * 0.1 : 0
-outputs.discount = discount
-outputs.final_total = total - discount
+outputs['discount'] = discount
+outputs['final_total'] = total - discount
 ```
 
 ### Database Query

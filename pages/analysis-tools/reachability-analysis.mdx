@@ -41,7 +41,8 @@ Which conditions pass most frequently, revealing your typical traffic patterns a
 The panel header shows summary stats: how many requests matched at least one row, how many matched nothing, and how many rows have zero hits.
 
 <Callout type="warning">
-High "no match" counts mean inputs are falling through without being handled. You probably need a catch-all row or broader conditions.
+  High "no match" counts mean inputs are falling through without being handled.
+  You probably need a catch-all row or broader conditions.
 </Callout>
 
 ## Finding Dead Rows
@@ -52,10 +53,16 @@ A row with 0% hits over 30 days is probably:
 - **Obsolete** — handles an edge case that never actually occurs
 - **Safe to remove** — cleaning up your rule table
 
-Before deleting, check *why* it's not being hit. Some rows handle rare but critical cases—you don't want to remove your fraud detection row just because it only fires twice a month.
+Before deleting, make sure to thoroughly investigate _why_ it's not being hit. Some rows handle rare but critical cases— you don't want to remove your fraud detection row just because it only fires twice a month.
 
 ## Performance Optimization
 
 If one row handles 80% of your traffic but sits at the bottom of your table, moving it up can meaningfully improve evaluation speed at scale. Rulebricks evaluates top-to-bottom, so putting your high-traffic rows near the top reduces unnecessary condition checks.
 
 Use [Impact Analysis](/analysis-tools/impact-analysis) afterward to verify that reordering didn't change your rule's behavior.
+
+## Large Reports
+
+Computation is handled on our servers– but we encourage users to be prudent about the sample sizes they use as particularly large requests may take several minutes to complete and potentially timeout.
+
+We perform cardinality analysis on your rule internally to optimize reachability reports for massive amounts of data/rows.

@@ -24,9 +24,10 @@ Navigate to the asset you want to export.
 
 ![Name Export](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/exporting-rules/name-export.png)
 
-### Automatically includes Values
+### Review dependencies
 
 Exports intelligently bundle all assets related to the item you're exporting. Exporting Flows also exports the rules within. Exporting rules also exports any values those rules reference.
+
 This ensures you won't have to think about dependencies while moving around assets- all relevant data is self-contained within a single file.
 
 ![Exports Bundled Values](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/exporting-rules/export-bundled-values.png)
@@ -47,6 +48,7 @@ We offer two conflict resolution schemes, that help address what happens if you'
 
 ## What's Included
 
-**Rules** export with all conditions, results, schema, referenced dynamic values, settings, test cases, and publication histories.
+- **Rules** export with all conditions, results, schema, referenced dynamic values, settings, test cases, and publication histories.
+- **Flows** export the complete flow definition plus all embedded rules.
 
-**Flows** export the complete flow definition plus all embedded rules.
+We do not obfuscate our schemas in exported files and encourage users to review how their assets are stored. RBM files are stored as large amounts of JSON, but they are structured in a way your team may be able to build custom tools directly against them!

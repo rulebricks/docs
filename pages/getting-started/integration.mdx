@@ -2,32 +2,58 @@
 metaDescription: Integrating Rulebricks into your workflows is easy, and there are a few ways you can do it. Learn how to integrate Rulebricks here.
 ---
 
-# Go live and integrate your rule
+# Using your Rules
 
-Once you’ve finished configuring and testing your rule, it's time to publish your rule, and integrate it into your workflows.
+Once you’ve finished configuring and testing your rule, it's time to publish your rule, and integrate it into your work.
 
-You'll need to decide, given the technologies your business already uses, what the best way to integrate it into your existing systems looks like.
+You'll need to decide, given the technologies your business already uses, what the best way to connect it to your existing systems looks like.
 
-We offer two primary ways to integrate Rulebricks into your workflows that nearly all business software can integrate with: via API, and via Zapier.
+We offer many ways to use your rules across different levels of technical expertise– you do not need to learn or employ all of them, merely pick out the one that works best in your situation.
 
-## Via API
+## For Business Users
 
-A few API endpoints are made available for developers to effectively integrate a Rulebricks decision from anywhere.
+A great place to start as a less technically-involved Rulebricks user is to think about when you want your rule to actually run/be triggered. This will give you a bunch of relevant information to what's best for you at once– what data will be available, who is actually providing that data/where it's coming from, etcetera.
 
-The endpoints below all require the `x-api-key` header (with the API key found on your dashboard), and currently utilize the base URL: `https://rulebricks.com/api/v1`
+### Via Forms
+
+If you want to use your rule to calculate something every once in a while, or help your users do so, forms are perfect for you. You don't actually have to build a form once you have your rule created– we generate the form for you using the logic in your rule! These forms can be embedded on your site and present your company's branding.
+
+[Learn more about using forms →](/building-forms/creating-a-form)
+
+### Via Zapier
+
+This probably mainly works if you have heard of or are already familiar with Zapier, but we have a pretty powerful "Make Decision" action on Zapier that allows you to use Rules in lieu of Paths/Filters to perform complex comparisons/outcome determinations.
+
+![Untitled](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/Go%20live%20and%20integrate%20your%20rule/Untitled.png)
+
+The action will guide you fully through the process of connecting your Rulebricks account to Zapier, connecting a rule to your Zap, and finally mapping data in your automation to send to the rule. If you ever run into issues with the action that do not seem clear, try deleting and re-creating the entire step, and if you’re still stuck, send us a quick email.
+
+[Find us on Zapier →](https://zapier.com/apps/rulebricks/integrations)
+
+### Developer Handoff
+
+Given that you've created and published a rule– Rulebricks is incredibly quick for developers to integrate into existing applications, often taking less than half an hour to implement. What's more, they only need to set up each rule for you once– subsequent edits to the rule and changes to the decision table within will take effect seamlessly.
+
+## For Developers
+
+### Via API/SDK
+
+A few API endpoints are made available for developers to effectively integrate a Rulebricks decision from anywhere. We also offer fully-featured SDK's in most programming languages that are dead-easy to install and use.
+
+The particular endpoints that execute decision making assets are below, and all require the `x-api-key` header (with the API key found on your dashboard).
 
 `/solve/[slug]` – **POST** your JSON request data to this endpoint to run your rule
 
 `/flows/[id]` – **POST** your JSON request data to a Rule Flow you've created using this rule to run it as part of a larger sequence
 
-Read more about these endpoints in [API Reference](/api-reference).
+Read more about these endpoints in our [API Reference](/api-reference), and use the tab there in the top right to switch to our SDK documentation in the language of your choice.
 
-## Via Zapier
+### Via Flows
 
-Rulebricks offers a powerful Zapier integration that allows you to create and use rules when you need to make complex decisions in your Zaps for your business, especially decisions you would like to make editable to non-Zapier users.
+Flows will still require use of our API/SDK noted above, but contain within them powerful abilities to chain rules, or connect them with databases or internal services.
 
-To use the integration, discover the action “Make Decision in Rulebricks” in your Zap, after accepting our invitation to use our action.
+One particularly powerful component of Flows is that flows allow you to leverage powerful caching mechanisms on any data fetching you're doing within– meaning you can create high-performance, low-latency Flows that still perform otherwise time consuming tasks like fetching data from an API or querying an SQL database.
 
-![Untitled](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/Go%20live%20and%20integrate%20your%20rule/Untitled.png)
+Flows also allow you to explode lists and run rules against each object within.
 
-The action will guide you fully through the process of connecting your Rulebricks account to Zapier, connecting a rule to your Zap, and finally mapping data in your automation to send to the rule. If you ever run into issues with the action that do not seem clear, try deleting and re-creating the entire step, and if you’re still stuck, send us a quick email.
+[Learn more about Flow capabilities →](/integrating-rules/rule-flows)

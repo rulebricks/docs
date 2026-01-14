@@ -4,20 +4,24 @@ metaDescription: See exactly how rule changes would affect your outputs before d
 
 # Impact Analysis
 
-You're about to change your credit score threshold from 700 to 650. How many more applications will get approved? Will your denial reasons shift? Impact Analysis answers these questions before you deploy anything.
+You're about to change your credit score threshold from 700 to 650. How many more applications will get approved? Will your denial reasons shift?
+
+Impact Analysis gives you crystal clear answers to these questions before you deploy anything.
 
 import { Tabs, Callout } from 'nextra/components'
 
 ![Impact Analysis](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/rule-analysis-tools/impact-analysis.png)
 
-The tool replays real production requests through your modified rule logic and shows you exactly what would change—approval rates, output distributions, everything.
+The tool replays a configurable sample of real production requests through your modified rule logic and shows you exactly what would change—approval rates, output distributions, everything.
 
-## Two Ways to Analyze
+## Analysis Methods
 
-<Tabs items={['Simulate a Change', 'Compare Versions']}>
+Two analysis methods are made available, depending on how your organization is using rules in production, and the extent of changes you're trying to simulate.
+
+<Tabs items={['Specific Conditions', 'Compare Versions']}>
 <Tabs.Tab>
 
-Test a specific condition change before committing it:
+Test one or more specific condition changes (against the working rule) before publishing them:
 
 1. Click on any condition cell in your rule table
 2. Enter the new value you want to test
@@ -25,16 +29,26 @@ Test a specific condition change before committing it:
 
 The results show how your outputs would shift. If you're lowering a threshold, you'll see exactly how many more requests would match. If you're tightening a condition, you'll see what would get filtered out.
 
+<Callout type="info">
+  You can also click on multiple condition cells to understand interactions from
+  multiple changes to different conditions at once.
+</Callout>
+
 </Tabs.Tab>
 <Tabs.Tab>
 
-Compare the current rule against any previous version:
+Compare the current (working) rule against a previously published version:
 
 1. Switch to **Version** mode in the panel
 2. Select a previous version from the dropdown
 3. Click **Run Analysis**
 
-This is useful when something seems off after a deploy—you can see precisely what changed between versions and how it affected your output distribution.
+This is useful when something seems off after a deploy— you can see precisely what changed between versions and how it affected your output distribution.
+
+<Callout type="warning">
+  While it will still run, we do not recommend this approach if your schema
+  changes often.
+</Callout>
 
 </Tabs.Tab>
 </Tabs>
@@ -67,10 +81,12 @@ Timeline distributions for date outputs. Useful for rules that set deadlines or 
 </Tabs.Tab>
 </Tabs>
 
-Watch for **null shifts**—when values suddenly become null, it often means requests stopped matching any row.
+Watch for **null shifts**—when values suddenly become null, it often means requests stopped matching any row. Impact Analysis will surface this in an alert if it detects it.
 
 <Callout>
-Choose your sample size based on what you need: 50-100 requests for quick iteration, 500+ for validation before deploying.
+  While computation is done on our servers and included with your Rulebricks
+  plan, we recommend being very deliberate about the sample size you use–
+  particularly between the 100k - 1M range; these can be large reports.
 </Callout>
 
 ## Example: Threshold Optimization
@@ -82,6 +98,7 @@ Say you want to approve more loan applications by lowering the credit score requ
 3. Run analysis against the last 500 requests
 
 The results might show:
+
 - Approval rate jumps from 62% to 78%
 - Average approved amount drops slightly (riskier applicants qualify for less)
 - Denial reason distribution shifts from "low credit" to "high debt ratio"

@@ -4,7 +4,7 @@ metaDescription: Create your first Context in Rulebricks and see progressive rul
 
 # Getting Started with Contexts
 
-Let's build a loan approval Context that collects data from multiple sources and automatically runs your approval rule when everything's ready.
+Let's build a Customer Context that tracks customer data across multiple sources and automatically runs your bound rules when the required information is available.
 
 import { Steps } from 'nextra/components'
 
@@ -16,47 +16,52 @@ Go to **Dashboard → Contexts** and click **Create Context**.
 
 ![Context Tab](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/contexts/context-tab.png)
 
-Name it "Loan Application" and set `application_id` as the identity fact—this is what uniquely identifies each loan application flowing through the system.
+Name it "Customer" and set `customer_id` as the identity fact—this is what uniquely identifies each customer flowing through the system.
 
 ### Define Your Facts
 
-In the Context Editor, add the facts your approval decision needs:
+In the Context Editor, add the facts your decisions need:
 
 ![Define Facts](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/contexts/define-facts.png)
 
-| Fact | Type | Required |
-|------|------|----------|
-| `application_id` | string | Yes |
-| `credit_score` | number | Yes |
-| `annual_income` | number | Yes |
-| `employment_verified` | boolean | Yes |
-| `approval_decision` | string | No (output) |
+| Fact          | Type    | Required |
+| ------------- | ------- | -------- |
+| `customer_id` | string  | Yes      |
+| `name`        | string  | No       |
+| `email`       | string  | No       |
+| `tier`        | string  | Yes      |
+| `income`      | number  | Yes      |
+| `address`     | object  | No       |
+| `nicknames`   | list    | No       |
+| `subscribed`  | boolean | No       |
 
-Mark facts as **required** if rules can't execute without them. Mark `approval_decision` as **output only**—your rule will write to it, not external systems.
+Mark facts as **required** if rules can't execute without them. Facts like `tier` and `income` might be required for your decisions, while profile data like `nicknames` is optional.
 
 ### Add a Derived Fact (Optional)
 
-Derived facts calculate automatically from other facts. Add a debt-to-income ratio:
+Derived facts calculate automatically from other facts or related entities. Add a `total_spent` fact that aggregates transaction amounts:
 
 ![Derived Facts](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/contexts/derived-facts.png)
 
 ```javascript
-monthly_debt / (annual_income / 12)
+sum($relations.Transaction, 'amount')
 ```
 
-This updates whenever `monthly_debt` or `annual_income` changes.
+This updates whenever a related Transaction is added or modified. You can also create derived facts like `transaction_count` to track how many transactions a customer has.
 
-### Bind Your Rule
+### Link Your Rule
 
-Open your loan approval rule, set its input schema to **From Context**, and select the Loan Application context. The rule will now read from context facts and write its decision back.
+Create a rule, set its input schema to **From Context**, and select the Customer context. Any rules you create in this way will read from context facts and write their decision results back automatically.
+
+[Learn more about linking decision assets →](/contexts/binding-rules)
 
 ### Test It
 
-Use the **Console** tab to simulate data arriving:
+Use the **Console** tab to explore live customer instances:
 
 ![Context Console](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/contexts/context-console.png)
 
-Submit facts one at a time and watch the `have`/`need` arrays update. When you submit the last required fact, your rule executes automatically and writes `approval_decision` back to the context.
+Enter a customer ID like `c_001` to fetch the instance and see all base facts (name, tier, income, etc.) and derived facts (transaction_count, total_spent). When required facts are present, bound rules/flows execute automatically– if you've already set those up, you should be able to see their outputs write-back to your live context accordingly.
 
 </Steps>
 
@@ -65,9 +70,9 @@ Submit facts one at a time and watch the `have`/`need` arrays update. When you s
 Submit facts to a context instance via POST:
 
 ```bash
-curl -X POST "https://api.rulebricks.com/api/v1/contexts/loan-application/APP-12345" \
+curl -X POST "https://rulebricks.com/api/v1/contexts/customer/c_001" \
   -H "x-api-key: YOUR_API_KEY" \
-  -d '{ "credit_score": 720 }'
+  -d '{ "tier": "gold", "income": 200000 }'
 ```
 
 The response shows current state:
@@ -75,25 +80,27 @@ The response shows current state:
 ```json
 {
   "status": "pending",
-  "have": ["application_id", "credit_score"],
-  "need": ["annual_income", "employment_verified"]
+  "have": ["customer_id", "tier", "income"],
+  "need": []
 }
 ```
 
-When the final required fact arrives, the response includes the rule execution:
+When all required facts are present and a bound rule exists, the response includes rule execution:
 
 ```json
 {
   "status": "complete",
-  "cascaded": [{
-    "rule": "loan-approval",
-    "result": { "approval_decision": "approved", "max_loan_amount": 250000 }
-  }]
+  "cascaded": [
+    {
+      "rule": "customer-decision",
+      "result": { "tier_benefits": ["free_shipping", "priority_support"] }
+    }
+  ]
 }
 ```
 
-## Next Steps
+## Key Concepts
 
-- **[Facts and Schema](/contexts/core-concepts/facts-and-schema)** — Derived facts, history tracking, and schema design
-- **[Progressive Execution](/contexts/core-concepts/progressive-execution)** — How auto-execution and cascades work
-- **[Binding Rules](/contexts/guides/binding-rules)** — Connect rules to read from and write to contexts
+- **[Facts and Schema](/contexts/key-concepts/facts-and-schema)** — Derived facts, history tracking, and schema design
+- **[Execution Mode](/contexts/key-concepts/progressive-execution)** — How auto-execution and cascades work
+- **[Binding Rules](/contexts/binding-rules)** — Connect rules to read from and write to contexts

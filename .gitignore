@@ -2,3 +2,5 @@
 node_modules
 CHANGELOG_PROMPT.md
 .DS_Store
+.env
+.env.local

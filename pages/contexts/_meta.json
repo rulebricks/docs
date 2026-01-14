@@ -1,7 +1,8 @@
 {
   "index": "What are Contexts?",
   "getting-started": "Getting Started",
-  "core-concepts": "Core Concepts",
-  "guides": "Guides",
+  "key-concepts": "Key Concepts",
+  "binding-rules": "Linking Rules & Flows",
+  "webhooks": "Webhooks",
   "gradient": "Rulebricks Gradient"
 }

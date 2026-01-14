@@ -1,6 +1,12 @@
 {
-    "values-and-functions": "Values & Functions",
-    "groups-and-hit-policies": "Groups & Hit Policies",
-    "condition-priorities": "Condition Priorities",
-    "scheduled-conditions": "Scheduled Conditions"
+  "values-and-functions": "Values & Functions",
+  "Available Operators": {
+    "title": "Available Operators ↗",
+    "type": "page",
+    "href": "https://rulebricks.com/operators",
+    "newWindow": true
+  },
+  "groups-and-hit-policies": "Groups & Hit Policies",
+  "condition-priorities": "Condition Priorities",
+  "scheduled-conditions": "Scheduled Conditions"
 }
