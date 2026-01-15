@@ -75,9 +75,7 @@ You're deploying a complete Rulebricks stack to your existing Kubernetes cluster
 
 **Self-hosted (default):** PostgreSQL runs in your cluster with persistent storage. You have full control and data never leaves your infrastructure.
 
-**Managed Supabase:** Use Supabase Cloud instead. Set `supabase.enabled: false` and provide your project credentials. The chart automatically configures your managed project.
-
----
+**Managed Supabase:** Use Supabase Cloud instead. Set `supabase.enabled: false` and provide your project credentials. The chart automatically configures your managed project. We are also able to manage your database for you, should you prefer a hybrid deployment configuration.
 
 ## Troubleshooting
 
@@ -102,8 +100,6 @@ helm install rulebricks oci://ghcr.io/rulebricks/charts/stack \
   --namespace rulebricks \
   -f your-values.yaml
 ```
-
----
 
 ## Caveats & Limits
 
