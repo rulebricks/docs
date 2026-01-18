@@ -36,10 +36,11 @@ function extractTitle(content, filename) {
  * Extract description from MDX content
  */
 function extractDescription(content) {
-  // Try frontmatter metaDescription
-  const metaMatch = content.match(/metaDescription:\s*['"]?([^'"\n]+)['"]?/m)
+  // Try frontmatter metaDescription - grab the whole line
+  const metaMatch = content.match(/metaDescription:\s*(.+)$/m)
   if (metaMatch) {
-    return metaMatch[1].trim()
+    // Remove surrounding quotes if present
+    return metaMatch[1].trim().replace(/^['"]|['"]$/g, '')
   }
 
   // Try to get first paragraph after heading
@@ -53,27 +54,18 @@ function extractDescription(content) {
 
 /**
  * Clean MDX content for AI consumption
- * Removes imports, JSX components, frontmatter, etc.
+ * Removes imports and frontmatter, preserves MDX components and code blocks.
  */
 function cleanContent(content) {
   return content
     // Remove frontmatter
     .replace(/^---[\s\S]*?---\n*/m, '')
-    // Remove import statements
-    .replace(/^import\s+.+$/gm, '')
-    // Remove JSX components (simple cases)
-    .replace(/<[A-Z][^>]*\/>/g, '')
-    .replace(/<[A-Z][^>]*>[\s\S]*?<\/[A-Z][^>]*>/g, '')
-    // Remove HTML-style JSX
-    .replace(/<div[^>]*>|<\/div>/g, '')
-    // Remove Callout and other common components
-    .replace(/<Callout[^>]*>[\s\S]*?<\/Callout>/g, '')
-    .replace(/<Steps[^>]*>[\s\S]*?<\/Steps>/g, '')
-    .replace(/<Tabs[^>]*>[\s\S]*?<\/Tabs>/g, '')
-    // Clean up code blocks - keep content but mark it
-    .replace(/```(\w+)?\n([\s\S]*?)```/g, '[Code: $2]')
-    // Remove inline JSX expressions
-    .replace(/\{[^}]+\}/g, '')
+    // Remove multi-line imports (import { ... } from '...')
+    .replace(/^import\s+\{[\s\S]*?\}\s+from\s+['"][^'"]+['"]\s*$/gm, '')
+    // Remove single-line imports
+    .replace(/^import\s+.+from\s+['"][^'"]+['"]\s*$/gm, '')
+    // Remove JSX comments
+    .replace(/\{\/\*[\s\S]*?\*\/\}/g, '')
     // Clean up extra whitespace
     .replace(/\n{3,}/g, '\n\n')
     .trim()
