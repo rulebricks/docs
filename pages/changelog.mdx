@@ -4,6 +4,31 @@ metaDescription: Track the latest updates, improvements, and bug fixes to the Ru
 
 ![SDK Banner](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/changelog-banner-dark.png)
 
+## January 15-27, 2026 🔒
+
+### New Features
+
+#### Templates
+
+- **Benchmarking Flow**: New flow template for comparing and benchmarking different rule configurations and outputs
+
+### Private Deployment
+
+- **New & Improved CLI**: Rich new TUI interface + managed deployments on existing infrastructure
+- **Improved SSO Configuration**: Fixed an issue where SSO settings weren't being applied correctly in private deployments with `global.sso.enabled = false`
+- **AI Feature Configuration**: Resolved a configuration issue that could incorrectly display AI features in self-hosted deployments
+
+### Bug Fixes
+
+- Fixed undo/redo functionality when publishing rules and flows
+- Resolved date editor input handling issues
+- Fixed AI generation header rendering glitch in rule editor
+- Improved flow editor stability by detecting unpublished changes before version comparisons
+
+_Now available in `rulebricks/app:1.5.10, rulebricks/hps:1.5.9`_
+
+---
+
 ## January 8-14, 2026 🔍
 
 ### New Features
@@ -601,4 +626,4 @@ _Now available in `rulebricks/app:0.0.11`_
 
 ---
 
-_Last updated: January 14, 2026_
+_Last updated: January 27, 2026_
