@@ -4,6 +4,33 @@ metaDescription: Track the latest updates, improvements, and bug fixes to the Ru
 
 ![SDK Banner](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/changelog-banner-dark.png)
 
+## January 28 - February 13, 2026 ✨
+
+### New Features
+
+#### API & Integrations
+
+- **Workspace Notifications**: Configure workspace-wide webhooks and app notifications to keep teams informed when shared events happen
+- **Richer Asset Listings**: Rule and flow list APIs now return publication status and asset metadata, making integrations and admin dashboards easier to build
+- **Draft-Aware Rule APIs**: Admin and OpenAPI rule endpoints now include draft rules and additional metadata fields, so tooling can better reflect in-progress work
+- **Condition Count Metadata**: Rule APIs now expose condition counts for easier reporting, filtering, and rule inventory analysis
+
+#### Team Management
+
+- **Advanced Team Permissions**: Added entitlement-based controls for managing team templates, objects, and notification preferences with clearer access boundaries
+- **Improved Team Workspace Loading**: Team templates and objects now use better loading states for a smoother management experience
+
+### Bug Fixes
+
+- Improved AI-assisted editing reliability in the rule editor
+- Added matched-row context from logs directly into the rule editor to speed up troubleshooting
+- Fixed edge cases in default value handling and nested path updates to prevent editor errors
+- Improved condition settings and test suite checks for more predictable rule validation behavior
+
+_Now available in `rulebricks/app:1.6.9`_
+
+---
+
 ## January 15-27, 2026 🔒
 
 ### New Features

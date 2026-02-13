@@ -2826,7 +2826,10 @@
                 "python": "rule.when(tier=tier.is_included_in([\"gold\", \"platinum\", \"diamond\"]))",
                 "typescript": "rule.when({ tier: tier.is_included_in([\"gold\", \"platinum\", \"diamond\"]) });"
               },
-              "exampleOutput": ["is included in", [["gold", "platinum", "diamond"]]]
+              "exampleOutput": [
+                "is included in",
+                [["gold", "platinum", "diamond"]]
+              ]
             },
             {
               "name": "BooleanField.equals",
