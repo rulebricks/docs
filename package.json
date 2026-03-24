@@ -39,6 +39,9 @@
     "postinstall": "patch-package",
     "postbuild": "next-sitemap"
   },
+  "resolutions": {
+    "next-mdx-remote": "6.0.0"
+  },
   "devDependencies": {
     "@types/node": "20.12.7",
     "autoprefixer": "^10.4.19",
