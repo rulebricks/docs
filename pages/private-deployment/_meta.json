@@ -2,5 +2,7 @@
   "quick-start": "Getting Started",
   "deployment": "Deployment Modes",
   "configuration-reference": "YAML Reference",
+  "external-services": "External Services",
+  "sso": "SSO & Authentication",
   "architecture": "Architecture"
 }

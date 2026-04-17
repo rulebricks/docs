@@ -1,0 +1,344 @@
+---
+metaDescription: Point the Rulebricks Helm chart at your own Kafka and Redis infrastructure, and understand why Supabase stays internal.
+---
+
+import { Callout } from 'nextra/components'
+
+# External Services
+
+This guide covers how to point the Rulebricks Helm chart at your own Kafka and Redis infrastructure instead of using the bundled instances. It is written for platform engineers deploying Rulebricks into a self-hosted Kubernetes environment.
+
+<Callout type="info">
+  Supabase externalization is not covered here. See [Supabase: Why It Stays
+  Internal](#supabase-why-it-stays-internal) at the end of this document for the
+  full rationale.
+</Callout>
+
+## Architecture Overview
+
+Self-hosted Rulebricks deployments are split into two services:
+
+- **App** — the main Next.js application. Serves the dashboard UI, admin APIs, rule/flow editor, and user management. This is the control plane.
+- **HPS (High Performance Server)** — a performance optimized server dedicated to handling rule execution at scale. When a client calls the solve API, Traefik routes the request to HPS rather than the main app. HPS is built for high throughput and low latency.
+
+HPS uses a **correlation-ID request/response pattern** over Kafka. When a solve request arrives:
+
+1. HPS produces a message to the `solution` Kafka topic with a unique correlation ID and a designated response partition.
+2. A worker pod consumes the message, evaluates the rule, and produces the result to the `solution-response` topic on the exact partition the originating HPS replica is listening on.
+3. HPS resolves the pending request and returns the result to the caller.
+
+This architecture means that rather than paying arbitrary per-request network cost, throughput is bottlenecked primarily by rule evaluation compute. Clients submit bulk payloads (typically 500–1,000 items per request), and workers process them as capacity allows. The idempotent Kafka producer guarantees exactly-once delivery at the broker level, and the correlation-ID mechanism ensures responses always route back to the correct HPS replica — giving you a request-idempotent server-side architecture consumable through standard REST APIs and SDKs.
+
+Redis sits in front of Supabase as a shared cache layer. API key authentication, rule/flow definitions, and named-environment lookups are all cached in Redis with short TTLs (60–180 seconds), backed by an in-process LRU per pod. In practice, Supabase sees very few direct queries under normal operation.
+
+For a deeper walkthrough of component interactions and request flow, see the [Architecture & Operations Guide](/private-deployment/architecture).
+
+---
+
+## Externalizing Kafka
+
+### How Rulebricks Uses Kafka
+
+Rulebricks uses three Kafka topics:
+
+| Topic               | Purpose                                                 | Producers        | Consumers                                             |
+| :------------------ | :------------------------------------------------------ | :--------------- | :---------------------------------------------------- |
+| `solution`          | Inbound solve requests                                  | HPS API pods     | Worker pods (`generic-workers` consumer group)        |
+| `solution-response` | Outbound results routed back to originating HPS replica | Worker pods      | HPS API pods (`hps-response-consumer` consumer group) |
+| `logs`              | Structured decision logs (optional)                     | HPS and app pods | Vector aggregator (`vector-consumers` consumer group) |
+
+Messages are plain JSON — no schema registry, no Kafka Connect, no custom broker plugins. The client library is KafkaJS, which speaks the standard Kafka wire protocol.
+
+### Helm Values for External Kafka
+
+To switch from the bundled Kafka to your own cluster, set the following in your values override:
+
+```yaml
+kafka:
+  enabled: false
+
+rulebricks:
+  app:
+    logging:
+      enabled: true
+      kafkaBrokers: 'broker-1.example.com:9092,broker-2.example.com:9092'
+```
+
+That's it. The `kafkaBrokers` value flows into the `KAFKA_BROKERS` environment variable on HPS, workers, and the main app via the shared ConfigMap. When `kafkaBrokers` is empty (the default), the chart auto-generates the internal cluster address `<release>-kafka.<namespace>.svc.cluster.local:9092`.
+
+The KEDA ScaledObject for worker autoscaling also reads `kafkaBrokers` and will point at your external cluster automatically (see [KEDA Autoscaling with External Kafka](#keda-autoscaling-with-external-kafka)).
+
+<Callout type="warning">
+  The current HPS codebase instantiates the KafkaJS client without `ssl` or
+  `sasl` options. If your Kafka cluster requires TLS or SASL authentication (AWS
+  MSK with IAM/SCRAM, Confluent Cloud, etc.), a small code change in the HPS
+  image is needed to wire those credentials through. Contact Rulebricks support
+  if your cluster requires authenticated connections.
+</Callout>
+
+### Topics to Pre-Create
+
+The HPS producer sets `allowAutoTopicCreation: true`, but auto-created topics inherit the broker's `default.num.partitions` — often just `1`. A single-partition `solution-response` will cause request timeouts under any meaningful replica count. **Always pre-create topics explicitly.**
+
+Ask your Kafka team to create:
+
+| Topic               | Partition Count                               | Notes                                                                 |
+| :------------------ | :-------------------------------------------- | :-------------------------------------------------------------------- |
+| `solution`          | ≥ number of worker replicas (e.g. 12)         | More partitions = more parallelism for workers                        |
+| `solution-response` | Must match `hps.workers.keda.maxReplicaCount` | See [Partition Sizing](#partition-sizing-for-solution-response) below |
+| `logs`              | Any (e.g. 4–8)                                | Optional. Only needed if `app.logging.enabled: true`                  |
+
+Retention can be short (hours). Messages are consumed almost immediately. Replication factor of 2–3 is recommended for production.
+
+### Partition Sizing for solution-response
+
+The `solution-response` topic is partition-sensitive. HPS replicas share a consumer group over this topic, so each replica is assigned a subset of partitions. When producing a response, the worker writes to the _exact_ partition the originating HPS replica is consuming. If the topic has fewer partitions than expected, responses land on partitions no replica is watching, causing 30-second timeouts.
+
+The expected partition count is set in the Helm values:
+
+```yaml
+rulebricks:
+  hps:
+    workers:
+      keda:
+        maxReplicaCount: 12
+```
+
+The HPS StatefulSet template passes `maxReplicaCount` as the `MAX_WORKERS` environment variable.
+
+<Callout type="warning">
+  Keep `maxReplicaCount` equal to the actual partition count of
+  `solution-response` on your external cluster. A mismatch here is the most
+  common cause of 30-second timeouts on solve requests.
+</Callout>
+
+### ZooKeeper vs KRaft
+
+HPS does not care how your Kafka cluster manages metadata. It never connects to ZooKeeper directly — it only speaks the Kafka wire protocol to brokers via a bootstrap address. Both ZooKeeper-backed clusters and KRaft-mode clusters work identically. Managed services like AWS MSK (in either mode), Confluent Cloud, Aiven, and Redpanda are all compatible.
+
+The bundled Kafka subchart ships in KRaft mode (`kraft.enabled: true`, `zookeeper.enabled: false`), but this is a deployment choice for the internal broker — it has no bearing on external cluster compatibility.
+
+### Tuning and Idempotency
+
+The HPS Kafka client is pre-tuned for a low-latency request/response workload. These settings are baked into the application and do not need external configuration, but are worth understanding:
+
+**Producer:**
+
+- **Idempotent mode** (`idempotent: true`, `acks: -1`) — guarantees exactly-once produce semantics per session. If a network blip causes a retry, Kafka deduplicates the message at the broker. This is Kafka-level idempotency, not HTTP-level: a client retrying an HTTP request produces a new message with a new correlation ID.
+- **Snappy compression** — reduces wire bytes. The broker must support Snappy (enabled by default on Apache Kafka and Confluent). If your cluster has disabled Snappy, contact Rulebricks support.
+- **`lingerMs: 0`** — send immediately. Latency is prioritized over batch throughput because these are synchronous, user-facing requests.
+
+**Consumer:**
+
+- **`sessionTimeout: 60000`, `heartbeatInterval: 15000`** — tolerates brief idle periods without spurious rebalancing.
+- **`maxWaitTimeInMs: 50`** — broker returns fetched messages quickly for low-latency response delivery.
+- Workers process up to 2 partitions concurrently per pod. Throughput scales by adding worker replicas, not by raising concurrency.
+
+No tuning is needed on the external Kafka side beyond ensuring the three topics exist with correct partition counts and reasonable ISR settings (e.g., `min.insync.replicas=1` for single-broker, `2` for multi-broker production).
+
+### KEDA Autoscaling with External Kafka
+
+The KEDA ScaledObject for HPS workers monitors consumer lag on the `solution` topic. When you externalize Kafka, KEDA's `bootstrapServers` is automatically derived from your `kafkaBrokers` value. No additional KEDA configuration is needed.
+
+However, ensure KEDA can reach your external Kafka brokers from within the cluster (network policies, VPC peering, security groups, etc.). If your Kafka requires SASL, KEDA's Kafka trigger also needs authentication — see the [KEDA Kafka trigger docs](https://keda.sh/docs/latest/scalers/apache-kafka/) for details.
+
+### Disabling Kafka Entirely
+
+Setting `kafka.enabled: false` without providing external `kafkaBrokers` effectively disables HPS. All solve endpoints return HTTP 503. Only the `/health` endpoint continues to respond. This is only useful for running a control-plane-only deployment (dashboard and admin APIs without rule execution).
+
+---
+
+## Externalizing Redis
+
+### How Rulebricks Uses Redis
+
+Redis serves as a shared cache between all Rulebricks components — the main app, HPS, and workers. It sits in a three-tier caching hierarchy:
+
+1. **L1 — In-process LRU** (per pod, always present)
+2. **L2 — Redis** (shared across all pods and replicas)
+3. **L3 — Supabase** (source of truth, queried on full cache miss)
+
+What lives in Redis:
+
+| Data                                     | TTL       | Written By         |
+| :--------------------------------------- | :-------- | :----------------- |
+| API key auth payloads                    | 60s       | HPS                |
+| Rule/flow definitions (compressed)       | 180s      | HPS, workers       |
+| Named-environment release mappings       | No expiry | Main app (not HPS) |
+| Flow node results (API, SOAP, DB, vault) | 1–300s    | Workers            |
+
+Redis is accessed using only basic commands: `GET`, `SET` with `EX`, `EXPIRE`, and `DEL`. No Lua scripts, no pub/sub, no streams. A vanilla Redis instance is all that's needed — no clustering, persistence configuration, or eviction policy requirements.
+
+### What You Provide
+
+To use your own Redis instance, you provide **one thing**: a Redis host and port.
+
+```yaml
+rulebricks:
+  redis:
+    enabled: false
+    external:
+      host: 'your-redis.example.com'
+      port: 6379
+      password: 'your-password'
+      # existingSecret: "my-redis-secret"
+      # existingSecretKey: "redis-password"
+      tls:
+        enabled: false
+```
+
+Setting `redis.enabled: false` stops the chart from deploying its own internal Redis pod and PVC. The chart takes care of everything else — all internal components are wired to your Redis automatically.
+
+### What the Chart Does Behind the Scenes
+
+The Rulebricks stack has two types of Redis consumers:
+
+- **HPS and workers** connect to Redis directly via the native Redis protocol (`ioredis`). This is the fast path (~1–2ms per operation) and is configured via the `REDIS_URL` environment variable, which the chart constructs from your `external.host` and `external.port`.
+- **The main app** (Next.js) uses an HTTP-based Redis client (`@vercel/kv`). It cannot connect to Redis natively, so it needs an HTTP translation layer.
+
+To bridge this, the chart always deploys a lightweight internal proxy (`serverless-redis-http`) that speaks HTTP on one side and the Redis protocol on the other. When you externalize Redis, this proxy is automatically pointed at your external instance — you do not need to configure or think about it. It's an internal implementation detail.
+
+In short: you provide a standard Redis endpoint, and the chart handles routing each component to it through the appropriate protocol.
+
+### Connection Examples
+
+| Provider                        | `host`                                              | `port`  | `tls.enabled` |
+| :------------------------------ | :-------------------------------------------------- | :------ | :------------ |
+| AWS ElastiCache (no TLS)        | `primary.my-cluster.use1.cache.amazonaws.com`       | `6379`  | `false`       |
+| AWS ElastiCache (TLS)           | `primary.my-cluster.use1.cache.amazonaws.com`       | `6379`  | `true`        |
+| AWS MemoryDB                    | `clustercfg.my-cluster.use1.memorydb.amazonaws.com` | `6379`  | `true`        |
+| Redis Cloud                     | `redis-12345.c1.us-east-1.redns.redis-cloud.com`    | `12345` | `true`        |
+| GCP Memorystore                 | `10.x.x.x`                                          | `6379`  | `false`       |
+| Self-hosted (another namespace) | `redis-svc.other-ns.svc.cluster.local`              | `6379`  | `false`       |
+
+The Redis client is pre-configured with TCP keepalive, auto-pipelining, and exponential-backoff retries. No client-side tuning is typically required.
+
+### Disabling Redis Entirely
+
+If `redis.enabled` is `false` and no `external` host is provided, Redis operates in a no-op mode where cache writes are silently discarded and reads return empty. HPS will start and log a warning, but consequences are significant:
+
+- **Every authentication and entity lookup hits Supabase directly.** Expect a ~60x increase in database queries at steady state.
+- **Named-environment URLs stop working.** Requests like `/api/v1/solve/my-rule/prod` return 404 because the `releases_*` cache keys are only written by the main app into Redis. Numeric versions and `latest` still work.
+- **Flow-node caching is lost.** API, SOAP, and database nodes inside flows execute on every invocation.
+
+---
+
+## Supabase
+
+While feasible, wiring Supabase to an external PostgreSQL instance is **not currently supported** by Rulebricks, as Supabase's requirement for PostgreSQL is quite specific.
+
+We can, however, help you self-host the Supabase stack, which includes the following services:
+
+- **PostgreSQL** — stores users, teams, rules, flows, API keys, usage data, and all application state.
+- **GoTrue (Auth)** — handles user signup, login, password recovery, email verification, SSO/OIDC, and JWT issuance. The main app delegates all authentication to Supabase Auth.
+- **PostgREST** — provides the REST API layer over PostgreSQL that the application queries.
+- **Realtime** — powers live-update features in the dashboard.
+- **Kong** — API gateway that routes and authenticates requests to the above services.
+
+Beyond providing a clear database layer for Rulebricks, Supabase is our interface for authentication, JWT management, and real-time features. There are also database triggers between Supabase-managed identity tables (e.g., `auth.users`) and Rulebricks-managed application tables that depend on Supabase's internal wiring. In any scenario, Rulebricks must ultimately maintain an internal users table to allow for basic API key, usage tracking, tenancy, and role-based access control features.
+
+**The database is likely not a bottleneck.** Because Redis aggressively caches entity definitions, and every pod has an in-process LRU in front of Redis, actual database read/write volumes under normal operation are generally minimal.
+
+### Database Backup Recommendations
+
+While the Supabase PostgreSQL instance is lightweight, it holds all application state and should be backed up regularly if self-hosting. The bundled deployment uses a PersistentVolumeClaim, so data survives pod restarts — but PVCs are not a meaningful backup strategy.
+
+**Scheduled `pg_dump` via CronJob**
+
+Create a Kubernetes CronJob that runs `pg_dump` against the Supabase database and stores the output in S3 or a persistent volume:
+
+```yaml
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: supabase-db-backup
+spec:
+  schedule: '0 2 * * *' # Daily at 2 AM
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+            - name: pg-dump
+              image: postgres:15
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  PGPASSWORD=$DB_PASSWORD pg_dump \
+                    -h <release>-supabase-db.<namespace>.svc.cluster.local \
+                    -U postgres -d postgres \
+                    --format=custom \
+                    -f /backup/rulebricks-$(date +%Y%m%d-%H%M%S).dump
+              env:
+                - name: DB_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: <release>-supabase-db
+                      key: password
+              volumeMounts:
+                - name: backup-vol
+                  mountPath: /backup
+          restartPolicy: OnFailure
+          volumes:
+            - name: backup-vol
+              persistentVolumeClaim:
+                claimName: supabase-db-backup
+```
+
+Replace `<release>` and `<namespace>` with your Helm release name and namespace. For S3, substitute the volume mount with an `aws s3 cp` command using IRSA credentials.
+
+**EBS Snapshots**
+
+If running on AWS with EBS-backed PVCs, schedule EBS snapshots of the Supabase database volume. This captures a point-in-time copy at the block level without impacting the running database.
+
+---
+
+## Verification Checklist
+
+After switching to external Kafka or Redis, verify the deployment is healthy:
+
+### 1. HPS health endpoint
+
+```bash
+kubectl port-forward svc/<release>-hps 3000:3000
+curl -s http://localhost:3000/health | jq
+```
+
+Expected:
+
+```json
+{
+  "status": "ok",
+  "redis": true,
+  "kafka": {
+    "enabled": true,
+    "ready": true,
+    "partitions": 4
+  }
+}
+```
+
+- `redis: true` confirms the KV client connected. If `false`, check your `REDIS_URL` or `redis.external.*` values.
+- `kafka.ready: true` confirms the consumer joined its group. If `false` on startup, retry after 10–15 seconds — group join can take a moment.
+- `kafka.partitions` shows how many `solution-response` partitions this pod owns. In a 3-replica HPS against a 12-partition topic, each pod should report ~4.
+
+### 2. End-to-end smoke test
+
+```bash
+curl -X POST http://localhost:3000/api/v1/solve/<rule-slug>/latest \
+  -H "x-api-key: $API_KEY" \
+  -H "content-type: application/json" \
+  -d '{"input": "value"}'
+```
+
+A 200 response confirms Kafka, Redis, Supabase, and the worker pipeline are all healthy.
+
+### 3. Common failure modes
+
+| Symptom                               | Likely Cause                                                                | Fix                                                                               |
+| :------------------------------------ | :-------------------------------------------------------------------------- | :-------------------------------------------------------------------------------- |
+| All solve requests return 503         | Kafka disabled or unreachable                                               | Check `kafkaBrokers`, verify network connectivity to brokers                      |
+| Requests timeout after 30s            | `solution-response` partition count ≠ `maxReplicaCount`                     | Recreate topic with correct partition count, or update `maxReplicaCount` to match |
+| Named-environment URLs return 404     | Redis not connected, or main app and HPS point at different Redis instances | Verify `redis: true` on `/health`; ensure shared Redis                            |
+| Persistent consumer lag on `solution` | Not enough worker replicas                                                  | Scale up `hps.workers.replicas` or `hps.workers.keda.minReplicaCount`             |

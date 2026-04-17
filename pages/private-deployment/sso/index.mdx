@@ -1,0 +1,120 @@
+---
+metaDescription: Understand how Rulebricks resolves SSO users into its parent-child team model, the one-administrator rule, and the recommended configuration sequence.
+---
+
+import { Callout, Steps } from 'nextra/components'
+
+# SSO & Authentication
+
+This section explains how Rulebricks maps incoming SSO identities onto its internal authorization model, and how to configure that mapping from the **Team → SSO** tab. It is written for workspace administrators running a self-hosted or white-labeled Rulebricks deployment.
+
+If you cannot provision an SSO application for Rulebricks — for example because Rulebricks lives inside a private network behind an existing identity-aware proxy — see [Disabling Authentication](/private-deployment/sso/disabling-authentication) for the token passthrough alternative.
+
+## What the SSO Team Tab Does
+
+The SSO Team tab connects incoming identity claims from your IdP to four dimensions of Rulebricks authorization:
+
+- **Access** — who is allowed to enter the application at all
+- **Tenants** — which tenancy boundaries a user can see
+- **Roles** — what permissions the user has once inside
+- **Profile** — how the user's name and avatar are populated
+
+Each dimension is configured independently. The full reference for every field lives in [Claim Mapping](/private-deployment/sso/claim-mapping).
+
+## How the SSO Model Works
+
+Rulebricks uses a parent-child team model.
+
+- The first admitted SSO user becomes the **root workspace administrator**.
+- That user has no parent and is the single built-in administrator for the workspace.
+- Every later admitted SSO user is adopted under that administrator as a child user.
+- Child users receive:
+  - a Rulebricks role
+  - optional tenant assignments
+  - optional profile mappings
+
+This means the SSO layer does not create a separate authorization model. It resolves users into the same internal team structure that Rulebricks already uses everywhere else.
+
+## The One Administrator Rule
+
+Rulebricks maintains exactly one built-in administrator per workspace:
+
+- The first admitted user is the workspace administrator.
+- The built-in `Administrator` role is **not assignable** through SSO role mapping.
+- Later users can be assigned system roles like `Developer` or `Editor`, or custom roles created in Rulebricks.
+
+This prevents claim mapping from accidentally creating multiple built-in administrators. If you need a class of trusted cross-tenant users, use the [admin tenant value](/private-deployment/sso/claim-mapping#admin-tenant-value) instead, which affects tenant visibility without granting administrator status.
+
+## What Happens When Mapping Fails
+
+Rulebricks treats failed mapping safely by default.
+
+Examples of failed mapping include:
+
+- access rules block the user
+- role mapping produces no valid role
+- tenant mapping is enabled but no tenant claim is present
+- the system cannot safely determine how the user should be adopted into the workspace
+
+In these cases the user is denied access and sent to the access-unavailable screen.
+
+There are two intentional exceptions:
+
+- If a fallback role is enabled, an unmatched role resolves into that role instead of producing a denial.
+- If the tenant claim refers to a tenant that does not exist yet, Rulebricks auto-creates the tenant.
+
+<Callout type="info">
+  Tenant auto-creation is always on. Administrators do not need to pre-create
+  every tenant value — newly seen tenants are created automatically on first
+  login.
+</Callout>
+
+## Recommended Configuration Pattern
+
+For most teams, a good configuration sequence is:
+
+<Steps>
+
+### Admit the first user
+
+Let the first SSO user enter and become the workspace administrator.
+
+### Create custom roles
+
+If you plan to use custom roles, create them first in the Team UI so they are available when you configure role mappings.
+
+### Configure Access
+
+Configure `Access` rules if only certain SSO users should be admitted at all.
+
+### Configure Tenants
+
+Configure `Tenants` so normal users land in the correct tenant automatically.
+
+### Set the Admin tenant value
+
+Set an `Admin tenant value` if you need specific users to see across all tenants.
+
+### Configure Roles
+
+Configure `Roles` so users get the correct Rulebricks permissions. Enable a fallback role if you want unmatched users to land on a safe default rather than being denied.
+
+### Configure Profile
+
+Optionally configure `Profile` so user display names and avatars are populated from SSO.
+
+</Steps>
+
+## Access Levels at a Glance
+
+| Dimension              | Controlled by       | Possible outcomes                                                                                                             |
+| :--------------------- | :------------------ | :---------------------------------------------------------------------------------------------------------------------------- |
+| **Workspace access**   | `Access` section    | Allowed into the application, or denied before any workspace mapping                                                          |
+| **Tenant visibility**  | `Tenants` section   | Assigned to one or more tenants, or assigned to no tenants via the admin tenant value (cross-tenant visibility)               |
+| **Role permissions**   | `Roles` section     | Mapped to a system role, mapped to a custom role, assigned the fallback role if configured, or denied if no role mapping hits |
+| **Profile population** | `Profile` section   | Name and avatar remain unchanged, or are automatically populated from SSO claims                                              |
+
+## Where to Next
+
+- [Claim Mapping](/private-deployment/sso/claim-mapping) — the full reference for the `Access`, `Tenants`, `Roles`, and `Profile` sections of the Team tab.
+- [Disabling Authentication](/private-deployment/sso/disabling-authentication) — for deployments that cannot provision an SSO application for Rulebricks and instead want to delegate authentication to an upstream proxy.

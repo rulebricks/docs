@@ -1,0 +1,146 @@
+---
+metaDescription: Reference for the Access, Tenants, Roles, and Profile configuration sections in the Rulebricks SSO Team tab.
+---
+
+import { Callout } from 'nextra/components'
+
+# Claim Mapping
+
+This is the reference page for the four configuration sections in the **Team → SSO** tab. Each section maps one kind of identity claim onto a dimension of the Rulebricks authorization model. For the conceptual background behind this model — including the one-administrator rule and the parent-child team structure — see the [SSO Overview](/private-deployment/sso).
+
+The tab is organized into four sections:
+
+- [Access](#access) — controls who is allowed into the application
+- [Tenants](#tenants) — maps users into tenancy boundaries
+- [Roles](#roles) — maps identity claim values to Rulebricks roles
+- [Profile](#profile) — populates a user's profile from identity claims
+
+Together, these sections determine how SSO users are admitted and what they are allowed to see and do after they sign in.
+
+## Access
+
+The `Access` section controls whether every SSO user is evaluated for workspace mapping, or whether only a subset of users can enter the application at all.
+
+### When Access Rules Are Off
+
+If the access toggle is off:
+
+- Every SSO user is allowed to continue into Rulebricks.
+- They are then evaluated by the `Tenants`, `Roles`, and `Profile` sections.
+- Users who cannot be mapped safely may still be denied later, depending on the configuration.
+
+### When Access Rules Are On
+
+If the access toggle is on:
+
+- Rulebricks reads a configured identity claim field.
+- The claim must match one of the configured allowed values.
+- If it does not match, the user is denied before any workspace role or tenant assignment happens.
+
+This is useful when only a subset of your SSO population should be allowed to enter the application.
+
+## Tenants
+
+The `Tenants` section maps users into tenancy boundaries.
+
+<Callout type="info">
+  In Rulebricks, tenants are implemented through user-group assignments behind
+  the scenes. The Team UI uses the term `Tenants` for clarity and consistency.
+</Callout>
+
+### Standard Tenant Mapping
+
+When tenant mapping is enabled:
+
+- Rulebricks reads the configured tenant claim field.
+- The resulting tenant value is used to assign the user into the matching tenant.
+- If the tenant does not exist yet, Rulebricks automatically creates it.
+
+Tenant auto-creation is always enabled and enforced. This means:
+
+- Administrators do not need to pre-create every tenant value.
+- Newly seen tenant values can be created automatically on first login.
+
+### Tenant Assignment and Visibility
+
+Tenant assignment controls what scoped data a user can see.
+
+- Users assigned to one or more tenants see the data available to those tenants.
+- Users assigned to no tenants can see across all tenants.
+
+That second case is important for the administrative tenancy behavior described below.
+
+### Admin Tenant Value
+
+The tenant section includes an `Admin tenant value`.
+
+If a user's tenant claim matches this value:
+
+- The user is intentionally not assigned to any tenant.
+- They can see across all tenants.
+- Their Rulebricks role is still determined separately by the `Roles` section.
+
+<Callout type="warning">
+  Admin tenant mapping does **not** automatically make a user a built-in
+  Rulebricks administrator. It only affects tenant visibility. Use it when you
+  want a class of trusted cross-tenant users, but still want role-based
+  permissions to be controlled separately.
+</Callout>
+
+## Roles
+
+The `Roles` section maps identity claim values to Rulebricks roles.
+
+### What Can Be Mapped
+
+Users can be mapped to:
+
+- `Developer`
+- `Editor`
+- Custom Rulebricks roles that you create in the Team UI
+
+Users cannot be mapped to the built-in `Administrator` role. See [The One Administrator Rule](/private-deployment/sso#the-one-administrator-rule) for why.
+
+### Role Mapping Behavior
+
+Role mapping works by:
+
+1. Selecting an identity claim field for roles.
+2. Defining claim value → role mappings.
+3. Assigning the matching Rulebricks role when a user signs in.
+
+### Fallback Role
+
+The Roles section can optionally define a fallback role.
+
+If fallback is disabled:
+
+- Users whose role claim does not match any mapping are denied access.
+
+If fallback is enabled:
+
+- Unmatched users are assigned to the configured fallback role instead of being denied.
+
+This gives administrators a controlled way to admit users whose role claims are incomplete or unexpected.
+
+## Profile
+
+The `Profile` section maps identity claims into the user's Rulebricks profile.
+
+Today this supports:
+
+- **Display name**
+- **Avatar URL**
+
+When configured, a user's profile is automatically populated from SSO identity data so they enter the application with a more native, pre-filled experience.
+
+## Summary
+
+The SSO Team tab is built to preserve the existing Rulebricks team model:
+
+- One root administrator
+- Child users beneath that admin
+- Tenancy through tenant assignments
+- Permissions through roles
+
+SSO becomes a configuration layer on top of the same core authorization system the rest of the application already uses. For the recommended order in which to configure these sections, see the [recommended configuration pattern](/private-deployment/sso#recommended-configuration-pattern).
