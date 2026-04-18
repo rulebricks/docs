@@ -3,7 +3,7 @@
   "deployment": "Deployment Modes",
   "configuration-reference": "YAML Reference",
   "external-services": "External Services",
+  "external-authentication": "External Authentication",
   "provisioning-users": "Provisioning Users",
-  "disabling-authentication": "Disabling Authentication",
   "architecture": "Architecture"
 }

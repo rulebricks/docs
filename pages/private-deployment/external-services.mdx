@@ -32,8 +32,6 @@ Redis sits in front of Supabase as a shared cache layer. API key authentication,
 
 For a deeper walkthrough of component interactions and request flow, see the [Architecture & Operations Guide](/private-deployment/architecture).
 
----
-
 ## Externalizing Kafka
 
 ### How Rulebricks Uses Kafka
@@ -90,10 +88,10 @@ The HPS producer sets `allowAutoTopicCreation: true`, but auto-created topics in
 
 Ask your Kafka team to create:
 
-| Topic               | Partition Count                               | Notes                                                                 |
-| :------------------ | :-------------------------------------------- | :-------------------------------------------------------------------- |
-| `solution`          | ≥ number of worker replicas (e.g. 12)         | More partitions = more parallelism for workers                        |
-| `solution-response` | Must match `hps.workers.keda.maxReplicaCount` | See [Partition Sizing](#partition-sizing-for-solution-response) below |
+| Topic               | Partition Count                               | Notes                                                                                                                                     |
+| :------------------ | :-------------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------- |
+| `solution`          | ≥ number of worker replicas (e.g. 12)         | More partitions = more parallelism for workers                                                                                            |
+| `solution-response` | Must match `hps.workers.keda.maxReplicaCount` | See [Partition Sizing](#partition-sizing-for-solution-response) below                                                                     |
 | `logs`              | 2–4 is plenty                                 | Required when the Vector pod is deployed (chart default). Vector does not benefit from high partition counts the way the solve path does. |
 
 Retention can be short (hours). Messages are consumed almost immediately. Replication factor of 2–3 is recommended for production.
@@ -177,8 +175,6 @@ Setting `kafka.enabled: false` without providing external `kafkaBrokers` effecti
 
 It also breaks the decision-log pipeline: Vector loses its data source, so any downstream sink (ClickHouse, S3, SIEM) will see a complete gap for the duration of the Kafka outage. See [Vector and the logs topic](#vector-and-the-logs-topic) for the consumer-side details.
 
----
-
 ## Externalizing Redis
 
 ### How Rulebricks Uses Redis
@@ -252,8 +248,6 @@ If `redis.enabled` is `false` and no `external` host is provided, Redis operates
 - **Named-environment URLs stop working.** Requests like `/api/v1/solve/my-rule/prod` return 404 because the `releases_*` cache keys are only written by the main app into Redis. Numeric versions and `latest` still work.
 - **Flow-node caching is lost.** API, SOAP, and database nodes inside flows execute on every invocation.
 
----
-
 ## Supabase
 
 While feasible, wiring Supabase to an external PostgreSQL instance is **not currently supported** by Rulebricks, as Supabase's requirement for PostgreSQL is quite specific.
@@ -323,8 +317,6 @@ Replace `<release>` and `<namespace>` with your Helm release name and namespace.
 
 If running on AWS with EBS-backed PVCs, schedule EBS snapshots of the Supabase database volume. This captures a point-in-time copy at the block level without impacting the running database.
 
----
-
 ## Verification Checklist
 
 After switching to external Kafka or Redis, verify the deployment is healthy:
@@ -367,10 +359,10 @@ A 200 response confirms Kafka, Redis, Supabase, and the worker pipeline are all 
 
 ### 3. Common failure modes
 
-| Symptom                               | Likely Cause                                                                | Fix                                                                               |
-| :------------------------------------ | :-------------------------------------------------------------------------- | :-------------------------------------------------------------------------------- |
-| All solve requests return 503         | Kafka disabled or unreachable                                               | Check `kafkaBrokers`, verify network connectivity to brokers                      |
-| Requests timeout after 30s            | `solution-response` partition count ≠ `maxReplicaCount`                     | Recreate topic with correct partition count, or update `maxReplicaCount` to match |
-| Named-environment URLs return 404     | Redis not connected, or main app and HPS point at different Redis instances | Verify `redis: true` on `/health`; ensure shared Redis                            |
-| Persistent consumer lag on `solution` | Not enough worker replicas                                                  | Scale up `hps.workers.replicas` or `hps.workers.keda.minReplicaCount`             |
+| Symptom                                                                      | Likely Cause                                                                | Fix                                                                                           |
+| :--------------------------------------------------------------------------- | :-------------------------------------------------------------------------- | :-------------------------------------------------------------------------------------------- |
+| All solve requests return 503                                                | Kafka disabled or unreachable                                               | Check `kafkaBrokers`, verify network connectivity to brokers                                  |
+| Requests timeout after 30s                                                   | `solution-response` partition count ≠ `maxReplicaCount`                     | Recreate topic with correct partition count, or update `maxReplicaCount` to match             |
+| Named-environment URLs return 404                                            | Redis not connected, or main app and HPS point at different Redis instances | Verify `redis: true` on `/health`; ensure shared Redis                                        |
+| Persistent consumer lag on `solution`                                        | Not enough worker replicas                                                  | Scale up `hps.workers.replicas` or `hps.workers.keda.minReplicaCount`                         |
 | Decision logs stop reaching ClickHouse / S3 / SIEM after externalizing Kafka | Vector still pointing at the old in-cluster broker                          | Set `vector.env[KAFKA_BOOTSTRAP_SERVERS]` to the external broker list; restart the Vector pod |
