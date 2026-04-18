@@ -18,7 +18,7 @@ This guide covers how to point the Rulebricks Helm chart at your own Kafka and R
 
 Self-hosted Rulebricks deployments are split into two services:
 
-- **App** — the main Next.js application. Serves the dashboard UI, admin APIs, rule/flow editor, and user management. This is the control plane.
+- **App** — the main application. Serves the dashboard UI, certain admin APIs, rule/flow editor, and user management. This is the control plane.
 - **HPS (High Performance Server)** — a performance optimized server dedicated to handling rule execution at scale. When a client calls the solve API, Traefik routes the request to HPS rather than the main app. HPS is built for high throughput and low latency.
 
 HPS uses a **correlation-ID request/response pattern** over Kafka. When a solve request arrives:
@@ -237,7 +237,7 @@ We can, however, help you self-host the Supabase stack, which includes the follo
 
 Beyond providing a clear database layer for Rulebricks, Supabase is our interface for authentication, JWT management, and real-time features. There are also database triggers between Supabase-managed identity tables (e.g., `auth.users`) and Rulebricks-managed application tables that depend on Supabase's internal wiring. In any scenario, Rulebricks must ultimately maintain an internal users table to allow for basic API key, usage tracking, tenancy, and role-based access control features.
 
-**The database is likely not a bottleneck.** Because Redis aggressively caches entity definitions, and every pod has an in-process LRU in front of Redis, actual database read/write volumes under normal operation are generally minimal.
+It is worth noting **the database is likely not a bottleneck.** Because Redis aggressively caches entity definitions, and every pod has an in-process LRU in front of Redis, actual database read/write volumes under normal operation are generally minimal.
 
 ### Database Backup Recommendations
 
