@@ -11,11 +11,11 @@ This page describes a **token passthrough** authentication mode for self-hosted 
 This mode completely disables Rulebricks' own authentication surface: the login UI is hidden, password and magic-link flows are shut off, and identity is derived entirely from the header your proxy attaches to each request.
 
 <Callout type="warning">
-  **Do not use this mode** on a public-facing deployment, on a cloud-hosted
-  tenant, or when you cannot guarantee that every request reaching Rulebricks
-  has been through your gatekeeper. Rulebricks does **not** verify the token
-  signature in this mode – the entire security guarantee rests on your upstream
-  proxy.
+  **Never consider this mode** on a public-facing deployment, on a cloud-hosted
+  tenant, or anywhere you cannot absolutely guarantee that every request
+  reaching Rulebricks has been through your gatekeeper. Rulebricks does **not**
+  verify the token signature in this mode – the entire security guarantee rests
+  on your upstream proxy.
 </Callout>
 
 ## How It Works

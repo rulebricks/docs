@@ -3,6 +3,6 @@
   "deployment": "Deployment Modes",
   "configuration-reference": "YAML Reference",
   "external-services": "External Services",
-  "sso": "Authentication",
+  "provisioning-users": "Provisioning Users",
   "architecture": "Architecture"
 }

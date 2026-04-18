@@ -1,10 +1,10 @@
 ---
-metaDescription: Understand how Rulebricks resolves SSO users into its parent-child team model, the one-administrator rule, and the recommended configuration sequence.
+metaDescription: Understand controls to automatically configure Rulebricks app access, roles, and tenancy for users entering Rulebricks via an external Identity Provider.
 ---
 
 import { Callout, Steps } from 'nextra/components'
 
-# SSO & Authentication
+# Provisioning Users
 
 This section explains how Rulebricks maps incoming SSO identities onto its internal authorization model, and how to configure that mapping from the **Team → SSO** tab. It is written for workspace administrators running a self-hosted or white-labeled Rulebricks deployment.
 
@@ -107,12 +107,12 @@ Optionally configure `Profile` so user display names and avatars are populated f
 
 ## Access Levels at a Glance
 
-| Dimension              | Controlled by       | Possible outcomes                                                                                                             |
-| :--------------------- | :------------------ | :---------------------------------------------------------------------------------------------------------------------------- |
-| **Workspace access**   | `Access` section    | Allowed into the application, or denied before any workspace mapping                                                          |
-| **Tenant visibility**  | `Tenants` section   | Assigned to one or more tenants, or assigned to no tenants via the admin tenant value (cross-tenant visibility)               |
-| **Role permissions**   | `Roles` section     | Mapped to a system role, mapped to a custom role, assigned the fallback role if configured, or denied if no role mapping hits |
-| **Profile population** | `Profile` section   | Name and avatar remain unchanged, or are automatically populated from SSO claims                                              |
+| Dimension              | Controlled by     | Possible outcomes                                                                                                             |
+| :--------------------- | :---------------- | :---------------------------------------------------------------------------------------------------------------------------- |
+| **Workspace access**   | `Access` section  | Allowed into the application, or denied before any workspace mapping                                                          |
+| **Tenant visibility**  | `Tenants` section | Assigned to one or more tenants, or assigned to no tenants via the admin tenant value (cross-tenant visibility)               |
+| **Role permissions**   | `Roles` section   | Mapped to a system role, mapped to a custom role, assigned the fallback role if configured, or denied if no role mapping hits |
+| **Profile population** | `Profile` section | Name and avatar remain unchanged, or are automatically populated from SSO claims                                              |
 
 ## Where to Next
 
