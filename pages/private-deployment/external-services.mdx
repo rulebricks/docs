@@ -44,7 +44,9 @@ Rulebricks uses three Kafka topics:
 | :------------------ | :------------------------------------------------------ | :--------------- | :---------------------------------------------------- |
 | `solution`          | Inbound solve requests                                  | HPS API pods     | Worker pods (`generic-workers` consumer group)        |
 | `solution-response` | Outbound results routed back to originating HPS replica | Worker pods      | HPS API pods (`hps-response-consumer` consumer group) |
-| `logs`              | Structured decision logs (optional)                     | HPS and app pods | Vector aggregator (`vector-consumers` consumer group) |
+| `logs`              | Structured decision logs                                | HPS and app pods | Vector aggregator (`vector-consumers` consumer group) |
+
+The `logs` topic is only truly optional if both `vector.enabled: false` and `rulebricks.app.logging.enabled: false`. In the default chart configuration the Vector pod is deployed and consumes this topic, so it needs to exist on your cluster. See [Vector and the logs topic](#vector-and-the-logs-topic) below.
 
 Messages are plain JSON — no schema registry, no Kafka Connect, no custom broker plugins. The client library is KafkaJS, which speaks the standard Kafka wire protocol.
 
@@ -61,9 +63,16 @@ rulebricks:
     logging:
       enabled: true
       kafkaBrokers: 'broker-1.example.com:9092,broker-2.example.com:9092'
+
+vector:
+  env:
+    - name: KAFKA_BOOTSTRAP_SERVERS
+      value: 'broker-1.example.com:9092,broker-2.example.com:9092'
 ```
 
-That's it. The `kafkaBrokers` value flows into the `KAFKA_BROKERS` environment variable on HPS, workers, and the main app via the shared ConfigMap. When `kafkaBrokers` is empty (the default), the chart auto-generates the internal cluster address `<release>-kafka.<namespace>.svc.cluster.local:9092`.
+The `kafkaBrokers` value flows into the `KAFKA_BROKERS` environment variable on HPS, workers, and the main app via the shared ConfigMap. When `kafkaBrokers` is empty (the default), the chart auto-generates the internal cluster address `<release>-kafka.<namespace>.svc.cluster.local:9092`.
+
+Vector is a separate subchart and does **not** read `rulebricks.app.logging.kafkaBrokers`. Its bootstrap address comes from `vector.env[KAFKA_BOOTSTRAP_SERVERS]`, which is substituted into `vector.customConfig.sources.kafka.bootstrap_servers` at render time (default: `rulebricks-kafka:9092`). If you externalize Kafka without updating `vector.env`, HPS and workers will happily talk to the new broker while the Vector pod idles on the old in-cluster address — decision logs silently stop reaching ClickHouse / S3 / your SIEM, even though solves continue to succeed. See [Vector and the logs topic](#vector-and-the-logs-topic) for verification steps.
 
 The KEDA ScaledObject for worker autoscaling also reads `kafkaBrokers` and will point at your external cluster automatically (see [KEDA Autoscaling with External Kafka](#keda-autoscaling-with-external-kafka)).
 
@@ -85,7 +94,7 @@ Ask your Kafka team to create:
 | :------------------ | :-------------------------------------------- | :-------------------------------------------------------------------- |
 | `solution`          | ≥ number of worker replicas (e.g. 12)         | More partitions = more parallelism for workers                        |
 | `solution-response` | Must match `hps.workers.keda.maxReplicaCount` | See [Partition Sizing](#partition-sizing-for-solution-response) below |
-| `logs`              | Any (e.g. 4–8)                                | Optional. Only needed if `app.logging.enabled: true`                  |
+| `logs`              | 2–4 is plenty                                 | Required when the Vector pod is deployed (chart default). Vector does not benefit from high partition counts the way the solve path does. |
 
 Retention can be short (hours). Messages are consumed almost immediately. Replication factor of 2–3 is recommended for production.
 
@@ -141,9 +150,32 @@ The KEDA ScaledObject for HPS workers monitors consumer lag on the `solution` to
 
 However, ensure KEDA can reach your external Kafka brokers from within the cluster (network policies, VPC peering, security groups, etc.). If your Kafka requires SASL, KEDA's Kafka trigger also needs authentication — see the [KEDA Kafka trigger docs](https://keda.sh/docs/latest/scalers/apache-kafka/) for details.
 
+### Vector and the logs topic
+
+The Rulebricks chart ships a Vector pod by default as the consumer of the `logs` topic. HPS and the main app produce structured decision-log entries to Kafka after each request completes (non-blocking, post-response); Vector reads them and forwards to whatever sink the chart is configured for — commonly ClickHouse, S3, or an HTTP endpoint into a SIEM.
+
+A few things to know when externalizing Kafka:
+
+- **Consumer group.** Vector joins Kafka as `vector-consumers` (configured in `vector.customConfig.sources.kafka.group_id`). This is the group ID to use in `kafka-consumer-groups.sh` commands and any ACL rules.
+- **Consume-only.** In the default chart configuration Vector only reads from the `logs` topic; it does not produce back to Kafka. If your cluster enforces ACLs, the Vector principal needs `Read` and `Describe` on `logs` with group id `vector-consumers`, and no `Write`.
+- **Network reachability.** Vector must be able to reach the external brokers from inside the cluster, the same as HPS and the workers. Check network policies, security groups, and VPC peering accordingly.
+
+To verify Vector is healthy after pointing it at external Kafka:
+
+```bash
+kubectl get pods | grep vector
+kubectl logs <vector-pod> | grep -i "kafka\|partition"
+kafka-consumer-groups.sh --bootstrap-server <broker> \
+  --describe --group vector-consumers
+```
+
+The pod should be `Running`, the logs should show a successful Kafka connection and partition assignment at startup, and consumer-group lag on `logs` should stay near zero under normal load. Growing lag almost always means Vector cannot reach the brokers or is missing ACL permissions.
+
 ### Disabling Kafka Entirely
 
 Setting `kafka.enabled: false` without providing external `kafkaBrokers` effectively disables HPS. All solve endpoints return HTTP 503. Only the `/health` endpoint continues to respond. This is only useful for running a control-plane-only deployment (dashboard and admin APIs without rule execution).
+
+It also breaks the decision-log pipeline: Vector loses its data source, so any downstream sink (ClickHouse, S3, SIEM) will see a complete gap for the duration of the Kafka outage. See [Vector and the logs topic](#vector-and-the-logs-topic) for the consumer-side details.
 
 ---
 
@@ -341,3 +373,4 @@ A 200 response confirms Kafka, Redis, Supabase, and the worker pipeline are all 
 | Requests timeout after 30s            | `solution-response` partition count ≠ `maxReplicaCount`                     | Recreate topic with correct partition count, or update `maxReplicaCount` to match |
 | Named-environment URLs return 404     | Redis not connected, or main app and HPS point at different Redis instances | Verify `redis: true` on `/health`; ensure shared Redis                            |
 | Persistent consumer lag on `solution` | Not enough worker replicas                                                  | Scale up `hps.workers.replicas` or `hps.workers.keda.minReplicaCount`             |
+| Decision logs stop reaching ClickHouse / S3 / SIEM after externalizing Kafka | Vector still pointing at the old in-cluster broker                          | Set `vector.env[KAFKA_BOOTSTRAP_SERVERS]` to the external broker list; restart the Vector pod |

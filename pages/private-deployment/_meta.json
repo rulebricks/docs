@@ -4,5 +4,6 @@
   "configuration-reference": "YAML Reference",
   "external-services": "External Services",
   "provisioning-users": "Provisioning Users",
+  "disabling-authentication": "Disabling Authentication",
   "architecture": "Architecture"
 }
