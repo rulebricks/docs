@@ -4,6 +4,37 @@ metaDescription: Track the latest updates, improvements, and bug fixes to the Ru
 
 ![SDK Banner](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/changelog-banner-dark.png)
 
+## April 18-22, 2026 📊
+
+### Large Rule Editing
+
+- **Move Rows to Position**: New button for moving selected rows to a specific position in large decision tables, making it easier to reorganize long rule sets without manual dragging
+- **Auto-Scroll on Drag**: Decision tables now auto-scroll while dragging rows or selections, so rearranging conditions in large rules is smoother and no longer cut off at the viewport edge
+- **Sort by Column**: Added a sort button in column details to quickly reorder rule rows based on a specific condition or output
+
+### Schema Flexibility
+
+- **Rename Column Keys**: Schema column keys (not just display labels) can now be renamed in place, with existing conditions preserved automatically
+- **Stable Key Editing**: Fixed an issue where editing schema column keys could reorder inputs mid-entry, making schema edits predictable and non-disruptive
+
+### Performance
+
+- **Faster Publish Modal**: Publish modal now loads quickly for rules with many historical versions
+- **Snappier Back Navigation**: Reduced the delay when returning from the rule editor back to the workspace
+
+### Values & Vocabulary Imports
+
+- **Append or Overwrite**: When bulk importing values from a JSON dictionary, users can now choose to append to existing workspace values or overwrite them entirely
+- **Preserve Casing**: Fixed auto-capitalization being incorrectly applied to imported values from JSON dictionaries, preserving the original casing
+
+### Forms
+
+- **Spreadsheet-Powered Forms**: Publish no-code forms that accept spreadsheet uploads and run your rules against each row, enabling bulk processing workflows without code
+
+_Now available in `rulebricks/app:1.8.7`_
+
+---
+
 ## March 25 - April 17, 2026 🔑
 
 ### Private Deployment
