@@ -120,8 +120,8 @@ Documentation context:
 ${context}`
 
     const message = await anthropic.messages.create({
-      model: 'claude-opus-4-5',
-      max_tokens: 1024,
+      model: 'claude-opus-4-7',
+      max_tokens: 2048,
       system: systemPrompt,
       messages: [{ role: 'user', content: query }],
     })
