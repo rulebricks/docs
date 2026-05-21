@@ -4,6 +4,40 @@ metaDescription: Track the latest updates, improvements, and bug fixes to the Ru
 
 ![SDK Banner](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/changelog-banner-dark.png)
 
+## April 23 - May 21, 2026 🧠
+
+### Large Vocabulary Management
+
+- **AI Business Vocabulary Planning**: Turn source documents into proposed business objects, fields, value collections, enums, and ranges, giving teams a faster path from policy material to reusable rule vocabulary
+- **Vocabulary from Existing Rules**: New bulk tooling can scan built-out rules and help reverse-engineer reusable business vocabulary from literals and hardcoded condition data
+- **Bulk Value References**: Apply value references across entire columns and rules in one action, making mature rule sets easier to maintain and scale without manually replacing each literal
+- **Model Synonyms**: Define synonyms for similar business concepts so rules can keep consistent contextual meaning even when teams use different terminology
+- **AI Formula Generation**: Use AI to generate and test reusable formulas for easy reference and last-mile calculations in rule outputs
+
+### Forms & Bulk Data
+
+- **Spreadsheet Bulk Processing**: Forms can now accept spreadsheet uploads, run rules against each row, and return a downloadable output spreadsheet with rule results
+- **No-Code Dataset Validation**: Teams can validate larger ad-hoc datasets through published forms without a single line of code
+
+### Publishing & API Endpoints
+
+- **Rich Text Publication Notes**: Published rule and flow versions can now include autosaved rich text notes, creating a clear commit history for every production version
+- **Custom Slug Aliases**: Rules and flows can use workspace-scoped API endpoint aliases before publication, replacing random generated IDs with readable endpoints like `/api/v1/solve/effective-rates`
+
+### Flow Builder
+
+- **More Flexible Continue-If Nodes**: Continue-if steps now support arbitrary conditions, making it easier to decide whether a path should continue based on any incoming rule or flow data
+- **Aggregate Nodes**: New aggregate nodes consolidate exploded list inputs so flows can continue after inner iterations over list items
+
+### Import, Export & AI Document Ingestion
+
+- **Workspace CSV Archives**: Export an entire Rulebricks workspace as a ZIP of CSV spreadsheets for archival, auditing, or offline review, and restore workspaces from those spreadsheets
+- **Stronger AI Generation**: AI-assisted generation now uses newer state-of-the-art models, significantly improving large document ingestion and rule translation quality
+
+_Now available in `rulebricks/app:1.8.16`_
+
+---
+
 ## April 18-22, 2026 📊
 
 ### Large Rule Editing
@@ -44,7 +78,7 @@ _Now available in `rulebricks/app:1.8.7`_
 
 ### Rule & Flow Management
 
-- **Scoped Template Pickers**: Template categories can now be hidden based on a user's entitlements, giving teams a more focused template selection experience
+- **Scoped Template Pickers**: Template categories can now be hidden based on a user's groups, giving tenants a more focused template selection experience
 
 _Now available in `rulebricks/app:1.8.3`_
 
@@ -740,4 +774,4 @@ _Now available in `rulebricks/app:0.0.11`_
 
 ---
 
-_Last updated: March 23, 2026_
+_Last updated: May 21, 2026_
