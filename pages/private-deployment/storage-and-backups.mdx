@@ -1,0 +1,106 @@
+---
+metaDescription: Configure shared object storage and database backups for your private Rulebricks deployment.
+---
+
+import { Callout } from 'nextra/components'
+
+# Storage & Backups
+
+Rulebricks uses one cloud provider, one identity, and one bucket (or container) for all storage-backed features. Decision logs and database backups are key prefixes within that single bucket, so adding more data types later never means another identity or bucket to wire up.
+
+## Shared Object Storage
+
+| Parameter                           | Type   | Default           | Description                                          |
+| :---------------------------------- | :----- | :---------------- | :--------------------------------------------------- |
+| `global.storage.provider`           | string | `"s3"`            | Storage backend: `s3`, `azure-blob`, or `gcs`        |
+| `global.storage.bucket`             | string | `""`              | Bucket name (S3/GCS) or storage account (Azure Blob) |
+| `global.storage.region`             | string | `""`              | Bucket region                                        |
+| `global.storage.paths.decisionLogs` | string | `"decision-logs"` | Key prefix for the decision log archive              |
+| `global.storage.paths.dbBackups`    | string | `"db-backups"`    | Key prefix for database backups                      |
+
+Identity is configured per provider. Workload identity is preferred everywhere; static credentials are an escape hatch.
+
+| Provider     | Preferred Identity                           | Fallback                                         |
+| :----------- | :------------------------------------------- | :----------------------------------------------- |
+| `s3`         | `global.storage.s3.iamRoleArn` (IRSA)        | `global.storage.s3.existingSecret.name`          |
+| `azure-blob` | `global.storage.azure.clientId` + `tenantId` | `global.storage.azure.connectionStringSecretRef` |
+| `gcs`        | `global.storage.gcp.serviceAccountEmail`     | n/a                                              |
+
+```yaml
+global:
+  storage:
+    provider: s3 # s3, azure-blob, or gcs
+    bucket: my-rulebricks-data
+    region: us-west-2
+    s3:
+      iamRoleArn: arn:aws:iam::123456789012:role/rulebricks-storage
+    paths:
+      decisionLogs: decision-logs
+      dbBackups: db-backups
+```
+
+Every component that touches the bucket (Vector, ClickHouse, the backup CronJob) authenticates through the same workload identity pattern, so bucket credentials stay in Kubernetes service account configuration rather than application containers.
+
+<Callout type="info">
+  **Upgrade note:** older values that split storage into
+  `global.storage.decisionLogs.*` and `global.storage.dbBackups.*` (per-purpose
+  buckets and regions) are still honored as overrides, but new installs should
+  use the unified `bucket`, `region`, and `paths.*` shape shown above.
+</Callout>
+
+If you use the [Rulebricks CLI](/private-deployment/cli), the wizard collects this storage backend during `rulebricks init` and generates the values above for you. The CLI's [cluster-setup resources](https://github.com/rulebricks/cli/tree/main/cluster-setup) also create compatible buckets and identity roles per cloud.
+
+What lands in the bucket:
+
+- **Decision logs** under `paths.decisionLogs`: a compressed NDJSON archive written by Vector and queried by ClickHouse. See [Decision Logs](/private-deployment/decision-logs).
+- **Database backups** under `paths.dbBackups`: Barman base backups of the self-hosted Supabase database, covered below.
+
+## Database Backups
+
+The Supabase PostgreSQL instance holds all application state and should be backed up regularly if self-hosting. The bundled deployment uses a PersistentVolumeClaim, so data survives pod restarts, but PVCs are not a meaningful backup strategy.
+
+Enable `backup.enabled` and the chart schedules Barman base backups to your bucket under `global.storage.paths.dbBackups`:
+
+```yaml
+backup:
+  enabled: true
+  schedule: '0 2 * * *'
+  retentionDays: 30
+```
+
+| Parameter                        | Type    | Default            | Description                                                 |
+| :------------------------------- | :------ | :----------------- | :---------------------------------------------------------- |
+| `backup.enabled`                 | boolean | `false`            | Enable scheduled database backups                           |
+| `backup.schedule`                | string  | `"0 2 * * *"`      | Cron schedule for Barman base backups                       |
+| `backup.retentionDays`           | integer | `30`               | Days to retain restorable backup data                       |
+| `backup.superuser`               | string  | `"supabase_admin"` | Postgres superuser role used for logical dumps and restores |
+| `backup.ttlSecondsAfterFinished` | integer | `2592000`          | Seconds to retain completed backup Jobs and their pod logs  |
+| `backup.jobHistory.successful`   | integer | `30`               | CronJob history limit for successful Jobs                   |
+| `backup.jobHistory.failed`       | integer | `30`               | CronJob history limit for failed Jobs                       |
+
+Logical dumps run as `backup.superuser` so they can read schemas owned by `supabase_admin` (auth, storage, realtime, and so on).
+
+<Callout type="info">
+  Backups are only available for self-hosted Supabase. The default history
+  limits assume the default daily schedule; increase `backup.jobHistory.*` if
+  you back up more frequently and need every completed Job visible for the full
+  TTL window.
+</Callout>
+
+### On-Demand Backups and Restores
+
+The [Rulebricks CLI](/private-deployment/cli) manages backups outside the schedule:
+
+```bash
+# Trigger an on-demand backup
+rulebricks backup my-deployment
+
+# List backups in object storage and interactively restore one
+rulebricks restore my-deployment
+```
+
+The restore command lists available backups from object storage and asks for confirmation before restoring.
+
+### Block-Level Snapshots
+
+As a secondary measure on AWS with EBS-backed PVCs, you can also schedule EBS snapshots of the database volume. This captures a point-in-time copy at the block level without impacting the running database.

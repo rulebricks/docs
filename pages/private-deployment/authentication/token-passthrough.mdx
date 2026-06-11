@@ -117,7 +117,7 @@ Rulebricks accepts any valid 3-part JWT (`header.payload.signature`). It does no
 
 ### Optional Payload Claims
 
-Any additional claims (e.g. `department`, `role`, `groups`, `cost_center`, `tenant`) are preserved on the auth user (in `user_metadata.external_claims`) and surfaced in the Rulebricks admin SSO-mapping UI. The admin can configure claim-based access / role / tenant / profile mappings from that UI — see [Claim Mapping](/private-deployment/sso/claim-mapping).
+Any additional claims (e.g. `department`, `role`, `groups`, `cost_center`, `tenant`) are preserved on the auth user (in `user_metadata.external_claims`) and surfaced in the Rulebricks admin SSO-mapping UI. The admin can configure claim-based access / role / tenant / profile mappings from that UI — see [Claim Mapping](/private-deployment/authentication/claim-mapping).
 
 ### Example Token Payload
 
@@ -175,7 +175,7 @@ This is the expected behavior — in passthrough mode, the proxy owns the sessio
 
 Once the admin has logged in, they should visit **Team → SSO** in the Rulebricks UI. This page automatically loads the claim schema from the most recent token and lets the admin configure access, role, tenant, and profile mappings from the same interface used for traditional SSO.
 
-See [Claim Mapping](/private-deployment/sso/claim-mapping) for the full reference on each section.
+See [Claim Mapping](/private-deployment/authentication/claim-mapping) for the full reference on each section.
 
 Mappings are saved to `public.users.ssoRoleMapping` on the admin's row and re-applied on every subsequent user sign-in. Until mappings are configured, every non-admin user is provisioned with the default `developer` role.
 
@@ -240,7 +240,7 @@ The simplest way to try passthrough is with a local Rulebricks chart install poi
 4. Install (or upgrade) the chart with this overlay:
 
    ```bash
-   helm upgrade --install rulebricks oci://ghcr.io/rulebricks/charts/stack \
+   helm upgrade --install rulebricks oci://ghcr.io/rulebricks/helm/stack \
      --namespace rulebricks --create-namespace \
      -f values-local.yaml
    ```
@@ -284,7 +284,7 @@ Passthrough mode is **explicitly trust-based**. Rulebricks does not verify the t
 
 If any of those assumptions breaks, an attacker who can inject HTTP headers reaching Rulebricks can impersonate any user (including the admin) simply by crafting a JSON payload.
 
-This is the intended trust model for the internal-network deployment scenario this feature is designed for. Deployments that cannot meet these assumptions should use the standard OIDC SSO mode instead — see the [SSO Overview](/private-deployment/sso) for configuration.
+This is the intended trust model for the internal-network deployment scenario this feature is designed for. Deployments that cannot meet these assumptions should use the standard OIDC SSO mode instead — see the [SSO Overview](/private-deployment/authentication) for configuration.
 
 ## Troubleshooting
 

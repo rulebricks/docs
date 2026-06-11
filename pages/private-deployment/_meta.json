@@ -1,9 +1,22 @@
 {
-  "quick-start": "Getting Started",
-  "deployment": "Deployment Modes",
+  "quick-start": "Overview & Quick Start",
+  "cli": "Rulebricks CLI",
+  "---guides": {
+    "type": "separator"
+  },
+  "storage-and-backups": "Storage & Backups",
+  "decision-logs": "Decision Logs",
+  "monitoring": "Monitoring",
+  "performance": "Performance & Scaling",
+  "troubleshooting": "Troubleshooting",
+  "---integrations": {
+    "type": "separator"
+  },
+  "external-services": "External Kafka & Redis",
+  "authentication": "Authentication & SSO",
+  "---reference": {
+    "type": "separator"
+  },
   "configuration-reference": "YAML Reference",
-  "external-services": "External Services",
-  "external-authentication": "External Authentication",
-  "provisioning-users": "Provisioning Users",
   "architecture": "Architecture"
 }

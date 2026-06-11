@@ -8,7 +8,7 @@ import { Callout } from 'nextra/components'
 
 Our unified Helm chart deploys Rulebricks and all its dependencies to your Kubernetes cluster in a single command. You'll need:
 
-- **Kubernetes 1.19+** (EKS, GKE, AKS, or self-managed)
+- **Kubernetes 1.29+** (EKS, GKE, AKS, or self-managed; our [cluster templates](/private-deployment/cli#cluster-setup) provision 1.34)
 - **Helm 3.2.0+**
 - **kubectl** configured for your cluster
 - A **domain name** you control
@@ -19,19 +19,26 @@ Our unified Helm chart deploys Rulebricks and all its dependencies to your Kuber
   coordinates the rest.
 </Callout>
 
+<Callout type="info">
+  Prefer a guided setup? The [Rulebricks CLI](/private-deployment/cli) walks you
+  through configuration interactively, sizes the deployment from your cluster's
+  available resources, and generates a valid values file before deploying the
+  same chart.
+</Callout>
+
 ### Quick Start
 
 ```bash
 # 1. Create your values file
 # 2. Install the chart
-helm install rulebricks oci://ghcr.io/rulebricks/charts/stack \
+helm install rulebricks oci://ghcr.io/rulebricks/helm/stack \
   --namespace rulebricks \
   --create-namespace \
   -f your-values.yaml
 
 # 3. Follow the on-screen instructions for DNS setup
 # 4. Enable TLS once DNS is configured
-helm upgrade rulebricks oci://ghcr.io/rulebricks/charts/stack \
+helm upgrade rulebricks oci://ghcr.io/rulebricks/helm/stack \
   --namespace rulebricks \
   --reuse-values \
   --set global.tlsEnabled=true
@@ -42,7 +49,7 @@ helm upgrade rulebricks oci://ghcr.io/rulebricks/charts/stack \
 If you're on AWS, GCP, or Azure and want fully automated DNS:
 
 ```bash
-helm install rulebricks oci://ghcr.io/rulebricks/charts/stack \
+helm install rulebricks oci://ghcr.io/rulebricks/helm/stack \
   --namespace rulebricks \
   --create-namespace \
   -f your-values.yaml \
@@ -51,7 +58,7 @@ helm install rulebricks oci://ghcr.io/rulebricks/charts/stack \
   --set global.tlsEnabled=true
 ```
 
-See [Deployment Modes](/private-deployment/deployment) for minimal configurations required for different deployment scenarios, and visit [Configuration Reference](/private-deployment/configuration-reference) for a complete breakdown of all available options in `values.yaml`.
+See [Example Configurations](#example-configurations) below for minimal values files, and visit the [YAML Reference](/private-deployment/configuration-reference) for a complete breakdown of all available options.
 
 ---
 
@@ -59,17 +66,20 @@ See [Deployment Modes](/private-deployment/deployment) for minimal configuration
 
 You're deploying a complete Rulebricks stack to your existing Kubernetes cluster. The chart installs multiple integrated services, pre-configured for production workloads.
 
-| Component        | Purpose                                      | Enabled by Default |
-| :--------------- | :------------------------------------------- | :----------------: |
-| **Rulebricks**   | Core application and high-performance solver |         ✓          |
-| **Supabase**     | PostgreSQL database and authentication       |         ✓          |
-| **Kafka**        | Message queue for async rule execution       |         ✓          |
-| **Traefik**      | Ingress controller with automatic TLS        |         ✓          |
-| **cert-manager** | Let's Encrypt certificate provisioning       |         ✓          |
-| **KEDA**         | Event-driven autoscaling for workers         |         ✓          |
-| **Vector**       | Log aggregation and forwarding               |         ✓          |
-| **external-dns** | Automatic DNS record management              |         ✗          |
-| **Prometheus**   | Metrics collection and alerting              |         ✗          |
+| Component        | Purpose                                       | Enabled by Default |
+| :--------------- | :-------------------------------------------- | :----------------: |
+| **Rulebricks**   | Core application and high-performance solver  |         ✓          |
+| **Supabase**     | PostgreSQL database and authentication        |         ✓          |
+| **Kafka**        | Message queue for async rule execution        |         ✓          |
+| **Traefik**      | Ingress controller with automatic TLS         |         ✓          |
+| **cert-manager** | Let's Encrypt certificate provisioning        |         ✓          |
+| **KEDA**         | Event-driven autoscaling for workers          |         ✓          |
+| **Vector**       | Decision log aggregation and forwarding       |         ✓          |
+| **ClickHouse**   | Native decision log querying in the dashboard |         ✓          |
+| **Prometheus**   | Metrics collection (kube-prometheus-stack)    |         ✓          |
+| **external-dns** | Automatic DNS record management               |         ✗          |
+
+For how these components interact, see [Architecture](/private-deployment/architecture).
 
 ### Database Options
 
@@ -77,29 +87,113 @@ You're deploying a complete Rulebricks stack to your existing Kubernetes cluster
 
 **Managed Supabase:** Use Supabase Cloud instead. Set `supabase.enabled: false` and provide your project credentials. The chart automatically configures your managed project. We are also able to manage your database for you, should you prefer a hybrid deployment configuration.
 
-## Troubleshooting
+---
 
-### Check Database Migration
+## Example Configurations
 
-```bash
-# Check migration job status
-kubectl get jobs -n rulebricks
-kubectl logs job/rulebricks-db-migrate-1 -n rulebricks
+We recommend consulting the [Changelog](/changelog) and pinning `global.version` to the release containing the latest fixes/features. That single version selects the app, HPS, and HPS worker images together.
+
+### Development / Testing
+
+Minimal configuration for evaluation purposes. Self-hosts Supabase.
+
+```yaml
+# values.yaml
+global:
+  domain: '<domain-you-control.com>'
+  email: '<valid-email>'
+  licenseKey: '<valid-license-key>'
+  version: '<rulebricks-version>' # e.g. "1.8.17"
+  smtp: <valid-information>
+
+# Everything else uses defaults
 ```
 
-### Clean Reinstall
+### Production with Supabase Cloud
 
-```bash
-# Full cleanup including data
-helm uninstall rulebricks -n rulebricks
-kubectl delete pvc --all -n rulebricks
-kubectl delete namespace rulebricks
+Automatic DNS, external database, shared object storage.
 
-# Reinstall
-helm install rulebricks oci://ghcr.io/rulebricks/charts/stack \
-  --namespace rulebricks \
-  -f your-values.yaml
+```yaml
+# production-values.yaml
+global:
+  domain: '<domain-you-control.com>'
+  email: '<valid-email>'
+  licenseKey: '<valid-license-key>'
+  version: '<rulebricks-version>'
+  tlsEnabled: true
+  externalDnsEnabled: true
+
+  smtp: <valid-information>
+
+  # Shared object storage for decision logs (and database backups
+  # when self-hosting Supabase)
+  storage:
+    provider: s3 # s3, azure-blob, or gcs
+    bucket: '<your-bucket>'
+    region: '<bucket-region>'
+    s3:
+      iamRoleArn: '<irsa-role-arn>'
+
+  supabase:
+    url: 'https://abcd1234.supabase.co'
+    projectRef: 'abcd1234'
+    anonKey: 'from-supabase-dashboard'
+    serviceKey: 'from-supabase-dashboard'
+    # Account > Settings > Access Tokens
+    accessToken: '${SUPABASE_ACCESS_TOKEN}'
+
+supabase:
+  enabled: false # Don't deploy self-hosted
+
+# Ensure this is configured properly
+external-dns:
+  enabled: true
+  provider: route53
 ```
+
+### Cloud-Specific Values
+
+Each provider needs a compatible StorageClass and external-dns configuration:
+
+```yaml
+# AWS EKS (requires EBS CSI driver; use IRSA for AWS integrations)
+storageClass:
+  create: true
+  provisioner: ebs.csi.aws.com
+  type: gp3
+external-dns:
+  enabled: true
+  provider: route53
+```
+
+```yaml
+# Google GKE (uses Workload Identity; annotate service accounts accordingly)
+storageClass:
+  create: true
+  provisioner: pd.csi.storage.gke.io
+  type: pd-ssd
+external-dns:
+  enabled: true
+  provider: google
+  google:
+    project: 'your-gcp-project'
+```
+
+```yaml
+# Azure AKS
+storageClass:
+  create: true
+  provisioner: disk.csi.azure.com
+  type: Premium_LRS
+external-dns:
+  enabled: true
+  provider: azure
+  azure:
+    resourceGroup: 'your-resource-group'
+    subscriptionId: 'your-subscription-id'
+```
+
+---
 
 ## Caveats & Limits
 
@@ -112,34 +206,50 @@ The Helm chart deploys to your **existing** Kubernetes cluster. You're responsib
 - Storage provisioner (e.g., AWS EBS CSI driver)
 - Network policies and security
 
-See [example-min-cluster.yaml](https://github.com/rulebricks/helm/blob/main/example-min-cluster.yaml) for minimum EKS cluster specifications.
+See [example-min-cluster.yaml](https://github.com/rulebricks/helm/blob/main/example-min-cluster.yaml) for minimum EKS cluster specifications, or the CLI's [cluster-setup resources](/private-deployment/cli#cluster-setup) for ready-made AWS, Azure, and GCP starting points.
 
 ### Air-Gapped Deployments
 
 Rulebricks can run nearly air-gapped with these exceptions:
 
-| Feature          | External Dependency       | Can Disable?                       |
-| :--------------- | :------------------------ | :--------------------------------- |
-| Managed Supabase | Supabase Cloud API        | Yes—use self-hosted                |
-| AI Features      | OpenAI API                | Yes—set `global.ai.enabled: false` |
-| Log Forwarding   | External sinks (S3, etc.) | Yes—use console sink only          |
-| TLS Certificates | Let's Encrypt             | Yes—bring your own certs           |
-| Fonts            | Google Fonts              | Requires customization             |
-| Analytics        | Sentry                    | Requires customization             |
+| Feature          | External Dependency       | Can Disable?                        |
+| :--------------- | :------------------------ | :---------------------------------- |
+| Managed Supabase | Supabase Cloud API        | Yes, use self-hosted                |
+| AI Features      | OpenAI API                | Yes, set `global.ai.enabled: false` |
+| Log Forwarding   | External sinks (S3, etc.) | Yes, use console sink only          |
+| TLS Certificates | Let's Encrypt             | Yes, bring your own certs           |
+| Fonts            | Google Fonts              | Requires customization              |
+| Analytics        | Sentry                    | Requires customization              |
 
-### Installing Updates
+## Installing Updates
 
-Rule engines usually take critical roles, so we don't release updates continuously. We make upgrades easy with zero downtime, but you control when they happen:
+Rule engines usually take critical roles, so we don't release updates continuously. We make upgrades easy with zero downtime, but you control when they happen.
 
-First, visit our [Changelog](/changelog), and find the `rulebricks/app` tag containing the fixes/features you need in your upgrade.
+The Rulebricks product version is pinned by a single value, `global.version`. It selects the `rulebricks/app`, `rulebricks/hps`, and `rulebricks/hps:worker-*` images together, along with app-backed migration jobs, so there's no per-image tag to keep in sync.
 
-Then, edit `rulebricks.app.image.tag` in your `values.yaml` file accordingly.
+First, visit our [Changelog](/changelog) and find the version containing the fixes/features you need.
+
+Then, edit `global.version` in your `values.yaml` file:
+
+```yaml
+global:
+  version: '1.8.17'
+```
 
 Finally, run:
 
 ```bash
-# Upgrade to latest version
-helm upgrade rulebricks oci://ghcr.io/rulebricks/charts/stack \
+# Upgrade to the pinned version
+helm upgrade rulebricks oci://ghcr.io/rulebricks/helm/stack \
   --namespace rulebricks \
   -f your-values.yaml
 ```
+
+<Callout type="info">
+  The chart version controls Kubernetes packaging and infrastructure templates;
+  it doesn't select the application image version. Production deployments should
+  pin both: a chart version via `helm install --version` and a product version
+  via `global.version`.
+</Callout>
+
+If anything goes wrong during install or upgrade, see [Troubleshooting](/private-deployment/troubleshooting).

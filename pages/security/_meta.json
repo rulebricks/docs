@@ -1,6 +1,6 @@
 {
-    "system-architecture": "Architecture",
-    "subprocessor-list": "Subprocessor List",
-    "service-level-agreement": "Service Agreements",
-    "terms-of-service": "Terms of Service"
+  "system-architecture": "Architecture",
+  "trust-portal": "Trust Portal",
+  "service-level-agreement": "Service Agreements",
+  "terms-of-service": "Terms of Service"
 }

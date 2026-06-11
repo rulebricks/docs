@@ -1,0 +1,86 @@
+---
+metaDescription: Prometheus monitoring for private Rulebricks deployments, including scraped metrics, label policy, and remote write configuration.
+---
+
+import { Callout } from 'nextra/components'
+
+# Monitoring
+
+Monitoring is enabled by default through `kube-prometheus-stack`. Prometheus stores metrics in-cluster unless you configure a remote write destination.
+
+| Parameter                                    | Type    | Default | Description                |
+| :------------------------------------------- | :------ | :------ | :------------------------- |
+| `monitoring.enabled`                         | boolean | `true`  | Enable monitoring          |
+| `rulebricks.metrics.enabled`                 | boolean | `true`  | Rulebricks ServiceMonitors |
+| `kube-prometheus-stack.alertmanager.enabled` | boolean | `false` | Deploy Alertmanager        |
+| `kube-prometheus-stack.grafana.enabled`      | boolean | `false` | Deploy Grafana             |
+
+## What's Scraped
+
+The chart adds ServiceMonitors for:
+
+- **App** (`/api/metrics`): app/admin API request counts, latency histograms, coarse rejections, and frontend error counts.
+- **HPS** (`/metrics`): rule-engine request counts, latency histograms, rejections, Kafka worker wait time, bulk item volume, and memory cache stats.
+- **Supporting infrastructure** where available: Kafka JMX and ClickHouse metrics. Traefik's Prometheus endpoint is enabled, but its ServiceMonitor is an explicit opt-in because the Traefik chart validates Prometheus Operator CRDs at render time.
+
+Metric labels are intentionally bounded to avoid cardinality problems: route templates, methods, status classes, operations, and coarse reasons. They never include API keys, users, organizations, IP addresses, raw URLs, rule slugs, flow slugs, or error messages.
+
+Useful queries:
+
+```promql
+histogram_quantile(0.95, sum(rate(rulebricks_hps_http_request_duration_seconds_bucket[5m])) by (le, route))
+sum(rate(rulebricks_hps_rejections_total[5m])) by (route, reason)
+histogram_quantile(0.95, sum(rate(rulebricks_hps_kafka_request_duration_seconds_bucket[5m])) by (le, operation))
+sum(rate(rulebricks_hps_bulk_items_total[5m])) by (operation)
+sum(rate(rulebricks_app_frontend_errors_total[5m])) by (source)
+```
+
+After install, verify scrape discovery:
+
+```bash
+kubectl get servicemonitor -n rulebricks
+kubectl port-forward -n rulebricks svc/rulebricks-kube-prometheus-stack-prometheus 9090:9090
+```
+
+## Remote Write
+
+To ship metrics to AWS Managed Prometheus, Azure Monitor managed Prometheus, Grafana Cloud, or another remote-write-compatible backend:
+
+```yaml
+kube-prometheus-stack:
+  prometheus:
+    prometheusSpec:
+      remoteWrite:
+        - url: 'https://prometheus-prod-XX.grafana.net/api/prom/push'
+          basicAuth:
+            username:
+              name: prometheus-remote-write
+              key: username
+            password:
+              name: prometheus-remote-write
+              key: password
+```
+
+<Callout type="info">
+  The [Rulebricks CLI](/private-deployment/cli) wizard asks for a remote write
+  destination during `rulebricks init` and generates this block for you. You can
+  skip that step and add it later.
+</Callout>
+
+## In-Cluster Retention
+
+When keeping metrics in-cluster, give Prometheus persistent storage sized for your retention window:
+
+```yaml
+kube-prometheus-stack:
+  prometheus:
+    prometheusSpec:
+      retention: 30d
+      storageSpec:
+        volumeClaimTemplate:
+          spec:
+            storageClassName: gp3
+            resources:
+              requests:
+                storage: 50Gi
+```

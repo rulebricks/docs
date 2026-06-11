@@ -40,6 +40,46 @@ module.exports = {
         basePath: false,
         permanent: false,
       },
+      {
+        source: '/private-deployment/deployment',
+        destination: '/private-deployment/quick-start',
+        permanent: true,
+      },
+      {
+        source: '/private-deployment/external-authentication',
+        destination: '/private-deployment/authentication/token-passthrough',
+        permanent: true,
+      },
+      {
+        source: '/private-deployment/provisioning-users',
+        destination: '/private-deployment/authentication',
+        permanent: true,
+      },
+      {
+        source: '/private-deployment/provisioning-users/claim-mapping',
+        destination: '/private-deployment/authentication/claim-mapping',
+        permanent: true,
+      },
+      {
+        source: '/private-deployment/sso',
+        destination: '/private-deployment/authentication',
+        permanent: true,
+      },
+      {
+        source: '/private-deployment/sso/claim-mapping',
+        destination: '/private-deployment/authentication/claim-mapping',
+        permanent: true,
+      },
+      {
+        source: '/private-deployment/sso/disabling-authentication',
+        destination: '/private-deployment/authentication/token-passthrough',
+        permanent: true,
+      },
+      {
+        source: '/security/subprocessor-list',
+        destination: '/security/trust-portal',
+        permanent: true,
+      },
     ]
   },
 }

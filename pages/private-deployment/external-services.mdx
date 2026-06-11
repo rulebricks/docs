@@ -4,7 +4,7 @@ metaDescription: Point the Rulebricks Helm chart at your own Kafka and Redis inf
 
 import { Callout } from 'nextra/components'
 
-# External Services
+# External Kafka & Redis
 
 This guide covers how to point the Rulebricks Helm chart at your own Kafka and Redis infrastructure instead of using the bundled instances. It is written for platform engineers deploying Rulebricks into a self-hosted Kubernetes environment.
 
@@ -13,30 +13,23 @@ This guide covers how to point the Rulebricks Helm chart at your own Kafka and R
   [Supabase](#supabase) at the end of this document for the full rationale.
 </Callout>
 
-## Architecture Overview
+## How Rulebricks Uses These Services
 
-Self-hosted Rulebricks deployments are split into two services:
-
-- **App** — the main application. Serves the dashboard UI, certain admin APIs, rule/flow editor, and user management. This is the control plane.
-- **HPS (High Performance Server)** — a performance optimized server dedicated to handling rule execution at scale. When a client calls the solve API, Traefik routes the request to HPS rather than the main app. HPS is built for high throughput and low latency.
-
-HPS uses a **correlation-ID request/response pattern** over Kafka. When a solve request arrives:
+For the overall component layout and request flow, see [Architecture](/private-deployment/architecture). The part that matters here: HPS (the rule execution server) uses a **correlation-ID request/response pattern** over Kafka. When a solve request arrives:
 
 1. HPS produces a message to the `solution` Kafka topic with a unique correlation ID and a designated response partition.
 2. A worker pod consumes the message, evaluates the rule, and produces the result to the `solution-response` topic on the exact partition the originating HPS replica is listening on.
 3. HPS resolves the pending request and returns the result to the caller.
 
-This architecture means that rather than paying arbitrary per-request network cost, throughput is bottlenecked primarily by rule evaluation compute. Clients submit bulk payloads (typically 500–1,000 items per request), and workers process them as capacity allows. The idempotent Kafka producer guarantees exactly-once delivery at the broker level, and the correlation-ID mechanism ensures responses always route back to the correct HPS replica — giving you a request-idempotent server-side architecture consumable through standard REST APIs and SDKs.
+The idempotent Kafka producer guarantees exactly-once delivery at the broker level, and the correlation-ID mechanism ensures responses always route back to the correct HPS replica. This is why partition counts matter so much on an external cluster.
 
-Redis sits in front of Supabase as a shared cache layer. API key authentication, rule/flow definitions, and named-environment lookups are all cached in Redis with short TTLs (60–180 seconds), backed by an in-process LRU per pod. In practice, Supabase sees very few direct queries under normal operation.
-
-For a deeper walkthrough of component interactions and request flow, see the [Architecture & Operations Guide](/private-deployment/architecture).
+Redis sits in front of Supabase as a shared cache layer. API key authentication, rule/flow definitions, and named-environment lookups are all cached in Redis with short TTLs (60 to 180 seconds), backed by an in-process LRU per pod. In practice, Supabase sees very few direct queries under normal operation.
 
 ## Externalizing Kafka
 
 ### How Rulebricks Uses Kafka
 
-Rulebricks uses three Kafka topics:
+Rulebricks uses three Kafka topics. Topic names carry the configured `rulebricks.app.logging.kafkaTopicPrefix` (default `com.rulebricks.`, so the actual topic is `com.rulebricks.solution` and so on). The prefix exists so Rulebricks topics don't collide on shared or managed clusters; set it to `""` to disable prefixing.
 
 | Topic               | Purpose                                                 | Producers        | Consumers                                             |
 | :------------------ | :------------------------------------------------------ | :--------------- | :---------------------------------------------------- |
@@ -46,7 +39,7 @@ Rulebricks uses three Kafka topics:
 
 The `logs` topic is only truly optional if both `vector.enabled: false` and `rulebricks.app.logging.enabled: false`. In the default chart configuration the Vector pod is deployed and consumes this topic, so it needs to exist on your cluster. See [Vector and the logs topic](#vector-and-the-logs-topic) below.
 
-Messages are plain JSON — no schema registry, no Kafka Connect, no custom broker plugins. The client library is KafkaJS, which speaks the standard Kafka wire protocol.
+Messages are plain JSON: no schema registry, no Kafka Connect, no custom broker plugins. The client library is KafkaJS, which speaks the standard Kafka wire protocol.
 
 ### Helm Values for External Kafka
 
@@ -61,40 +54,92 @@ rulebricks:
     logging:
       enabled: true
       kafkaBrokers: 'broker-1.example.com:9092,broker-2.example.com:9092'
-
-vector:
-  env:
-    - name: KAFKA_BOOTSTRAP_SERVERS
-      value: 'broker-1.example.com:9092,broker-2.example.com:9092'
 ```
 
-The `kafkaBrokers` value flows into the `KAFKA_BROKERS` environment variable on HPS, workers, and the main app via the shared ConfigMap. When `kafkaBrokers` is empty (the default), the chart auto-generates the internal cluster address `<release>-kafka.<namespace>.svc.cluster.local:9092`.
+The `kafkaBrokers` value drives every consumer in the stack:
 
-Vector is a separate subchart and does **not** read `rulebricks.app.logging.kafkaBrokers`. Its bootstrap address comes from `vector.env[KAFKA_BOOTSTRAP_SERVERS]`, which is substituted into `vector.customConfig.sources.kafka.bootstrap_servers` at render time (default: `rulebricks-kafka:9092`). If you externalize Kafka without updating `vector.env`, HPS and workers will happily talk to the new broker while the Vector pod idles on the old in-cluster address — decision logs silently stop reaching ClickHouse / S3 / your SIEM, even though solves continue to succeed. See [Vector and the logs topic](#vector-and-the-logs-topic) for verification steps.
+- **HPS, workers, and the main app** receive it as the `KAFKA_BROKERS` environment variable via the shared ConfigMap. When `kafkaBrokers` is empty (the default), the chart auto-generates the internal cluster address `<release>-kafka.<namespace>.svc.cluster.local:9092`.
+- **Vector** is wired automatically through a templated `vector-kafka-env` ConfigMap that derives its bootstrap servers, TLS/SASL settings, and the prefixed log topic from the same `rulebricks.app.logging.*` values. You do not configure Vector's Kafka connection by hand. (For token-auth mechanisms, the ConfigMap points Vector at the local `kafkaBridge` proxy instead; see [Authentication](#authentication-sslsasl).)
+- **KEDA**'s worker-scaling trigger also reads `kafkaBrokers` and points at your external cluster automatically (see [KEDA Autoscaling with External Kafka](#keda-autoscaling-with-external-kafka)).
 
-The KEDA ScaledObject for worker autoscaling also reads `kafkaBrokers` and will point at your external cluster automatically (see [KEDA Autoscaling with External Kafka](#keda-autoscaling-with-external-kafka)).
+### Authentication (SSL/SASL)
 
-<Callout type="warning">
-  The current HPS codebase instantiates the KafkaJS client without `ssl` or
-  `sasl` options. If your Kafka cluster requires TLS or SASL authentication (AWS
-  MSK with IAM/SCRAM, Confluent Cloud, etc.), a small code change in the HPS
-  image is needed to wire those credentials through. Contact Rulebricks support
-  if your cluster requires authenticated connections.
-</Callout>
+The chart supports TLS and SASL for external Kafka through `rulebricks.app.logging.kafkaSsl` and `kafkaSasl`, which it exposes to the app, HPS, workers, and Vector. Supported SASL mechanisms are `plain`, `scram-sha-256`, `scram-sha-512`, and `aws-iam`.
+
+Two consumers connect to Kafka with different auth capabilities: HPS (KafkaJS, which handles all supported mechanisms including token-based ones) and Vector (which natively supports SSL plus SASL `PLAIN`/`SCRAM`, but not token mechanisms like IAM or OAUTHBEARER). For token mechanisms, the chart provides a `kafkaBridge` kafka-proxy sidecar that authenticates upstream using the Vector pod's workload identity and exposes a local plaintext listener Vector consumes from. The CLI configures all of this automatically when you externalize Kafka; the examples below are for hand-installs.
+
+**AWS MSK with IAM auth** (credentials from pod identity via IRSA, no static secrets):
+
+```yaml
+kafka:
+  enabled: false
+rulebricks:
+  app:
+    logging:
+      enabled: true
+      kafkaBrokers: 'b-1.msk.example:9098,b-2.msk.example:9098'
+      kafkaSsl: true
+      kafkaSasl:
+        mechanism: 'aws-iam'
+        region: 'us-east-1'
+  hps:
+    serviceAccount:
+      create: true
+      annotations:
+        eks.amazonaws.com/role-arn: 'arn:aws:iam::ACCOUNT:role/msk-access'
+# Vector cannot speak MSK IAM directly, so it uses the kafka-proxy bridge:
+kafkaBridge:
+  enabled: true
+  provider: 'aws'
+  region: 'us-east-1'
+  brokers: 'b-1.msk.example:9098,b-2.msk.example:9098'
+  awsRoleArn: 'arn:aws:iam::ACCOUNT:role/msk-access'
+vector:
+  serviceAccount:
+    create: true
+    annotations:
+      eks.amazonaws.com/role-arn: 'arn:aws:iam::ACCOUNT:role/msk-access'
+```
+
+**Azure Event Hubs (Kafka endpoint)** uses SASL PLAIN with the namespace connection string. Both HPS and Vector connect directly; no bridge sidecar required:
+
+```yaml
+kafka:
+  enabled: false
+rulebricks:
+  app:
+    logging:
+      enabled: true
+      kafkaBrokers: 'my-namespace.servicebus.windows.net:9093'
+      kafkaSsl: true
+      kafkaSasl:
+        mechanism: 'plain'
+        username: '$ConnectionString'
+        password: 'Endpoint=sb://my-namespace.servicebus.windows.net/;SharedAccessKeyName=...;SharedAccessKey=...'
+        # or: existingSecret / existingSecretUsernameKey / existingSecretPasswordKey
+```
+
+**GCP Managed Service for Apache Kafka** prefers OAUTHBEARER with Workload Identity; the Vector bridge runs GCP's local auth-token server sidecar (`kafkaBridge.provider: "gcp"` with `gcpServiceAccountEmail`). A simpler `plain`/SCRAM credential also works for both consumers but uses static credentials.
 
 ### Topics to Pre-Create
 
-The HPS producer sets `allowAutoTopicCreation: true`, but auto-created topics inherit the broker's `default.num.partitions` — often just `1`. A single-partition `solution-response` will cause request timeouts under any meaningful replica count. **Always pre-create topics explicitly.**
+The HPS producer sets `allowAutoTopicCreation: true`, but auto-created topics inherit the broker's default partition count, often just `1`. A single-partition `solution-response` will cause request timeouts under any meaningful replica count. **Always pre-create topics explicitly.**
 
-Ask your Kafka team to create:
+In-cluster chart deployments handle all of this automatically via `kafka.provisioning` plus the `kafka-topic-align` Job; this section applies to external/managed Kafka, where topics are customer-managed.
 
-| Topic               | Partition Count                               | Notes                                                                                                                                     |
-| :------------------ | :-------------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------- |
-| `solution`          | ≥ number of worker replicas (e.g. 12)         | More partitions = more parallelism for workers                                                                                            |
-| `solution-response` | Must match `hps.workers.keda.maxReplicaCount` | See [Partition Sizing](#partition-sizing-for-solution-response) below                                                                     |
-| `logs`              | 2–4 is plenty                                 | Required when the Vector pod is deployed (chart default). Vector does not benefit from high partition counts the way the solve path does. |
+Ask your Kafka team to create (names take your configured topic prefix):
 
-Retention can be short (hours). Messages are consumed almost immediately. Replication factor of 2–3 is recommended for production.
+| Topic               | Partition Count                                                         | Replication                             | Retention                                                          |
+| :------------------ | :---------------------------------------------------------------------- | :-------------------------------------- | :----------------------------------------------------------------- |
+| `solution`          | ~2x your maximum worker replica count (e.g. 48 for a 24-worker ceiling) | 1 is acceptable (transient RPC traffic) | Short: `retention.ms=300000`, `segment.ms=300000`, small segments  |
+| `solution-response` | Must equal `hps.workers.solutionPartitions`                             | Same as `solution`                      | Same as `solution`                                                 |
+| `logs`              | 8-24 depending on volume                                                | 2-3 in production (long-lived data)     | Size to your Vector outage tolerance, e.g. `retention.ms=86400000` |
+
+Set `max.message.bytes` to at least `2097152` (2 MB) on all three topics. HPS chunks are byte-bounded well below this, but the headroom prevents edge-case produce failures, and a response chunk can exceed its request chunk when rules expand payloads.
+
+Partition count on `solution` is the worker fleet's concurrency ceiling, not a worker quota; the 2x headroom recommendation and the full sizing model are explained in [Performance & Scaling](/private-deployment/performance#the-sizing-model).
+
+For replication, 1 is acceptable on the RPC topics because the traffic is transient and the HPS producer uses `acks=-1`, so higher replication adds ISR-wait latency to every request. Use 2+ only if broker loss must never produce a brief window of request failures.
 
 ### Partition Sizing for solution-response
 
@@ -106,23 +151,24 @@ The expected partition count is set in the Helm values:
 rulebricks:
   hps:
     workers:
-      keda:
-        maxReplicaCount: 12
+      solutionPartitions: 64
 ```
 
-The HPS StatefulSet template passes `maxReplicaCount` as the `MAX_WORKERS` environment variable.
+The HPS deployment template passes `solutionPartitions` to HPS as the `MAX_WORKERS` environment variable.
 
 <Callout type="warning">
-  Keep `maxReplicaCount` equal to the actual partition count of
+  Keep `solutionPartitions` equal to the actual partition count of
   `solution-response` on your external cluster. A mismatch here is the most
   common cause of 30-second timeouts on solve requests.
 </Callout>
 
+If you raise a topic's partition count later, HPS Kafka clients observe the change within about 30 seconds (`metadataMaxAge: 30000`), and consumers fully rebalance onto new partitions at their next group rebalance. Chart upgrades roll the workers, which forces one. HPS pods gate readiness on the response consumer owning partitions (`GET /ready` returns 503 until group join completes), so traffic never reaches an instance that can't receive its responses.
+
 ### ZooKeeper vs KRaft
 
-HPS does not care how your Kafka cluster manages metadata. It never connects to ZooKeeper directly — it only speaks the Kafka wire protocol to brokers via a bootstrap address. Both ZooKeeper-backed clusters and KRaft-mode clusters work identically. Managed services like AWS MSK (in either mode), Confluent Cloud, Aiven, and Redpanda are all compatible.
+HPS does not care how your Kafka cluster manages metadata. It never connects to ZooKeeper directly; it only speaks the Kafka wire protocol to brokers via a bootstrap address. Both ZooKeeper-backed clusters and KRaft-mode clusters work identically. Managed services like AWS MSK (in either mode), Confluent Cloud, Aiven, and Redpanda are all compatible.
 
-The bundled Kafka subchart ships in KRaft mode (`kraft.enabled: true`, `zookeeper.enabled: false`), but this is a deployment choice for the internal broker — it has no bearing on external cluster compatibility.
+The bundled Kafka subchart ships in KRaft mode (`kraft.enabled: true`, `zookeeper.enabled: false`), but this is a deployment choice for the internal broker and has no bearing on external cluster compatibility.
 
 ### Tuning and Idempotency
 
@@ -130,27 +176,38 @@ The HPS Kafka client is pre-tuned for a low-latency request/response workload. T
 
 **Producer:**
 
-- **Idempotent mode** (`idempotent: true`, `acks: -1`) — guarantees exactly-once produce semantics per session. If a network blip causes a retry, Kafka deduplicates the message at the broker. This is Kafka-level idempotency, not HTTP-level: a client retrying an HTTP request produces a new message with a new correlation ID.
-- **Snappy compression** — reduces wire bytes. The broker must support Snappy (enabled by default on Apache Kafka and Confluent). If your cluster has disabled Snappy, contact Rulebricks support.
-- **`lingerMs: 0`** — send immediately. Latency is prioritized over batch throughput because these are synchronous, user-facing requests.
+- **Idempotent mode** (`idempotent: true`, `acks: -1`) guarantees exactly-once produce semantics per session. If a network blip causes a retry, Kafka deduplicates the message at the broker. This is Kafka-level idempotency, not HTTP-level: a client retrying an HTTP request produces a new message with a new correlation ID.
+- **Snappy compression** reduces wire bytes. The broker must support Snappy (enabled by default on Apache Kafka and Confluent). If your cluster has disabled Snappy, contact Rulebricks support.
+- **`lingerMs: 0`** sends immediately. Latency is prioritized over batch throughput because these are synchronous, user-facing requests.
 
 **Consumer:**
 
-- **`sessionTimeout: 60000`, `heartbeatInterval: 15000`** — tolerates brief idle periods without spurious rebalancing.
-- **`maxWaitTimeInMs: 50`** — broker returns fetched messages quickly for low-latency response delivery.
+- The HPS response consumer uses **`sessionTimeout: 60000`, `heartbeatInterval: 15000`**, tolerating brief idle periods without spurious rebalancing.
+- Workers use a tighter **30s session timeout with a 3s heartbeat** (tunable via `WORKER_SESSION_TIMEOUT_MS` / `WORKER_HEARTBEAT_INTERVAL_MS`) so a hung worker releases its partitions quickly.
+- **`maxWaitTimeInMs: 50`** makes the broker return fetched messages quickly for low-latency response delivery.
 - Workers process up to 2 partitions concurrently per pod. Throughput scales by adding worker replicas, not by raising concurrency.
 
 No tuning is needed on the external Kafka side beyond ensuring the three topics exist with correct partition counts and reasonable ISR settings (e.g., `min.insync.replicas=1` for single-broker, `2` for multi-broker production).
+
+### Request Size Limits
+
+Admission is byte-first; item counts are not limited by default. Useful when setting client expectations:
+
+- **Total request body:** 6 MiB hard ceiling by default (HTTP 413 above it; configurable via `HTTP_BODY_LIMIT_BYTES` on HPS). We recommend clients stay around 1 MB or less for the best latency profile. Larger bodies execute fine but cost proportionally more parse time and fan out into more chunks.
+- **Single payload:** 1.5 MiB serialized hard ceiling (HTTP 413 naming the offending array index; configurable via `ITEM_MAX_BYTES`, which must stay below the topics' `max.message.bytes` minus envelope headroom).
+- **Item count:** unlimited by default. Operators can opt into a cap with `BULK_MAX_ITEMS` (HTTP 400 above it).
+- **Response amplification:** each chunk's response must fit the topic's `max.message.bytes` (2 MB default). Rules that expand outputs beyond roughly 16 KB average per payload will fail the request with an explicit error.
+- The whole request shares one 30-second execution deadline regardless of size.
 
 ### KEDA Autoscaling with External Kafka
 
 The KEDA ScaledObject for HPS workers monitors consumer lag on the `solution` topic. When you externalize Kafka, KEDA's `bootstrapServers` is automatically derived from your `kafkaBrokers` value. No additional KEDA configuration is needed.
 
-However, ensure KEDA can reach your external Kafka brokers from within the cluster (network policies, VPC peering, security groups, etc.). If your Kafka requires SASL, KEDA's Kafka trigger also needs authentication — see the [KEDA Kafka trigger docs](https://keda.sh/docs/latest/scalers/apache-kafka/) for details.
+However, ensure KEDA can reach your external Kafka brokers from within the cluster (network policies, VPC peering, security groups, etc.). If your Kafka requires SASL, KEDA's Kafka trigger also needs authentication; see the [KEDA Kafka trigger docs](https://keda.sh/docs/latest/scalers/apache-kafka/) for details.
 
 ### Vector and the logs topic
 
-The Rulebricks chart ships a Vector pod by default as the consumer of the `logs` topic. HPS and the main app produce structured decision-log entries to Kafka after each request completes (non-blocking, post-response); Vector reads them and forwards to whatever sink the chart is configured for — commonly ClickHouse, S3, or an HTTP endpoint into a SIEM.
+The Rulebricks chart ships a Vector pod by default as the consumer of the `logs` topic. HPS and the main app produce structured decision-log entries to Kafka after each request completes (non-blocking, post-response); Vector reads them and forwards to whatever sink the chart is configured for, commonly the object storage archive that ClickHouse queries, S3, or an HTTP endpoint into a SIEM.
 
 A few things to know when externalizing Kafka:
 
@@ -179,11 +236,11 @@ It also breaks the decision-log pipeline: Vector loses its data source, so any d
 
 ### How Rulebricks Uses Redis
 
-Redis serves as a shared cache between all Rulebricks components — the main app, HPS, and workers. It sits in a three-tier caching hierarchy:
+Redis serves as a shared cache between all Rulebricks components: the main app, HPS, and workers. It sits in a three-tier caching hierarchy:
 
-1. **L1 — In-process LRU** (per pod, always present)
-2. **L2 — Redis** (shared across all pods and replicas)
-3. **L3 — Supabase** (source of truth, queried on full cache miss)
+1. **L1: In-process LRU** (per pod, always present)
+2. **L2: Redis** (shared across all pods and replicas)
+3. **L3: Supabase** (source of truth, queried on full cache miss)
 
 What lives in Redis:
 
@@ -194,7 +251,7 @@ What lives in Redis:
 | Named-environment release mappings       | No expiry | Main app (not HPS) |
 | Flow node results (API, SOAP, DB, vault) | 1–300s    | Workers            |
 
-Redis is accessed using only basic commands: `GET`, `SET` with `EX`, `EXPIRE`, and `DEL`. No Lua scripts, no pub/sub, no streams. A vanilla Redis instance is all that's needed — no clustering, persistence configuration, or eviction policy requirements.
+Redis is accessed using only basic commands: `GET`, `SET` with `EX`, `EXPIRE`, and `DEL`. No Lua scripts, no pub/sub, no streams. A vanilla Redis instance is all that's needed, with no clustering, persistence configuration, or eviction policy requirements.
 
 ### What You Provide
 
@@ -214,7 +271,7 @@ rulebricks:
         enabled: false
 ```
 
-Setting `redis.enabled: false` stops the chart from deploying its own internal Redis pod and PVC. The chart takes care of everything else — all internal components are wired to your Redis automatically.
+Setting `redis.enabled: false` stops the chart from deploying its own internal Redis pod and PVC. The chart takes care of everything else; all internal components are wired to your Redis automatically.
 
 ### What the Chart Does Behind the Scenes
 
@@ -223,7 +280,7 @@ The Rulebricks stack has two types of Redis consumers:
 - **HPS and workers** connect to Redis directly via the native Redis protocol (`ioredis`). This is the fast path (~1–2ms per operation) and is configured via the `REDIS_URL` environment variable, which the chart constructs from your `external.host` and `external.port`.
 - **The main app** (Next.js) uses an HTTP-based Redis client (`@vercel/kv`). It cannot connect to Redis natively, so it needs an HTTP translation layer.
 
-To bridge this, the chart always deploys a lightweight internal proxy (`serverless-redis-http`) that speaks HTTP on one side and the Redis protocol on the other. When you externalize Redis, this proxy is automatically pointed at your external instance — you do not need to configure or think about it. It's an internal implementation detail.
+To bridge this, the chart always deploys a lightweight internal proxy (`serverless-redis-http`) that speaks HTTP on one side and the Redis protocol on the other. When you externalize Redis, this proxy is automatically pointed at your external instance. You do not need to configure or think about it; it's an internal implementation detail.
 
 In short: you provide a standard Redis endpoint, and the chart handles routing each component to it through the appropriate protocol.
 
@@ -250,85 +307,39 @@ If `redis.enabled` is `false` and no `external` host is provided, Redis operates
 
 ## Supabase
 
-While feasible, wiring Supabase to an external PostgreSQL instance is **not currently supported** by Rulebricks, as Supabase's requirement for PostgreSQL is quite specific.
+The Supabase stack itself stays in-cluster (or on Supabase Cloud); what you can externalize is the PostgreSQL server underneath it. Set `supabase.db.enabled: false` and configure `supabase.externalDatabase.*` to point the Supabase services and migration jobs at a server you manage. See [External PostgreSQL](/private-deployment/configuration-reference#external-postgresql) for the values.
 
-We can, however, help you self-host the Supabase stack, which includes the following services:
+The full self-hosted Supabase stack includes the following services:
 
-- **PostgreSQL** — stores users, teams, rules, flows, API keys, usage data, and all application state.
-- **GoTrue (Auth)** — handles user signup, login, password recovery, email verification, SSO/OIDC, and JWT issuance. The main app delegates all authentication to Supabase Auth.
-- **PostgREST** — provides the REST API layer over PostgreSQL that the application queries.
-- **Realtime** — powers live-update features in the dashboard.
-- **Kong** — API gateway that routes and authenticates requests to the above services.
+- **PostgreSQL** stores users, teams, rules, flows, API keys, usage data, and all application state.
+- **GoTrue (Auth)** handles user signup, login, password recovery, email verification, SSO/OIDC, and JWT issuance. The main app delegates all authentication to Supabase Auth.
+- **PostgREST** provides the REST API layer over PostgreSQL that the application queries.
+- **Realtime** powers live-update features in the dashboard.
+- **Kong** is the API gateway that routes and authenticates requests to the above services.
 
-Beyond providing a clear database layer for Rulebricks, Supabase is our interface for authentication, JWT management, and real-time features. There are also database triggers between Supabase-managed identity tables (e.g., `auth.users`) and Rulebricks-managed application tables that depend on Supabase's internal wiring. In any scenario, Rulebricks must ultimately maintain an internal users table to allow for basic API key, usage tracking, tenancy, and role-based access control features.
+These services stay chart-managed even with an external database. Beyond providing a clear database layer for Rulebricks, Supabase is our interface for authentication, JWT management, and real-time features. There are database triggers between Supabase-managed identity tables (e.g., `auth.users`) and Rulebricks-managed application tables that depend on Supabase's internal wiring, so the external server must be a vanilla PostgreSQL that the Supabase services can fully manage.
 
 It is worth noting **the database is likely not a bottleneck.** Because Redis aggressively caches entity definitions, and every pod has an in-process LRU in front of Redis, actual database read/write volumes under normal operation are generally minimal.
 
-### Database Backup Recommendations
+### Database Backups
 
-While the Supabase PostgreSQL instance is lightweight, it holds all application state and should be backed up regularly if self-hosting. The bundled deployment uses a PersistentVolumeClaim, so data survives pod restarts — but PVCs are not a meaningful backup strategy.
-
-**Scheduled `pg_dump` via CronJob**
-
-Create a Kubernetes CronJob that runs `pg_dump` against the Supabase database and stores the output in S3 or a persistent volume:
-
-```yaml
-apiVersion: batch/v1
-kind: CronJob
-metadata:
-  name: supabase-db-backup
-spec:
-  schedule: '0 2 * * *' # Daily at 2 AM
-  jobTemplate:
-    spec:
-      template:
-        spec:
-          containers:
-            - name: pg-dump
-              image: postgres:15
-              command:
-                - /bin/sh
-                - -c
-                - |
-                  PGPASSWORD=$DB_PASSWORD pg_dump \
-                    -h <release>-supabase-db.<namespace>.svc.cluster.local \
-                    -U postgres -d postgres \
-                    --format=custom \
-                    -f /backup/rulebricks-$(date +%Y%m%d-%H%M%S).dump
-              env:
-                - name: DB_PASSWORD
-                  valueFrom:
-                    secretKeyRef:
-                      name: <release>-supabase-db
-                      key: password
-              volumeMounts:
-                - name: backup-vol
-                  mountPath: /backup
-          restartPolicy: OnFailure
-          volumes:
-            - name: backup-vol
-              persistentVolumeClaim:
-                claimName: supabase-db-backup
-```
-
-Replace `<release>` and `<namespace>` with your Helm release name and namespace. For S3, substitute the volume mount with an `aws s3 cp` command using IRSA credentials.
-
-**EBS Snapshots**
-
-If running on AWS with EBS-backed PVCs, schedule EBS snapshots of the Supabase database volume. This captures a point-in-time copy at the block level without impacting the running database.
+While the Supabase PostgreSQL instance is lightweight, it holds all application state and should be backed up regularly if self-hosting. The chart manages this for you with scheduled Barman backups to shared object storage, plus on-demand backup and restore through the CLI. See [Storage & Backups](/private-deployment/storage-and-backups).
 
 ## Verification Checklist
 
 After switching to external Kafka or Redis, verify the deployment is healthy:
 
-### 1. HPS health endpoint
+### 1. HPS health endpoints
+
+HPS exposes two endpoints: `/health` (process-alive, used by the liveness probe) and `/ready` (used by the readiness probe; returns 503 until the Kafka response consumer has joined its group and owns partitions, so pods never receive traffic before they can route responses).
 
 ```bash
 kubectl port-forward svc/<release>-hps 3000:3000
 curl -s http://localhost:3000/health | jq
+curl -si http://localhost:3000/ready | head -1
 ```
 
-Expected:
+Expected from `/health`:
 
 ```json
 {
@@ -337,14 +348,14 @@ Expected:
   "kafka": {
     "enabled": true,
     "ready": true,
-    "partitions": 4
+    "partitions": 21
   }
 }
 ```
 
 - `redis: true` confirms the KV client connected. If `false`, check your `REDIS_URL` or `redis.external.*` values.
-- `kafka.ready: true` confirms the consumer joined its group. If `false` on startup, retry after 10–15 seconds — group join can take a moment.
-- `kafka.partitions` shows how many `solution-response` partitions this pod owns. In a 3-replica HPS against a 12-partition topic, each pod should report ~4.
+- `kafka.ready: true` confirms the consumer joined its group. If `false` on startup, retry after 10 to 15 seconds; group join can take a moment. `/ready` returns 200 once this completes.
+- `kafka.partitions` shows how many `solution-response` partitions this pod owns. In a 3-replica HPS against a 64-partition topic, each pod should report ~21.
 
 ### 2. End-to-end smoke test
 
@@ -359,10 +370,10 @@ A 200 response confirms Kafka, Redis, Supabase, and the worker pipeline are all 
 
 ### 3. Common failure modes
 
-| Symptom                                                                      | Likely Cause                                                                | Fix                                                                                           |
-| :--------------------------------------------------------------------------- | :-------------------------------------------------------------------------- | :-------------------------------------------------------------------------------------------- |
-| All solve requests return 503                                                | Kafka disabled or unreachable                                               | Check `kafkaBrokers`, verify network connectivity to brokers                                  |
-| Requests timeout after 30s                                                   | `solution-response` partition count ≠ `maxReplicaCount`                     | Recreate topic with correct partition count, or update `maxReplicaCount` to match             |
-| Named-environment URLs return 404                                            | Redis not connected, or main app and HPS point at different Redis instances | Verify `redis: true` on `/health`; ensure shared Redis                                        |
-| Persistent consumer lag on `solution`                                        | Not enough worker replicas                                                  | Scale up `hps.workers.replicas` or `hps.workers.keda.minReplicaCount`                         |
-| Decision logs stop reaching ClickHouse / S3 / SIEM after externalizing Kafka | Vector still pointing at the old in-cluster broker                          | Set `vector.env[KAFKA_BOOTSTRAP_SERVERS]` to the external broker list; restart the Vector pod |
+| Symptom                                                                      | Likely Cause                                                                | Fix                                                                                                              |
+| :--------------------------------------------------------------------------- | :-------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------- |
+| All solve requests return 503                                                | Kafka disabled or unreachable                                               | Check `kafkaBrokers`, verify network connectivity to brokers                                                     |
+| Requests timeout after 30s                                                   | `solution-response` partition count ≠ `solutionPartitions`                  | Raise the topic's partition count, or update `solutionPartitions` to match                                       |
+| Named-environment URLs return 404                                            | Redis not connected, or main app and HPS point at different Redis instances | Verify `redis: true` on `/health`; ensure shared Redis                                                           |
+| Persistent consumer lag on `solution`                                        | Not enough worker replicas                                                  | Scale up `hps.workers.replicas` or `hps.workers.keda.minReplicaCount`                                            |
+| Decision logs stop reaching ClickHouse / S3 / SIEM after externalizing Kafka | Vector can't reach or authenticate to the external broker                   | Check Vector pod logs and network reachability; for token-auth Kafka verify the `kafkaBridge` sidecar is enabled |

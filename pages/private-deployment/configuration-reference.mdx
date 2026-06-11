@@ -1,22 +1,32 @@
 ---
-metaDescription: Comprehensive reference for all configuration values in the Rulebricks Helm chart.
+metaDescription: Reference for the configuration values in the Rulebricks Helm chart.
 ---
 
 import { Callout } from 'nextra/components'
 
-# Configuration Reference
+# YAML Reference
 
-This document provides a comprehensive reference for all configuration values in the Rulebricks Helm chart. Values are organized by component with detailed explanations of their purpose, defaults, and recommendations.
+This page is a reference for the configuration values in the Rulebricks Helm chart, organized by component. Conceptual guides live elsewhere; each section links to the relevant one. For the exhaustive list of every value (including subchart internals), see the chart's [values.yaml](https://github.com/rulebricks/helm/blob/main/values.yaml) and [values.schema.json](https://github.com/rulebricks/helm/blob/main/values.schema.json).
 
 ### Core Configuration
 
-| Parameter                   | Type    | Default                    | Required | Description                                                                     |
-| :-------------------------- | :------ | :------------------------- | :------- | :------------------------------------------------------------------------------ |
-| `global.domain`             | string  | `""`                       | **Yes**  | The domain name for your Rulebricks instance. Must be a domain you control.     |
-| `global.email`              | string  | `"support@rulebricks.com"` | **Yes**  | Email address for Let's Encrypt certificate registration.                       |
-| `global.licenseKey`         | string  | `"evaluation"`             | **Yes**  | Your Rulebricks Enterprise license key.                                         |
-| `global.tlsEnabled`         | boolean | `false`                    | No       | Enable HTTPS. Set to `true` after DNS is configured or when using external-dns. |
-| `global.externalDnsEnabled` | boolean | `false`                    | No       | Enable external-dns annotations on ingresses for automatic DNS management.      |
+| Parameter                   | Type    | Default                    | Required | Description                                                                                             |
+| :-------------------------- | :------ | :------------------------- | :------- | :------------------------------------------------------------------------------------------------------ |
+| `global.domain`             | string  | `""`                       | **Yes**  | The domain name for your Rulebricks instance. Must be a domain you control.                             |
+| `global.email`              | string  | `"support@rulebricks.com"` | **Yes**  | Email address for Let's Encrypt certificate registration.                                               |
+| `global.licenseKey`         | string  | `"evaluation"`             | **Yes**  | Your Rulebricks Enterprise license key.                                                                 |
+| `global.version`            | string  | `""`                       | **Yes**  | Rulebricks product version. One semver selects the app, HPS, HPS worker, and migration images together. |
+| `global.tlsEnabled`         | boolean | `false`                    | No       | Enable HTTPS. Set to `true` after DNS is configured or when using external-dns.                         |
+| `global.externalDnsEnabled` | boolean | `false`                    | No       | Enable external-dns annotations on ingresses for automatic DNS management.                              |
+
+#### Version Pinning
+
+Production deployments should pin two versions: a Helm chart version (via `helm install --version`) and a Rulebricks product version (via `global.version`). The chart version controls Kubernetes packaging and infrastructure templates; `global.version` selects the application images. See [Installing Updates](/private-deployment/quick-start#installing-updates).
+
+```yaml
+global:
+  version: '1.8.17'
+```
 
 #### Domain Configuration
 
@@ -144,7 +154,7 @@ global:
 
 ### SSO Configuration
 
-Enable Single Sign-On (SSO) via OpenID Connect (OIDC).
+Enable Single Sign-On (SSO) via OpenID Connect (OIDC). For how user provisioning, claim mapping, and token passthrough work, see [Authentication & SSO](/private-deployment/authentication).
 
 | Parameter                 | Type    | Default | Description                                               |
 | :------------------------ | :------ | :------ | :-------------------------------------------------------- |
@@ -156,7 +166,7 @@ Enable Single Sign-On (SSO) via OpenID Connect (OIDC).
 
 #### Provider Types
 
-You will need to go to your Supabase dashboard, and configure your provider in the Authentication tab. If you don't see your provider, use _Keycloak_ – our proxy uses it as a bridge.
+You will need to go to your Supabase dashboard, and configure your provider in the Authentication tab. If you don't see your provider, use _Keycloak_; our proxy uses it as a bridge.
 
 - **Native Providers** (`azure`, `google`, `okta`, `keycloak`): Supabase handles authentication directly.
 - **Custom Providers** (`ory`, `other`): The app uses a built-in OIDC proxy we manage to translate paths for your IdP.
@@ -194,7 +204,34 @@ global:
       supabaseServiceKey: 'SUPABASE_SERVICE'
       supabaseAccessToken: 'SUPABASE_TOKEN'
       openaiApiKey: 'OPENAI_KEY'
+      ssoClientId: 'SSO_CLIENT_ID'
+      ssoClientSecret: 'SSO_CLIENT_SECRET'
 ```
+
+### External Authentication (Token Passthrough)
+
+For deployments behind an identity-aware proxy that has already authenticated the user, `global.externalAuth.*` (`enabled`, `header`, `claims.id/email/name`, `publicPaths`) delegates authentication to the upstream proxy. This carries real security implications; read [Token Passthrough](/private-deployment/authentication/token-passthrough) before enabling.
+
+### Scheduling, Labels, and Annotations
+
+| Parameter                                    | Type   | Default | Description                                                    |
+| :------------------------------------------- | :----- | :------ | :------------------------------------------------------------- |
+| `global.scheduling.nodeSelector`             | object | `{}`    | Node selector for workloads that inherit global scheduling     |
+| `global.scheduling.tolerations`              | list   | `[]`    | Tolerations (e.g. for ARM64-tainted node pools)                |
+| `global.scheduling.affinity`                 | object | `{}`    | Affinity rules; prefer soft rules so installs aren't blocked   |
+| `global.labels` / `global.annotations`       | object | `{}`    | Applied to all resource metadata (compliance, cost allocation) |
+| `global.podLabels` / `global.podAnnotations` | object | `{}`    | Applied to pod templates only (e.g. mesh injection)            |
+
+Rulebricks workloads and migration jobs honor `global.scheduling`; dependency subcharts (Kafka, Supabase, cert-manager, Traefik, KEDA, Vector) may require their own scheduling values. Most components also accept per-component `podLabels` and `podDisruptionBudget` blocks for clusters with admission policies.
+
+### Object Storage & Backups
+
+| Value prefix       | Purpose                                                               |
+| :----------------- | :-------------------------------------------------------------------- |
+| `global.storage.*` | Shared bucket, region, per-provider identity, and key prefixes        |
+| `backup.*`         | Scheduled database backups for self-hosted Supabase (Barman, CronJob) |
+
+Full tables, identity options per provider, and the backup/restore workflow live in [Storage & Backups](/private-deployment/storage-and-backups).
 
 ## Rulebricks Application
 
@@ -205,25 +242,36 @@ The core application and high-performance solver (HPS).
 | Parameter                         | Type   | Default                            | Description             |
 | :-------------------------------- | :----- | :--------------------------------- | :---------------------- |
 | `rulebricks.app.image.repository` | string | `"index.docker.io/rulebricks/app"` | Docker image repository |
-| `rulebricks.app.image.tag`        | string | `"1.X.X"`                          | Image version tag       |
 | `rulebricks.app.image.pullPolicy` | string | `"IfNotPresent"`                   | Image pull policy       |
+
+Image tags are selected by `global.version`, the single product semver shared by the app, HPS, and HPS worker images. There is no per-component tag to set.
 
 ### Logging Configuration
 
-| Parameter                                   | Type    | Default              | Description                              |
-| :------------------------------------------ | :------ | :------------------- | :--------------------------------------- |
-| `rulebricks.app.logging.enabled`            | boolean | `true`               | Enable decision logging                  |
-| `rulebricks.app.logging.kafkaBrokers`       | string  | `""`                 | Kafka brokers (auto-discovered if empty) |
-| `rulebricks.app.logging.kafkaTopic`         | string  | `"logs"`             | Kafka topic for logs                     |
-| `rulebricks.app.logging.loggingDestination` | string  | `"Console (stdout)"` | Display label in UI                      |
+| Parameter                                 | Type    | Default             | Description                                                                           |
+| :---------------------------------------- | :------ | :------------------ | :------------------------------------------------------------------------------------ |
+| `rulebricks.app.logging.enabled`          | boolean | `true`              | Enable decision logging                                                               |
+| `rulebricks.app.logging.kafkaBrokers`     | string  | `""`                | Kafka brokers (auto-discovered if empty)                                              |
+| `rulebricks.app.logging.kafkaTopic`       | string  | `"logs"`            | Kafka topic for logs                                                                  |
+| `rulebricks.app.logging.kafkaTopicPrefix` | string  | `"com.rulebricks."` | Prefix applied to all Kafka topic names; set `""` to disable prefixing                |
+| `rulebricks.app.logging.kafkaSsl`         | boolean | `false`             | Enable TLS for external Kafka brokers                                                 |
+| `rulebricks.app.logging.kafkaSasl.*`      | object  | `{}`                | SASL auth for external Kafka: `aws-iam`, `scram-sha-256`, `scram-sha-512`, or `plain` |
+
+For how decision logs flow through the system, see [Decision Logs](/private-deployment/decision-logs). For external Kafka authentication (including AWS MSK IAM and Azure Event Hubs examples), see [External Kafka & Redis](/private-deployment/external-services#authentication-sslsasl).
 
 ### Ingress
 
-| Parameter                      | Type    | Default     | Description            |
-| :----------------------------- | :------ | :---------- | :--------------------- |
-| `rulebricks.ingress.enabled`   | boolean | `true`      | Enable ingress         |
-| `rulebricks.ingress.className` | string  | `"traefik"` | Ingress class name     |
-| `rulebricks.ingress.paths`     | list    | `[{...}]`   | List of paths to route |
+| Parameter                         | Type    | Default     | Description                                                          |
+| :-------------------------------- | :------ | :---------- | :------------------------------------------------------------------- |
+| `rulebricks.ingress.enabled`      | boolean | `true`      | Enable chart-managed routing                                         |
+| `rulebricks.ingress.app.enabled`  | boolean | `true`      | Set `false` when an external auth proxy owns the app catch-all route |
+| `rulebricks.ingress.type`         | string  | `"ingress"` | `ingress` (standard) or `gateway-api` (renders `HTTPRoute`)          |
+| `rulebricks.ingress.className`    | string  | `"traefik"` | Ingress class name                                                   |
+| `rulebricks.ingress.hostname`     | string  | `""`        | Override when the app hostname differs from `global.domain`          |
+| `rulebricks.ingress.gatewayApi.*` | object  | `{}`        | `gatewayName` / `gatewayNamespace` for Gateway API mode              |
+| `rulebricks.ingress.paths`        | list    | `[{...}]`   | List of paths to route                                               |
+
+Gateway API mode requires an implementation (Envoy Gateway, Cilium, Istio) in your cluster.
 
 ### Redis
 
@@ -232,31 +280,49 @@ Redis is used for caching and session management.
 | Parameter                                    | Type    | Default   | Recommendation               |
 | :------------------------------------------- | :------ | :-------- | :--------------------------- |
 | `rulebricks.redis.resources.requests.cpu`    | string  | `"200m"`  | Increase for high traffic    |
-| `rulebricks.redis.resources.requests.memory` | string  | `"256Mi"` | —                            |
-| `rulebricks.redis.resources.limits.cpu`      | string  | `"500m"`  | —                            |
+| `rulebricks.redis.resources.requests.memory` | string  | `"256Mi"` |                              |
+| `rulebricks.redis.resources.limits.cpu`      | string  | `"500m"`  |                              |
 | `rulebricks.redis.resources.limits.memory`   | string  | `"4Gi"`   | Increase for large rule sets |
 | `rulebricks.redis.persistence.enabled`       | boolean | `true`    | Keep enabled for production  |
-| `rulebricks.redis.persistence.size`          | string  | `"4Gi"`   | —                            |
+| `rulebricks.redis.persistence.size`          | string  | `"4Gi"`   |                              |
 | `rulebricks.redis.persistence.storageClass`  | string  | `"gp3"`   | Match your storage class     |
+
+To use a managed Redis instance (ElastiCache, Memorystore, Upstash, and so on) instead of the bundled deployment, set `rulebricks.redis.enabled: false` and configure the external block:
+
+| Parameter                                     | Type    | Default | Description                                                |
+| :-------------------------------------------- | :------ | :------ | :--------------------------------------------------------- |
+| `rulebricks.redis.external.host`              | string  | `""`    | Redis hostname (required when `redis.enabled` is `false`)  |
+| `rulebricks.redis.external.port`              | integer | `6379`  | Redis port                                                 |
+| `rulebricks.redis.external.password`          | string  | `""`    | Inline password (injected at runtime, never in ConfigMaps) |
+| `rulebricks.redis.external.existingSecret`    | string  | `""`    | Existing secret name (preferred for production)            |
+| `rulebricks.redis.external.existingSecretKey` | string  | `""`    | Key within the secret                                      |
+| `rulebricks.redis.external.tls.enabled`       | boolean | `false` | Use `rediss://`                                            |
+| `rulebricks.redis.external.httpApi.*`         | object  | `{}`    | Upstash-style HTTP API (url/token or existing secret)      |
+
+See [External Kafka & Redis](/private-deployment/external-services#externalizing-redis) for how each component connects.
 
 ### High Performance Server (HPS)
 
-HPS handles rule execution with horizontal scaling.
+HPS handles rule execution with horizontal scaling. For the sizing model behind these values (partition ceilings, worker resources, KEDA thresholds), see [Performance & Scaling](/private-deployment/performance).
 
-| Parameter                         | Type    | Default | Description                    |
-| :-------------------------------- | :------ | :------ | :----------------------------- |
-| `rulebricks.hps.enabled`          | boolean | `true`  | Enable HPS                     |
-| `rulebricks.hps.replicas`         | integer | `3`     | Number of HPS gateway replicas |
-| `rulebricks.hps.workers.enabled`  | boolean | `true`  | Enable worker pods             |
-| `rulebricks.hps.workers.replicas` | integer | `4`     | Base worker replica count      |
+| Parameter                                   | Type    | Default                                                                       | Description                                                                     |
+| :------------------------------------------ | :------ | :---------------------------------------------------------------------------- | :------------------------------------------------------------------------------ |
+| `rulebricks.hps.enabled`                    | boolean | `true`                                                                        | Enable HPS                                                                      |
+| `rulebricks.hps.replicas`                   | integer | `3`                                                                           | Number of HPS gateway replicas                                                  |
+| `rulebricks.hps.workers.enabled`            | boolean | `true`                                                                        | Enable worker pods                                                              |
+| `rulebricks.hps.workers.replicas`           | integer | `4`                                                                           | Base worker replica count                                                       |
+| `rulebricks.hps.workers.solutionPartitions` | integer | `64`                                                                          | Partition count of the `solution` topic; the worker fleet's concurrency ceiling |
+| `rulebricks.hps.workers.resources.*`        | object  | 1 CPU / 1Gi                                                                   | Per-worker resources; keep CPU request equal to limit                           |
+| `rulebricks.hps.workers.keda.*`             | object  | see [Performance & Scaling](/private-deployment/performance#keda-autoscaling) | KEDA autoscaling configuration                                                  |
 
 #### HPS Image
 
 | Parameter                         | Type   | Default                            | Description             |
 | :-------------------------------- | :----- | :--------------------------------- | :---------------------- |
 | `rulebricks.hps.image.repository` | string | `"index.docker.io/rulebricks/hps"` | Docker image repository |
-| `rulebricks.hps.image.tag`        | string | `"1.X.X"`                          | Image version tag       |
 | `rulebricks.hps.image.pullPolicy` | string | `"Always"`                         | Image pull policy       |
+
+HPS and worker image tags are derived from `global.version` (`<version>` and `worker-<version>` respectively).
 
 #### HPS Resources
 
@@ -266,35 +332,6 @@ HPS handles rule execution with horizontal scaling.
 | `rulebricks.hps.resources.requests.memory` | string | `"1Gi"`   |
 | `rulebricks.hps.resources.limits.cpu`      | string | `"2000m"` |
 | `rulebricks.hps.resources.limits.memory`   | string | `"2Gi"`   |
-
-#### KEDA Autoscaling for HPS Workers
-
-| Parameter                                     | Type    | Default | Description                   |
-| :-------------------------------------------- | :------ | :------ | :---------------------------- |
-| `rulebricks.hps.workers.keda.enabled`         | boolean | `true`  | Enable KEDA autoscaling       |
-| `rulebricks.hps.workers.keda.minReplicaCount` | integer | `4`     | Minimum workers               |
-| `rulebricks.hps.workers.keda.maxReplicaCount` | integer | `12`    | Maximum workers               |
-| `rulebricks.hps.workers.keda.pollingInterval` | integer | `10`    | Seconds between metric checks |
-| `rulebricks.hps.workers.keda.cooldownPeriod`  | integer | `300`   | Seconds before scale-down     |
-| `rulebricks.hps.workers.keda.lagThreshold`    | integer | `50`    | Kafka lag threshold           |
-| `rulebricks.hps.workers.keda.cpuThreshold`    | integer | `25`    | CPU percentage threshold      |
-
-**Tuning Recommendations:**
-
-```yaml
-# High-throughput configuration
-# Replicas should match partitions
-rulebricks:
-  hps:
-    replicas: 4
-    workers:
-      replicas: 8
-      keda:
-        minReplicaCount: 12
-        maxReplicaCount: 32
-        lagThreshold: 5
-        cpuThreshold: 20
-```
 
 ## Database (Supabase)
 
@@ -326,12 +363,41 @@ rulebricks:
 | `supabase.db.persistence.size`             | string  | `"10Gi"` | Based on data volume         |
 | `supabase.db.persistence.storageClassName` | string  | `"gp3"`  | Use fast storage             |
 
+#### External PostgreSQL
+
+The Supabase services can run in-cluster while pointing at an external PostgreSQL server (e.g. a managed instance). Set `supabase.db.enabled: false` and configure the connection once:
+
+| Parameter                                  | Type    | Default                          | Description                                         |
+| :----------------------------------------- | :------ | :------------------------------- | :-------------------------------------------------- |
+| `supabase.externalDatabase.enabled`        | boolean | `false`                          | Use an external PostgreSQL server                   |
+| `supabase.externalDatabase.host`           | string  | `""`                             | PostgreSQL host shared across Supabase services     |
+| `supabase.externalDatabase.port`           | integer | `5432`                           | PostgreSQL port                                     |
+| `supabase.externalDatabase.secretRef`      | string  | `""`                             | Existing secret with credentials (else `secret.db`) |
+| `supabase.externalDatabase.secretRefKey.*` | object  | `username`/`password`/`database` | Key mappings within the secret                      |
+
+Migration jobs reach the same server through `migrations.externalDb.*`.
+
 ### Kong Ingress
 
 | Parameter                         | Type    | Default     | Description                 |
 | :-------------------------------- | :------ | :---------- | :-------------------------- |
 | `supabase.kong.ingress.enabled`   | boolean | `true`      | Enable Supabase API ingress |
 | `supabase.kong.ingress.className` | string  | `"traefik"` | Must match Traefik class    |
+
+### Studio and Auth URLs
+
+Supabase Studio can be exposed on its own hostname via `supabase.studio.ingress.*` (`enabled`, `type`, `className`, `hostname`, defaulting to `studio.<global.domain>`); dashboard credentials come from `supabase.secret.dashboard.*`. When your application hostname differs from the base domain, override the computed auth URLs with `supabase.auth.siteUrl`, `supabase.auth.externalUrl`, and `supabase.auth.additionalRedirectUrls`.
+
+## Migrations
+
+| Parameter                            | Type    | Default   | Description                                                                                                                 |
+| :----------------------------------- | :------ | :-------- | :-------------------------------------------------------------------------------------------------------------------------- |
+| `migrations.strategy`                | string  | `"hook"`  | `hook` (post-install/upgrade), `deployment` (regular resource, supports post-rendering), or `manual` (render without hooks) |
+| `migrations.ttlSecondsAfterFinished` | integer | `2592000` | Seconds to retain completed migration Jobs and pod logs                                                                     |
+| `migrations.backoffLimit`            | integer | `3`       | Retries before marking the Job failed                                                                                       |
+| `migrations.externalDb.*`            | object  | `{}`      | Host/port/secret for migrations against an external PostgreSQL                                                              |
+
+Migration pods inherit `global.scheduling` and accept their own `nodeSelector`, `tolerations`, and `annotations`.
 
 ## Message Queue (Kafka)
 
@@ -354,61 +420,62 @@ Kafka handles async rule execution and logging.
 | `kafka.controller.resources.requests.memory` | string  | `"2Gi"`              | Memory request        |
 | `kafka.controller.resources.limits.cpu`      | string  | `"2000m"`            | CPU limit             |
 | `kafka.controller.resources.limits.memory`   | string  | `"3Gi"`              | Memory limit          |
-| `kafka.controller.persistence.size`          | string  | `"10Gi"`             | Storage size          |
+| `kafka.controller.persistence.size`          | string  | `"20Gi"`             | Storage size          |
 | `kafka.controller.heapOpts`                  | string  | `"-Xmx1g -Xms1g..."` | JVM heap settings     |
 
-### Kafka Tuning
+The chart also ships pre-tuned broker settings (JVM options, network threads, socket buffers, message size limits) as `kafka.controller.extraEnvVars` and `kafka.overrideConfiguration`. These defaults are correct for the topics the chart provisions; override them only with a specific reason, using the chart's [values.yaml](https://github.com/rulebricks/helm/blob/main/values.yaml) as the reference.
 
-The default configuration includes extensive JVM and Kafka tuning:
+### Kafka Topic Provisioning
+
+The chart manages application topics explicitly rather than relying on broker auto-creation. The `kafka.provisioning` block is consumed by two post-install/post-upgrade Jobs: the Kafka subchart's provisioning Job creates topics if they don't exist, and the parent chart's `kafka-topic-align` Job idempotently converges pre-existing topics (partition increases, retention and size configs) so upgrades of existing installs don't require manual steps.
+
+| Parameter                    | Type    | Default      | Description                                         |
+| :--------------------------- | :------ | :----------- | :-------------------------------------------------- |
+| `kafka.provisioning.enabled` | boolean | `true`       | Enable explicit topic management                    |
+| `kafka.provisioning.topics`  | list    | three topics | Per-topic name, partitions, replication, and config |
+
+The defaults provision `solution`, `solution-response`, and `logs` topics with per-topic retention and size limits. Each entry looks like:
 
 ```yaml
 kafka:
-  overrideConfiguration:
-    auto.create.topics.enable: 'true'
-    log.retention.hours: '24' # Adjust based on log volume
-    default.replication.factor: '1' # Increase for HA
-    offsets.topic.replication.factor: '1'
-    num.partitions: '12' # Increase for parallelism
-  controller:
-    extraEnvVars:
-      - name: KAFKA_JVM_PERFORMANCE_OPTS
-        value: '-XX:MaxDirectMemorySize=256M -Djdk.nio.maxCachedBufferSize=262144'
-      - name: KAFKA_CFG_QUEUED_MAX_REQUESTS
-        value: '10000'
-      - name: KAFKA_CFG_NUM_NETWORK_THREADS
-        value: '8'
-      - name: KAFKA_CFG_NUM_IO_THREADS
-        value: '8'
-      - name: KAFKA_CFG_SOCKET_SEND_BUFFER_BYTES
-        value: '1048576'
-      - name: KAFKA_CFG_SOCKET_RECEIVE_BUFFER_BYTES
-        value: '1048576'
-      - name: KAFKA_CFG_SOCKET_REQUEST_MAX_BYTES
-        value: '209715200'
-      - name: KAFKA_CFG_LOG_RETENTION_BYTES
-        value: '4294967296'
-      - name: KAFKA_CFG_LOG_SEGMENT_BYTES
-        value: '1073741824'
-      - name: KAFKA_CFG_NUM_REPLICA_FETCHERS
-        value: '4'
-      - name: KAFKA_CFG_REPLICA_SOCKET_RECEIVE_BUFFER_BYTES
-        value: '1048576'
-      - name: KAFKA_CFG_LOG_CLEANER_DEDUPE_BUFFER_SIZE
-        value: '268435456'
-      - name: KAFKA_CFG_LOG_CLEANER_IO_BUFFER_SIZE
-        value: '1048576'
-      - name: KAFKA_CFG_MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION
-        value: '10'
-  listeners:
-    client:
-      protocol: PLAINTEXT
-    controller:
-      protocol: PLAINTEXT
-    interbroker:
-      protocol: PLAINTEXT
+  provisioning:
+    enabled: true
+    topics:
+      - name: com.rulebricks.solution
+        partitions: 64
+        replicationFactor: 1
+        config:
+          retention.ms: '300000'
+      # ... see the chart's values.yaml for the full default topic list
 ```
 
-**High-Availability Configuration:**
+<Callout type="warning">
+  Topic names must carry the configured `kafkaTopicPrefix`. If you change the
+  prefix, change these names to match. The CLI does this automatically. The
+  `solution` topic's partition count must also equal
+  `rulebricks.hps.workers.solutionPartitions`; see [Performance &
+  Scaling](/private-deployment/performance).
+</Callout>
+
+When using external Kafka (`kafka.enabled: false`), provisioning is disabled and topics are customer-managed. See [External Kafka & Redis](/private-deployment/external-services#topics-to-pre-create).
+
+### Kafka Bridge (Token-Auth External Kafka)
+
+When external Kafka uses a token-based SASL mechanism (AWS MSK IAM, GCP OAUTHBEARER), Vector consumes through a kafka-proxy bridge sidecar that authenticates upstream via workload identity:
+
+| Parameter                            | Type    | Default | Description                                   |
+| :----------------------------------- | :------ | :------ | :-------------------------------------------- |
+| `kafkaBridge.enabled`                | boolean | `false` | Enable the bridge sidecar path                |
+| `kafkaBridge.provider`               | string  | `""`    | `aws` or `gcp`                                |
+| `kafkaBridge.region`                 | string  | `""`    | Region (required for AWS MSK IAM signing)     |
+| `kafkaBridge.brokers`                | string  | `""`    | Upstream managed-Kafka broker list            |
+| `kafkaBridge.localPort`              | integer | `19092` | Local plaintext port Vector consumes from     |
+| `kafkaBridge.awsRoleArn`             | string  | `""`    | IRSA role ARN (AWS)                           |
+| `kafkaBridge.gcpServiceAccountEmail` | string  | `""`    | Workload Identity service account email (GCP) |
+
+The CLI sets all of this automatically when you externalize Kafka. See [External Kafka & Redis](/private-deployment/external-services#authentication-sslsasl).
+
+### High Availability
 
 ```yaml
 kafka:
@@ -431,43 +498,16 @@ Traefik handles all incoming traffic and TLS termination.
 | `traefik.autoscaling.minReplicas` | integer | `1`         | Minimum replicas   |
 | `traefik.autoscaling.maxReplicas` | integer | `2`         | Maximum replicas   |
 
-### Resources
-
-| Parameter                           | Type   | Default   | High-Traffic |
-| :---------------------------------- | :----- | :-------- | :----------- |
-| `traefik.resources.requests.cpu`    | string | `"100m"`  | `"500m"`     |
-| `traefik.resources.requests.memory` | string | `"256Mi"` | `"512Mi"`    |
-| `traefik.resources.limits.cpu`      | string | `"1000m"` | `"2000m"`    |
-| `traefik.resources.limits.memory`   | string | `"2Gi"`   | `"4Gi"`      |
-
-### Ports
-
-| Parameter                             | Default | Description         |
-| :------------------------------------ | :------ | :------------------ |
-| `traefik.ports.web.port`              | `8000`  | Internal HTTP port  |
-| `traefik.ports.web.exposedPort`       | `80`    | External HTTP port  |
-| `traefik.ports.websecure.port`        | `8443`  | Internal HTTPS port |
-| `traefik.ports.websecure.exposedPort` | `443`   | External HTTPS port |
-
-### Persistence
-
-| Parameter                     | Type    | Default | Description        |
-| :---------------------------- | :------ | :------ | :----------------- |
-| `traefik.persistence.enabled` | boolean | `false` | Enable persistence |
+Traefik resources, ports, and persistence follow the upstream subchart's values under `traefik.*`; the chart's defaults expose 80/443 and need no changes for typical deployments.
 
 ## Autoscaling (KEDA)
 
-KEDA provides event-driven autoscaling for HPS workers.
+KEDA provides event-driven autoscaling for HPS workers. Scaling behavior is configured per-worker under `rulebricks.hps.workers.keda.*`; see [Performance & Scaling](/private-deployment/performance).
 
 | Parameter           | Type    | Default | Description                  |
 | :------------------ | :------ | :------ | :--------------------------- |
 | `keda.enabled`      | boolean | `true`  | Deploy KEDA                  |
 | `keda.crds.install` | boolean | `false` | CRDs managed by parent chart |
-
-<Callout type="info">
-  **Note:** KEDA CRDs are included in the `crds/` directory and installed
-  automatically.
-</Callout>
 
 ## Certificates (cert-manager)
 
@@ -478,77 +518,16 @@ cert-manager provisions TLS certificates from Let's Encrypt.
 | `cert-manager.enabled`     | boolean | `true`  | Deploy cert-manager          |
 | `cert-manager.installCRDs` | boolean | `false` | CRDs managed by parent chart |
 
-The chart creates:
+The chart creates a `ClusterIssuer` for Let's Encrypt production and `Certificate` resources for your domain(s).
 
-- A `ClusterIssuer` for Let's Encrypt production
-- `Certificate` resources for your domain(s)
+## Decision Logging (Vector & ClickHouse)
 
-## Logging (Vector)
+| Value prefix   | Purpose                                                             |
+| :------------- | :------------------------------------------------------------------ |
+| `vector.*`     | Log aggregator consuming the Kafka `logs` topic; sinks and replicas |
+| `clickhouse.*` | Stateless query engine over the decision log archive                |
 
-Vector aggregates logs from Kafka and forwards them to configured sinks.
-
-| Parameter         | Type    | Default                  | Description        |
-| :---------------- | :------ | :----------------------- | :----------------- |
-| `vector.enabled`  | boolean | `true`                   | Deploy Vector      |
-| `vector.role`     | string  | `"Stateless-Aggregator"` | Vector role        |
-| `vector.replicas` | integer | `2`                      | Number of replicas |
-
-### Resources
-
-| Parameter                          | Type   | Default   |
-| :--------------------------------- | :----- | :-------- |
-| `vector.resources.requests.cpu`    | string | `"50m"`   |
-| `vector.resources.requests.memory` | string | `"128Mi"` |
-| `vector.resources.limits.cpu`      | string | `"200m"`  |
-| `vector.resources.limits.memory`   | string | `"256Mi"` |
-
-### Service
-
-| Parameter                | Type    | Default   | Description           |
-| :----------------------- | :------ | :-------- | :-------------------- |
-| `vector.service.enabled` | boolean | `true`    | Enable Vector service |
-| `vector.service.ports`   | list    | `[{...}]` | Service ports         |
-
-### Environment Variables
-
-| Parameter    | Type | Default   | Description                                           |
-| :----------- | :--- | :-------- | :---------------------------------------------------- |
-| `vector.env` | list | `[{...}]` | Environment variables (e.g., KAFKA_BOOTSTRAP_SERVERS) |
-
-### Custom Sinks
-
-Configure log destinations in `vector.customConfig.sinks`:
-
-```yaml
-vector:
-  customConfig:
-    sources:
-      kafka:
-        type: kafka
-        bootstrap_servers: '${KAFKA_BOOTSTRAP_SERVERS:-rulebricks-kafka:9092}'
-        topics:
-          - logs
-        group_id: vector-consumers
-        auto_offset_reset: latest
-    sinks:
-      # Console output (default)
-      console:
-        type: console
-        inputs: [kafka]
-        encoding:
-          codec: json
-
-      # S3 sink example
-      s3:
-        type: aws_s3
-        inputs: [kafka]
-        bucket: 'your-logs-bucket'
-        region: 'us-east-1'
-        key_prefix: 'rulebricks/logs/%Y/%m/%d/'
-        compression: gzip
-        encoding:
-          codec: json
-```
+Vector's Kafka connection (brokers, TLS, SASL, and the prefixed log topic) is templated automatically into a `vector-kafka-env` ConfigMap from `rulebricks.app.logging.*`; you don't set it by hand. How the pipeline fits together, the values tables, and custom sink examples live in [Decision Logs](/private-deployment/decision-logs).
 
 ## DNS (external-dns)
 
@@ -610,29 +589,13 @@ external-dns:
 
 ## Monitoring (Prometheus)
 
-Optional Prometheus stack for metrics collection.
+| Parameter                    | Type    | Default    | Description                             |
+| :--------------------------- | :------ | :--------- | :-------------------------------------- |
+| `monitoring.enabled`         | boolean | `true`     | Enable monitoring                       |
+| `rulebricks.metrics.enabled` | boolean | `true`     | Rulebricks ServiceMonitors              |
+| `kube-prometheus-stack.*`    | object  | see values | Upstream Prometheus stack configuration |
 
-| Parameter                                    | Type    | Default | Description         |
-| :------------------------------------------- | :------ | :------ | :------------------ |
-| `monitoring.enabled`                         | boolean | `false` | Enable monitoring   |
-| `kube-prometheus-stack.alertmanager.enabled` | boolean | `false` | Deploy Alertmanager |
-| `kube-prometheus-stack.grafana.enabled`      | boolean | `false` | Deploy Grafana      |
-
-### Prometheus Storage
-
-```yaml
-kube-prometheus-stack:
-  prometheus:
-    prometheusSpec:
-      retention: 30d
-      storageSpec:
-        volumeClaimTemplate:
-          spec:
-            storageClassName: gp3
-            resources:
-              requests:
-                storage: 50Gi
-```
+What's scraped, the metric label policy, remote write, and retention examples live in [Monitoring](/private-deployment/monitoring).
 
 ## Storage
 
@@ -651,4 +614,4 @@ The chart can create a gp3 StorageClass for AWS EBS:
 | `storageClass.volumeBindingMode`    | string  | `"WaitForFirstConsumer"` | Binding mode        |
 | `storageClass.allowVolumeExpansion` | boolean | `true`                   | Allow expansion     |
 
-For non-AWS clusters, set `storageClass.create: false` and ensure a compatible StorageClass exists.
+For non-AWS clusters, set `storageClass.create: false` and ensure a compatible StorageClass exists. Provider-specific examples are in [Quick Start](/private-deployment/quick-start#cloud-specific-values).

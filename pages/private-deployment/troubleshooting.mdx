@@ -1,0 +1,119 @@
+---
+metaDescription: Diagnose and fix common issues in private Rulebricks deployments, from failed migrations to TLS and autoscaling problems.
+---
+
+import { Callout } from 'nextra/components'
+
+# Troubleshooting
+
+Common diagnostics for private deployments, roughly in the order problems tend to appear.
+
+## Migration Jobs
+
+The chart runs a migration job on every install and upgrade. Failures here are usually inaccurate values or, for managed Supabase, a project that doesn't exist yet.
+
+```bash
+# Check job status
+kubectl get jobs -n rulebricks
+
+# Get detailed error
+kubectl describe job rulebricks-db-migrate-1 -n rulebricks
+
+# Check pod logs (self-hosted Supabase)
+kubectl logs job/rulebricks-db-migrate-1 -n rulebricks --all-containers
+
+# Check pod logs (managed Supabase)
+kubectl logs job/rulebricks-managed-supabase-setup-1 -n rulebricks
+```
+
+**Common causes:**
+
+- Database not ready (increase readiness wait)
+- Invalid credentials
+- Network policy blocking access
+- Supabase Cloud project not created yet, or wrong access token
+
+To inspect which migrations have applied on a self-hosted database:
+
+```bash
+kubectl exec -it deploy/rulebricks-supabase-db -n rulebricks -- \
+  psql -U postgres -c "SELECT * FROM schema_migrations ORDER BY applied_at;"
+```
+
+## TLS Certificates
+
+```bash
+# Check cert-manager logs
+kubectl logs -n cert-manager -l app=cert-manager
+
+# Check certificate status
+kubectl get certificates -n rulebricks
+kubectl describe certificate rulebricks-tls -n rulebricks
+
+# Check ClusterIssuer
+kubectl describe clusterissuer rulebricks-letsencrypt
+```
+
+The most common cause is enabling `global.tlsEnabled` before DNS records resolve to the cluster's load balancer. Let's Encrypt must be able to reach your domain.
+
+## Workers Not Scaling
+
+```bash
+# Check KEDA
+kubectl get scaledobject -n rulebricks
+kubectl describe scaledobject rulebricks-hps-workers -n rulebricks
+
+# Check Kafka consumer lag
+kubectl exec -it rulebricks-kafka-0 -n rulebricks -- \
+  kafka-consumer-groups.sh --bootstrap-server localhost:9092 \
+  --describe --group generic-workers
+```
+
+**Common causes:**
+
+- Kafka consumer group not found
+- KEDA unable to reach Kafka
+- Incorrect threshold configuration
+
+For the sizing model behind worker scaling (and why partition counts matter), see [Performance & Scaling](/private-deployment/performance).
+
+## External Kafka or Redis Problems
+
+If you've pointed the chart at your own Kafka or Redis and solves are failing or timing out, work through the [verification checklist](/private-deployment/external-services#verification-checklist), which covers the HPS health endpoints, an end-to-end smoke test, and a table of common failure modes.
+
+## Log Collection
+
+```bash
+# All pods in namespace
+kubectl logs -n rulebricks -l app.kubernetes.io/instance=rulebricks --all-containers
+
+# Specific component with follow
+kubectl logs -n rulebricks -l app.kubernetes.io/component=hps-worker -f
+```
+
+## Clean Reinstall
+
+As a last resort, fully remove the deployment and start over:
+
+```bash
+# Full cleanup including data
+helm uninstall rulebricks -n rulebricks
+kubectl delete pvc --all -n rulebricks
+kubectl delete namespace rulebricks
+
+# Reinstall
+helm install rulebricks oci://ghcr.io/rulebricks/helm/stack \
+  --namespace rulebricks \
+  --create-namespace \
+  -f your-values.yaml
+```
+
+<Callout type="warning">
+  Deleting PVCs destroys the self-hosted database and all application state.
+  Make sure you have a [backup](/private-deployment/storage-and-backups) before
+  a clean reinstall on anything but a fresh evaluation.
+</Callout>
+
+## Still Stuck?
+
+Email [support@rulebricks.com](mailto:support@rulebricks.com) with the failing component's logs, or open an issue on the [helm](https://github.com/rulebricks/helm/issues) or [CLI](https://github.com/rulebricks/cli/issues) repository.

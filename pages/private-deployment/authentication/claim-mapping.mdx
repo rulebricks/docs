@@ -6,7 +6,7 @@ import { Callout } from 'nextra/components'
 
 # Claim Mapping
 
-This is the reference page for the four configuration sections in the **Team → SSO** tab. Each section maps one kind of identity claim onto a dimension of the Rulebricks authorization model. For the conceptual background behind this model — including the one-administrator rule and the parent-child team structure — see the [SSO Overview](/private-deployment/sso).
+This is the reference page for the four configuration sections in the **Team → SSO** tab. Each section maps one kind of identity claim onto a dimension of the Rulebricks authorization model. For the conceptual background behind this model — including the one-administrator rule and the parent-child team structure — see the [SSO Overview](/private-deployment/authentication).
 
 The tab is organized into four sections:
 
@@ -99,7 +99,7 @@ Users can be mapped to:
 - `Editor`
 - Custom Rulebricks roles that you create in the Team UI
 
-Users cannot be mapped to the built-in `Administrator` role. See [The One Administrator Rule](/private-deployment/sso#the-one-administrator-rule) for why.
+Users cannot be mapped to the built-in `Administrator` role. See [The One Administrator Rule](/private-deployment/authentication#the-one-administrator-rule) for why.
 
 ### Role Mapping Behavior
 
@@ -143,4 +143,4 @@ The SSO Team tab is built to preserve the existing Rulebricks team model:
 - Tenancy through tenant assignments
 - Permissions through roles
 
-SSO becomes a configuration layer on top of the same core authorization system the rest of the application already uses. For the recommended order in which to configure these sections, see the [recommended configuration pattern](/private-deployment/sso#recommended-configuration-pattern).
+SSO becomes a configuration layer on top of the same core authorization system the rest of the application already uses. For the recommended order in which to configure these sections, see the [recommended configuration pattern](/private-deployment/authentication#recommended-configuration-pattern).

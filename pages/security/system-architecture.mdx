@@ -6,7 +6,7 @@ metaDescription: Rulebricks' system architecture is built on JS, Postgres, and R
 
 Rulebricks is built using Next JS, Postgres, and Redis, **all of which can be run on your own infrastructure via Kubernetes** if you choose to deploy Rulebricks privately.
 
-Our cloud infrastructure is respectively hosted on Vercel, Supabase, and Upstash. You can find more information about our subprocessors [here](/security/subprocessor-list), including the technology they provide, and the regions we operate over them in.
+Our cloud infrastructure is respectively hosted on Vercel, Supabase, and Upstash. You can find more information about our subprocessors in our [Trust Portal](/security/trust-portal), including the technology they provide, and the regions we operate over them in.
 
 All cloud data is backed up every few hours and retained for 30 days.
 
@@ -16,7 +16,7 @@ For our AI features, we use OpenAI. We do not store any data with OpenAI, and on
 
 All private deployments are HTTPS and require certification, _provided DNS records are updated immediately after deployment._
 
-Currently we support terraform based deployment AWS and GCP, with Azure support coming soon.
+We support Kubernetes-based deployment on all major cloud providers, with proven deployments on AWS and Azure.
 
 All private deployments use Helm charts to spin up and run occasional upgrades against the requisite services. We publish upgrades to our application quite often (2-3 times a day), and you can choose to upgrade your private deployment at your convenience, or opt into notifications about major upgrades we recommend you apply.
 

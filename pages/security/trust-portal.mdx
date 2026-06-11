@@ -1,8 +1,16 @@
 ---
-metaDescription: Rulebricks subprocessors are third-party services that Rulebricks uses to provide its core functionality. Learn more about them here.
+metaDescription: Access Rulebricks' cybersecurity documentation, SOC 2 reports, and penetration testing results, and review our subprocessors.
 ---
 
-# Rulebricks Subprocessors
+# Trust Portal
+
+We maintain all of our cybersecurity documentation, SOC 2 reports, and penetration testing results in our trust portal at [trust.rulebricks.com](https://trust.rulebricks.com). Most documents are available there on request after a short approval step.
+
+If you [schedule a demo](https://calendly.com/prefix-software/rulebricks) with us or [reach out](mailto:support@rulebricks.com), we can expedite your approval process toward our documentation.
+
+## Subprocessors
+
+Rulebricks uses the following third-party services to provide its core functionality:
 
 | Subprocessor | Technology             | Description                                                                                                                                                                                                                 | Website                          |
 | ------------ | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
@@ -10,10 +18,10 @@ metaDescription: Rulebricks subprocessors are third-party services that Rulebric
 | Supabase     | Cloud Database         | Acts as a backend service. Supabase offers a PostgreSQL database service, authentication, real-time subscriptions, and storage capabilities. It is used to manage and store all the application data in the cloud securely. | [Supabase](https://supabase.com) |
 | Upstash      | Redis Cache            | Provides managed Redis services. Upstash is used for caching frequently accessed data to reduce latency and improve the performance of database operations.                                                                 | [Upstash](https://upstash.com)   |
 
-## Details
+### Technology Details
 
-- **Next.js**: A React framework that enables server-side rendering and static site generation, which is hosted on Vercel. _Region – Vercel – IAD1 (Washington, D.C.)_
-- **Node 22**: Handles all server-side logic.
+- **Next.js**: A React framework that enables server-side rendering and static site generation, which is hosted on Vercel. _Region – Vercel – IAD1 (Washington, D.C.)_
+- **Node 26**: Handles all server-side logic.
 - **Vercel Edge Cache**: Utilizes Vercel's global network to cache and serve static and dynamic content at the edge, closest to the users, for faster performance.
-- **Supabase (Cloud)**: A cloud-hosted backend-as-a-service that provides not only database solutions but also handles authentication and real-time data functionality. _Region – Supabase – US East (N. Virginia)_
+- **Supabase (Cloud)**: A cloud-hosted backend-as-a-service that provides not only database solutions but also handles authentication and real-time data functionality. _Region – Supabase – US East (N. Virginia)_
 - **Redis (Upstash)**: Rulebricks uses Upstash to manage user rate limits, and temporarily store compressed asset data for increased API performance.

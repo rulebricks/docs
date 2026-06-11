@@ -8,7 +8,7 @@ import { Callout, Steps } from 'nextra/components'
 
 This section explains how Rulebricks maps incoming SSO identities onto its internal authorization model, and how to configure that mapping from the **Team → SSO** tab. It is written for workspace administrators running a self-hosted or white-labeled Rulebricks deployment.
 
-If you cannot provision an SSO application for Rulebricks — for example because Rulebricks lives inside a private network behind an existing identity-aware proxy — see [Disabling Authentication](/private-deployment/sso/disabling-authentication) for the token passthrough alternative.
+If you cannot provision an SSO application for Rulebricks — for example because Rulebricks lives inside a private network behind an existing identity-aware proxy — see [Token Passthrough](/private-deployment/authentication/token-passthrough) for the alternative that delegates authentication to your upstream proxy.
 
 ## What the SSO Team Tab Does
 
@@ -19,7 +19,7 @@ The SSO Team tab connects incoming identity claims from your IdP to four dimensi
 - **Roles** — what permissions the user has once inside
 - **Profile** — how the user's name and avatar are populated
 
-Each dimension is configured independently. The full reference for every field lives in [Claim Mapping](/private-deployment/sso/claim-mapping).
+Each dimension is configured independently. The full reference for every field lives in [Claim Mapping](/private-deployment/authentication/claim-mapping).
 
 ## How the SSO Model Works
 
@@ -43,7 +43,7 @@ Rulebricks maintains exactly one built-in administrator per workspace:
 - The built-in `Administrator` role is **not assignable** through SSO role mapping.
 - Later users can be assigned system roles like `Developer` or `Editor`, or custom roles created in Rulebricks.
 
-This prevents claim mapping from accidentally creating multiple built-in administrators. If you need a class of trusted cross-tenant users, use the [admin tenant value](/private-deployment/sso/claim-mapping#admin-tenant-value) instead, which affects tenant visibility without granting administrator status.
+This prevents claim mapping from accidentally creating multiple built-in administrators. If you need a class of trusted cross-tenant users, use the [admin tenant value](/private-deployment/authentication/claim-mapping#admin-tenant-value) instead, which affects tenant visibility without granting administrator status.
 
 ## What Happens When Mapping Fails
 
@@ -116,5 +116,5 @@ Optionally configure `Profile` so user display names and avatars are populated f
 
 ## Where to Next
 
-- [Claim Mapping](/private-deployment/sso/claim-mapping) — the full reference for the `Access`, `Tenants`, `Roles`, and `Profile` sections of the Team tab.
-- [Disabling Authentication](/private-deployment/sso/disabling-authentication) — for deployments that cannot provision an SSO application for Rulebricks and instead want to delegate authentication to an upstream proxy.
+- [Claim Mapping](/private-deployment/authentication/claim-mapping) — the full reference for the `Access`, `Tenants`, `Roles`, and `Profile` sections of the Team tab.
+- [Token Passthrough](/private-deployment/authentication/token-passthrough) — for deployments that cannot provision an SSO application for Rulebricks and instead want to delegate authentication to an upstream proxy.

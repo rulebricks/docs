@@ -1,0 +1,124 @@
+---
+metaDescription: Configure, deploy, and manage private Rulebricks instances with the Rulebricks CLI.
+---
+
+import { Callout } from 'nextra/components'
+
+# Rulebricks CLI
+
+The Rulebricks CLI is a management utility for configuring and deploying private Rulebricks instances onto Kubernetes clusters you already control. It focuses on three things: generating valid configuration values, sizing the application from the selected cluster's available resources, and deploying the Helm chart.
+
+If you'd rather work with Helm directly, every value the CLI generates maps to the [Configuration Reference](/private-deployment/configuration-reference). The CLI simply automates the parts that are easy to get wrong, like Kafka topic sizing and cloud storage identity wiring.
+
+## Installation
+
+```bash
+npm install -g @rulebricks/cli
+```
+
+## Prerequisites
+
+Before running the CLI, you'll need:
+
+- A valid **Rulebricks license key** (requested during configuration)
+- An **available Kubernetes cluster** to deploy to
+- **Node.js** >= 20
+- **kubectl** configured for your cluster
+- **Helm** >= 3.0
+- A cloud CLI (`aws`, `gcloud`, or `az`) configured for your provider, if you want the wizard to discover clusters or refresh kubeconfig
+
+Rulebricks requires TLS. You'll need either external-dns on your cluster for automatic DNS records, or access to manually add DNS records for the subdomains where your deployment will live.
+
+### Cluster Setup
+
+If you don't have a cluster yet, the [`cluster-setup/`](https://github.com/rulebricks/cli/tree/main/cluster-setup) directory in the CLI repository provides turnkey templates for AWS, Azure, and GCP. Each one creates the cluster (Kubernetes 1.34) plus the object storage and monitoring resources Rulebricks needs, wired to workload identity, and doubles as documentation for teams deploying to an existing cluster.
+
+On AWS, a single CloudFormation stack creates the VPC, EKS cluster and node group, EBS CSI and Pod Identity add-ons, an S3 data bucket, and an Amazon Managed Prometheus workspace:
+
+```bash
+cd cluster-setup/aws
+
+# Optional access check
+AWS_REGION=us-east-1 bash check-aws-prereqs.sh
+
+# Create the stack (named IAM roles require the capability flag)
+aws cloudformation create-stack \
+  --stack-name rulebricks-cluster \
+  --region us-east-1 \
+  --template-body file://rulebricks-cluster.cfn.yaml \
+  --parameters file://parameters.json \
+  --capabilities CAPABILITY_NAMED_IAM
+
+aws cloudformation wait stack-create-complete \
+  --stack-name rulebricks-cluster --region us-east-1
+
+aws eks update-kubeconfig --name rulebricks-cluster --region us-east-1
+```
+
+Azure has an equivalent Bicep template (AKS with Workload Identity, a blob container, and Azure Monitor wiring), and GCP has gcloud guidance for GKE; see each directory's README. The templates are deployment-independent: they use EKS Pod Identity (or Azure federated identity credentials), and the CLI creates the namespace-scoped associations at `rulebricks deploy` time, so one cluster can host multiple deployments. For hand-managed clusters, the chart also accepts IRSA role ARNs directly; see [Storage & Backups](/private-deployment/storage-and-backups).
+
+After the cluster exists and kubeconfig works, run `rulebricks init` and select it. The wizard can also refresh kubeconfig for EKS, GKE, or AKS when provider details are available.
+
+## Quick Start
+
+```bash
+# Configuration wizard (generates values.yaml)
+rulebricks init
+
+# Deploy to your cluster
+rulebricks deploy my-deployment
+```
+
+The generated Helm values pin one Rulebricks product version under `global.version`. That single semantic version selects the app, HPS, and HPS worker images together, so there's no per-image tag to keep in sync.
+
+## Commands
+
+| Command                     | Description                              |
+| :-------------------------- | :--------------------------------------- |
+| `rulebricks init`           | Interactive setup wizard                 |
+| `rulebricks deploy [name]`  | Deploy to Kubernetes                     |
+| `rulebricks upgrade [name]` | Upgrade to a new version                 |
+| `rulebricks destroy [name]` | Remove a deployment                      |
+| `rulebricks status [name]`  | Show deployment health                   |
+| `rulebricks logs [name]`    | Inspect services                         |
+| `rulebricks open [name]`    | Open the generated configuration files   |
+| `rulebricks backup [name]`  | Run an on-demand database backup         |
+| `rulebricks restore [name]` | Restore the database from object storage |
+
+Use `rulebricks -h` to explore all commands, and add `-h` to any command for its options.
+
+## Performance Tiers
+
+During `init`, the wizard asks you to pick a performance tier. The tier drives worker replica counts, resource requests, Kafka topic partition sizing, and storage allocations in the generated values.
+
+| Tier       | Intended Use          | Throughput\*               | Cluster Resources   |
+| :--------- | :-------------------- | :------------------------- | :------------------ |
+| **Small**  | Development & Testing | Up to ~5,000 rules/sec     | 8 vCPU, 16GB RAM    |
+| **Medium** | Production            | ~5,000 to 25,000 rules/sec | 16+ vCPU, 32GB+ RAM |
+| **Large**  | High Performance      | 25,000+ rules/sec          | 40+ vCPU, 80GB+ RAM |
+
+\* Throughput varies with rule complexity. These figures assume typical decision table workloads submitted in bulk.
+
+The CLI validates the generated values against the chart's schema plus cross-field invariants the schema can't express, like keeping the worker autoscaling ceiling at or below the Kafka partition count. If you hand-edit the generated `values.yaml`, the CLI will catch sizing mistakes before they reach the cluster.
+
+For the sizing model behind these numbers (and how to tune beyond a tier), see [Performance & Scaling](/private-deployment/performance).
+
+## Object Storage and Backups
+
+The wizard collects a shared object storage backend (S3, Azure Blob, or GCS) for every deployment, and optionally enables scheduled database backups for self-hosted Supabase. `rulebricks backup` triggers an on-demand backup, and `rulebricks restore` lists backups in object storage and interactively restores one.
+
+See [Storage & Backups](/private-deployment/storage-and-backups) for the full picture: the one-bucket model, per-provider identity, and backup configuration.
+
+## Monitoring
+
+Self-hosted deployments enable Prometheus monitoring by default. The wizard only asks whether you want to configure a Prometheus `remote_write` destination; you can skip that step if you don't yet have a remote-write-compatible backend ready.
+
+See [Monitoring](/private-deployment/monitoring) for what's scraped, the metric label policy, and remote write configuration.
+
+<Callout type="info">
+  The CLI offers a uniquely wide variety of customization options (multi-cloud,
+  hybrid vs. self-hosted database deployment, custom email templates, and more),
+  and not every combination has been validated. If you hit an issue, email
+  [support@rulebricks.com](mailto:support@rulebricks.com) or open an issue on
+  [GitHub](https://github.com/rulebricks/cli/issues).
+</Callout>
