@@ -33,8 +33,8 @@
   },
   "scripts": {
     "dev": "next dev",
-    "build": "node scripts/build-docs-index.js && next build",
-    "build:index": "node scripts/build-docs-index.js",
+    "build": "node scripts/build-docs-index.js && node scripts/build-llms-txt.js && next build",
+    "build:index": "node scripts/build-docs-index.js && node scripts/build-llms-txt.js",
     "start": "next start",
     "postinstall": "patch-package",
     "postbuild": "next-sitemap"
