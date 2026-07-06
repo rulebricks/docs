@@ -28,6 +28,19 @@ global:
   version: '1.8.17'
 ```
 
+#### Image Registry, Digests, and Priority Classes
+
+For private registry or air-gapped installs, the chart can repoint images to your registry mirror and pin image digests:
+
+| Parameter                        | Type    | Default | Description                                                                                           |
+| :------------------------------- | :------ | :------ | :---------------------------------------------------------------------------------------------------- |
+| `global.imageRegistry`           | string  | `""`    | Repoints Rulebricks image references to your registry host while keeping the `rulebricks/*` path       |
+| `global.imageDigests`            | object  | `{}`    | Optional image digest map generated from the chart image manifest                                     |
+| `global.imagePullSecrets`        | list    | `[]`    | Pull secrets for private image registries                                                             |
+| `global.priorityClasses.enabled` | boolean | `true`  | Creates release-scoped `critical` and `burst` scheduling priorities for infrastructure and worker pods |
+
+The single `global.imageRegistry` value covers images rendered through the Rulebricks chart helpers. Some upstream subcharts use their own image keys; the Rulebricks CLI rewrites those keys for you when you configure a registry mirror. Hand-installs should check the image comments in the chart's `values.yaml` for the matching Traefik, KEDA, cert-manager, Vector, Strimzi, and external-dns overrides.
+
 #### Domain Configuration
 
 Your domain should follow the pattern: `rulebricks.yourdomain.com`
@@ -53,8 +66,8 @@ SMTP is **required** for user authentication flows (invitations, password resets
 | :--------------------- | :------ | :-------------------------- | :------------------------------------------------- |
 | `global.smtp.host`     | string  | `"smtp.mailtrap.io"`        | SMTP server hostname                               |
 | `global.smtp.port`     | integer | `2525`                      | SMTP server port (typically 25, 465, 587, or 2525) |
-| `global.smtp.user`     | string  | `"demo-user"`               | SMTP authentication username                       |
-| `global.smtp.pass`     | string  | `"demo-password"`           | SMTP authentication password                       |
+| `global.smtp.user`     | string  | `""`                        | SMTP authentication username                       |
+| `global.smtp.pass`     | string  | `""`                        | SMTP authentication password                       |
 | `global.smtp.from`     | string  | `"no-reply@rulebricks.com"` | Sender email address                               |
 | `global.smtp.fromName` | string  | `"Rulebricks"`              | Sender display name                                |
 
@@ -72,8 +85,8 @@ global:
   smtp:
     host: 'email-smtp.us-east-1.amazonaws.com'
     port: 587
-    user: 'AKIAIOSFODNN7EXAMPLE'
-    pass: 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY'
+    user: '<smtp-username>'
+    pass: '<smtp-password>'
     from: 'no-reply@yourdomain.com'
     fromName: 'Your Company - Rulebricks'
 ```
@@ -90,8 +103,8 @@ These JWT keys are used for authentication between components.
 
 <Callout type="info">
   **Security:** For production, generate new keys using Supabase's key generator
-  or a secure random string generator. The default keys are for demo purposes
-  only.
+  or a secure random string generator. The chart no longer ships working demo
+  Supabase keys.
 </Callout>
 
 #### Managed Supabase (Cloud)
@@ -239,10 +252,11 @@ The core application and high-performance solver (HPS).
 
 ### Application Image
 
-| Parameter                         | Type   | Default                            | Description             |
-| :-------------------------------- | :----- | :--------------------------------- | :---------------------- |
-| `rulebricks.app.image.repository` | string | `"index.docker.io/rulebricks/app"` | Docker image repository |
-| `rulebricks.app.image.pullPolicy` | string | `"IfNotPresent"`                   | Image pull policy       |
+| Parameter                         | Type   | Default           | Description             |
+| :-------------------------------- | :----- | :---------------- | :---------------------- |
+| `rulebricks.app.image.registry`   | string | `"docker.io"`     | Docker image registry   |
+| `rulebricks.app.image.repository` | string | `"rulebricks/app"` | Docker image repository |
+| `rulebricks.app.image.pullPolicy` | string | `"IfNotPresent"`  | Image pull policy       |
 
 Image tags are selected by `global.version`, the single product semver shared by the app, HPS, and HPS worker images. There is no per-component tag to set.
 
@@ -310,17 +324,19 @@ HPS handles rule execution with horizontal scaling. For the sizing model behind 
 | `rulebricks.hps.enabled`                    | boolean | `true`                                                                        | Enable HPS                                                                      |
 | `rulebricks.hps.replicas`                   | integer | `3`                                                                           | Number of HPS gateway replicas                                                  |
 | `rulebricks.hps.workers.enabled`            | boolean | `true`                                                                        | Enable worker pods                                                              |
-| `rulebricks.hps.workers.replicas`           | integer | `4`                                                                           | Base worker replica count                                                       |
-| `rulebricks.hps.workers.solutionPartitions` | integer | `64`                                                                          | Partition count of the `solution` topic; the worker fleet's concurrency ceiling |
-| `rulebricks.hps.workers.resources.*`        | object  | 1 CPU / 1Gi                                                                   | Per-worker resources; keep CPU request equal to limit                           |
+| `rulebricks.hps.workers.replicas`           | integer | `8`                                                                           | Base worker replica count                                                       |
+| `rulebricks.hps.workers.solutionPartitions` | integer | `128`                                                                         | Partition count of the `solution` topic; the worker fleet's concurrency ceiling |
+| `rulebricks.hps.workers.resources.*`        | object  | 250m request / 1 CPU limit, 1Gi memory                                        | Per-worker resources; scale out for throughput                                  |
 | `rulebricks.hps.workers.keda.*`             | object  | see [Performance & Scaling](/private-deployment/performance#keda-autoscaling) | KEDA autoscaling configuration                                                  |
+| `rulebricks.hps.imagePrepull.enabled`       | boolean | `true`                                                                        | Pre-pulls HPS server and worker images on nodes before burst scale-out          |
 
 #### HPS Image
 
-| Parameter                         | Type   | Default                            | Description             |
-| :-------------------------------- | :----- | :--------------------------------- | :---------------------- |
-| `rulebricks.hps.image.repository` | string | `"index.docker.io/rulebricks/hps"` | Docker image repository |
-| `rulebricks.hps.image.pullPolicy` | string | `"Always"`                         | Image pull policy       |
+| Parameter                         | Type   | Default            | Description             |
+| :-------------------------------- | :----- | :----------------- | :---------------------- |
+| `rulebricks.hps.image.registry`   | string | `"docker.io"`      | Docker image registry   |
+| `rulebricks.hps.image.repository` | string | `"rulebricks/hps"` | Docker image repository |
+| `rulebricks.hps.image.pullPolicy` | string | `"Always"`         | Image pull policy       |
 
 HPS and worker image tags are derived from `global.version` (`<version>` and `worker-<version>` respectively).
 
@@ -348,10 +364,10 @@ HPS and worker image tags are derived from `global.version` (`<version>` and `wo
 | :----------------------------------- | :------ | :------------------------------- | :-------------------------- |
 | `supabase.enabled`                   | boolean | `true`                           | Deploy self-hosted Supabase |
 | `supabase.secret.db.username`        | string  | `"postgres"`                     | Database username           |
-| `supabase.secret.db.password`        | string  | `"postgres-password-change-me"`  | **Change this!**            |
+| `supabase.secret.db.password`        | string  | `""`                             | Database password           |
 | `supabase.secret.db.database`        | string  | `"postgres"`                     | Database name               |
 | `supabase.secret.dashboard.username` | string  | `"supabase"`                     | Studio dashboard username   |
-| `supabase.secret.dashboard.password` | string  | `"dashboard-password-change-me"` | **Change this!**            |
+| `supabase.secret.dashboard.password` | string  | `""`                             | Studio dashboard password   |
 
 #### Database Resources
 
@@ -365,7 +381,7 @@ HPS and worker image tags are derived from `global.version` (`<version>` and `wo
 
 #### External PostgreSQL
 
-The Supabase services can run in-cluster while pointing at an external PostgreSQL server (e.g. a managed instance). Set `supabase.db.enabled: false` and configure the connection once:
+The Supabase services can run in-cluster while pointing at an external PostgreSQL server (e.g. a managed instance). Set `supabase.externalDatabase.enabled: true` and configure the connection once:
 
 | Parameter                                  | Type    | Default                          | Description                                         |
 | :----------------------------------------- | :------ | :------------------------------- | :-------------------------------------------------- |
@@ -374,6 +390,7 @@ The Supabase services can run in-cluster while pointing at an external PostgreSQ
 | `supabase.externalDatabase.port`           | integer | `5432`                           | PostgreSQL port                                     |
 | `supabase.externalDatabase.secretRef`      | string  | `""`                             | Existing secret with credentials (else `secret.db`) |
 | `supabase.externalDatabase.secretRefKey.*` | object  | `username`/`password`/`database` | Key mappings within the secret                      |
+| `supabase.externalDatabase.bootstrap.*`    | object  | enabled                          | Optional one-time initialization of a bare database |
 
 Migration jobs reach the same server through `migrations.externalDb.*`.
 
@@ -405,48 +422,40 @@ Kafka handles async rule execution and logging.
 
 ### Basic Settings
 
-| Parameter                 | Type    | Default | Description                   |
-| :------------------------ | :------ | :------ | :---------------------------- |
-| `kafka.enabled`           | boolean | `true`  | Deploy Kafka                  |
-| `kafka.kraft.enabled`     | boolean | `true`  | Use KRaft mode (no Zookeeper) |
-| `kafka.zookeeper.enabled` | boolean | `false` | Disable Zookeeper             |
+| Parameter                  | Type    | Default    | Description                                                   |
+| :------------------------- | :------ | :--------- | :------------------------------------------------------------ |
+| `kafka.enabled`            | boolean | `true`     | Deploy the in-cluster Strimzi Kafka broker and Topic Operator |
+| `kafka.version`            | string  | `"4.2.0"`  | Kafka version supported by the bundled Strimzi operator       |
+| `kafka.replicas`           | integer | `1`        | Broker replica count                                          |
+| `kafka.storage.size`       | string  | `"20Gi"`   | Broker persistent storage size                                |
+| `kafka.storage.class`      | string  | `"gp3"`    | Broker storage class                                          |
+| `kafka.priorityClassName`  | string  | `""`       | PriorityClass for the broker pod, usually filled by the CLI   |
+| `strimzi-kafka-operator.*` | object  | see values | Operator images and namespace watch settings                  |
 
-### Controller/Broker Configuration
+The bundled broker is managed by Strimzi and runs in KRaft mode. The chart does not expose the old Bitnami `kafka.kraft.*`, `kafka.zookeeper.*`, or `kafka.controller.*` values.
 
-| Parameter                                    | Type    | Default              | Description           |
-| :------------------------------------------- | :------ | :------------------- | :-------------------- |
-| `kafka.controller.replicaCount`              | integer | `1`                  | Number of Kafka nodes |
-| `kafka.controller.resources.requests.cpu`    | string  | `"500m"`             | CPU request           |
-| `kafka.controller.resources.requests.memory` | string  | `"2Gi"`              | Memory request        |
-| `kafka.controller.resources.limits.cpu`      | string  | `"2000m"`            | CPU limit             |
-| `kafka.controller.resources.limits.memory`   | string  | `"3Gi"`              | Memory limit          |
-| `kafka.controller.persistence.size`          | string  | `"20Gi"`             | Storage size          |
-| `kafka.controller.heapOpts`                  | string  | `"-Xmx1g -Xms1g..."` | JVM heap settings     |
+### Kafka Topics
 
-The chart also ships pre-tuned broker settings (JVM options, network threads, socket buffers, message size limits) as `kafka.controller.extraEnvVars` and `kafka.overrideConfiguration`. These defaults are correct for the topics the chart provisions; override them only with a specific reason, using the chart's [values.yaml](https://github.com/rulebricks/helm/blob/main/values.yaml) as the reference.
+The chart manages application topics explicitly rather than relying on broker auto-creation. For the in-cluster broker, `kafka.topics` renders Strimzi `KafkaTopic` resources that the Topic Operator reconciles. When you externalize Kafka with a token-auth bridge, the same topic list can feed the external topic provisioning hook.
 
-### Kafka Topic Provisioning
+| Parameter                              | Type    | Default      | Description                                                                 |
+| :------------------------------------- | :------ | :----------- | :-------------------------------------------------------------------------- |
+| `kafka.topics`                         | list    | three topics | Per-topic name, partitions, replication, and config                         |
+| `kafka.provisioning.enabled`           | boolean | `true`       | Enable the external-Kafka topic creation hook when `kafka.enabled: false`   |
+| `kafka.provisioning.replicationFactor` | integer | `3`          | Replication factor used by that external provisioning hook                  |
 
-The chart manages application topics explicitly rather than relying on broker auto-creation. The `kafka.provisioning` block is consumed by two post-install/post-upgrade Jobs: the Kafka subchart's provisioning Job creates topics if they don't exist, and the parent chart's `kafka-topic-align` Job idempotently converges pre-existing topics (partition increases, retention and size configs) so upgrades of existing installs don't require manual steps.
-
-| Parameter                    | Type    | Default      | Description                                         |
-| :--------------------------- | :------ | :----------- | :-------------------------------------------------- |
-| `kafka.provisioning.enabled` | boolean | `true`       | Enable explicit topic management                    |
-| `kafka.provisioning.topics`  | list    | three topics | Per-topic name, partitions, replication, and config |
-
-The defaults provision `solution`, `solution-response`, and `logs` topics with per-topic retention and size limits. Each entry looks like:
+The defaults define `solution`, `solution-response`, and `logs` topics with per-topic retention and size limits. Each entry looks like:
 
 ```yaml
 kafka:
-  provisioning:
-    enabled: true
-    topics:
-      - name: com.rulebricks.solution
-        partitions: 64
-        replicationFactor: 1
-        config:
-          retention.ms: '300000'
-      # ... see the chart's values.yaml for the full default topic list
+  topics:
+    - name: com.rulebricks.solution
+      partitions: 128
+      replicas: 1
+      config:
+        retention.ms: '300000'
+        max.message.bytes: '2097152'
+    # ... see the chart's values.yaml for the full default topic list
 ```
 
 <Callout type="warning">
@@ -457,7 +466,7 @@ kafka:
   Scaling](/private-deployment/performance).
 </Callout>
 
-When using external Kafka (`kafka.enabled: false`), provisioning is disabled and topics are customer-managed. See [External Kafka & Redis](/private-deployment/external-services#topics-to-pre-create).
+When using external Kafka (`kafka.enabled: false`) without the token-auth bridge, topics are customer-managed. See [External Kafka & Redis](/private-deployment/external-services#topics-to-pre-create).
 
 ### Kafka Bridge (Token-Auth External Kafka)
 
@@ -473,15 +482,14 @@ When external Kafka uses a token-based SASL mechanism (AWS MSK IAM, GCP OAUTHBEA
 | `kafkaBridge.awsRoleArn`             | string  | `""`    | IRSA role ARN (AWS)                           |
 | `kafkaBridge.gcpServiceAccountEmail` | string  | `""`    | Workload Identity service account email (GCP) |
 
-The CLI sets all of this automatically when you externalize Kafka. See [External Kafka & Redis](/private-deployment/external-services#authentication-sslsasl).
+The CLI sets all of this automatically when you externalize Kafka with AWS MSK IAM or GCP OAUTHBEARER. See [External Kafka & Redis](/private-deployment/external-services#authentication-sslsasl).
 
 ### High Availability
 
 ```yaml
 kafka:
-  controller:
-    replicaCount: 3
-  overrideConfiguration:
+  replicas: 3
+  config:
     default.replication.factor: '3'
     min.insync.replicas: '2'
 ```
@@ -496,7 +504,7 @@ Traefik handles all incoming traffic and TLS termination.
 | `traefik.ingressClass.name`       | string  | `"traefik"` | Ingress class name |
 | `traefik.autoscaling.enabled`     | boolean | `true`      | Enable HPA         |
 | `traefik.autoscaling.minReplicas` | integer | `1`         | Minimum replicas   |
-| `traefik.autoscaling.maxReplicas` | integer | `2`         | Maximum replicas   |
+| `traefik.autoscaling.maxReplicas` | integer | `4`         | Maximum replicas   |
 
 Traefik resources, ports, and persistence follow the upstream subchart's values under `traefik.*`; the chart's defaults expose 80/443 and need no changes for typical deployments.
 
@@ -513,21 +521,34 @@ KEDA provides event-driven autoscaling for HPS workers. Scaling behavior is conf
 
 cert-manager provisions TLS certificates from Let's Encrypt.
 
-| Parameter                  | Type    | Default | Description                  |
-| :------------------------- | :------ | :------ | :--------------------------- |
-| `cert-manager.enabled`     | boolean | `true`  | Deploy cert-manager          |
-| `cert-manager.installCRDs` | boolean | `false` | CRDs managed by parent chart |
+| Parameter                   | Type    | Default | Description                  |
+| :-------------------------- | :------ | :------ | :--------------------------- |
+| `cert-manager.enabled`      | boolean | `true`  | Deploy cert-manager          |
+| `cert-manager.crds.enabled` | boolean | `false` | CRDs managed by parent chart |
 
 The chart creates a `ClusterIssuer` for Let's Encrypt production and `Certificate` resources for your domain(s).
 
 ## Decision Logging (Vector & ClickHouse)
 
-| Value prefix   | Purpose                                                             |
-| :------------- | :------------------------------------------------------------------ |
-| `vector.*`     | Log aggregator consuming the Kafka `logs` topic; sinks and replicas |
-| `clickhouse.*` | Stateless query engine over the decision log archive                |
+| Value prefix   | Purpose                                                                                                  |
+| :------------- | :------------------------------------------------------------------------------------------------------- |
+| `vector.*`     | Decision-log aggregator consuming the Kafka `logs` topic; sinks and replicas                            |
+| `clickhouse.*` | Query engine over the decision log archive, with local persistence for ClickStack telemetry when enabled |
 
 Vector's Kafka connection (brokers, TLS, SASL, and the prefixed log topic) is templated automatically into a `vector-kafka-env` ConfigMap from `rulebricks.app.logging.*`; you don't set it by hand. How the pipeline fits together, the values tables, and custom sink examples live in [Decision Logs](/private-deployment/decision-logs).
+
+## Built-in Observability (ClickStack, Tracing, and App Logs)
+
+| Value prefix                  | Purpose                                                                                  |
+| :---------------------------- | :--------------------------------------------------------------------------------------- |
+| `global.clickstack.enabled`   | Cross-chart switch for the built-in ClickStack observability backend, enabled by default |
+| `clickstack.hyperdx.*`        | HyperDX UI, ingress, and resources                                                       |
+| `clickstack.collector.*`      | OpenTelemetry gateway and node-agent resources                                           |
+| `clickstack.ferretdb.*`       | Metadata store used by HyperDX                                                           |
+| `global.tracing.*`            | Optional BYO tracing collector when ClickStack is disabled                               |
+| `vector-agent.*`              | Optional Kubernetes app/container log shipping to a customer-managed log backend         |
+
+ClickStack provides the default in-cluster traces, operational logs, and observability UI. If your platform team already has a tracing or log backend, disable ClickStack and configure `global.tracing.*` or `vector-agent.*` instead. See [Monitoring](/private-deployment/monitoring) for the operator story and examples.
 
 ## DNS (external-dns)
 
@@ -536,7 +557,7 @@ external-dns automatically creates DNS records for your ingresses.
 | Parameter                    | Type    | Default         | Description                  |
 | :--------------------------- | :------ | :-------------- | :--------------------------- |
 | `external-dns.enabled`       | boolean | `false`         | Deploy external-dns          |
-| `external-dns.provider`      | string  | `"route53"`     | DNS provider                 |
+| `external-dns.provider.name` | string  | `"route53"`     | DNS provider                 |
 | `external-dns.sources`       | list    | `["ingress"]`   | Resource types to watch      |
 | `external-dns.domainFilters` | list    | `[]`            | Restrict to specific domains |
 | `external-dns.policy`        | string  | `"upsert-only"` | Record management policy     |
@@ -548,7 +569,8 @@ external-dns automatically creates DNS records for your ingresses.
 ```yaml
 external-dns:
   enabled: true
-  provider: route53
+  provider:
+    name: route53
   # Uses IRSA - ensure service account has Route53 permissions
 ```
 
@@ -557,7 +579,8 @@ external-dns:
 ```yaml
 external-dns:
   enabled: true
-  provider: cloudflare
+  provider:
+    name: cloudflare
   extraEnvVars:
     - name: CF_API_TOKEN
       valueFrom:
@@ -571,7 +594,8 @@ external-dns:
 ```yaml
 external-dns:
   enabled: true
-  provider: google
+  provider:
+    name: google
   google:
     project: 'your-gcp-project'
 ```
@@ -581,7 +605,8 @@ external-dns:
 ```yaml
 external-dns:
   enabled: true
-  provider: azure
+  provider:
+    name: azure
   azure:
     resourceGroup: 'your-resource-group'
     subscriptionId: 'your-subscription-id'

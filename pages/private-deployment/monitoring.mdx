@@ -8,12 +8,15 @@ import { Callout } from 'nextra/components'
 
 Monitoring is enabled by default through `kube-prometheus-stack`. Prometheus stores metrics in-cluster unless you configure a remote write destination.
 
+ClickStack is also enabled by default for operational logs, traces, and a HyperDX UI. It complements Prometheus rather than replacing it: Prometheus remains the metrics source, while ClickStack handles trace and log exploration for the deployment.
+
 | Parameter                                    | Type    | Default | Description                |
 | :------------------------------------------- | :------ | :------ | :------------------------- |
 | `monitoring.enabled`                         | boolean | `true`  | Enable monitoring          |
 | `rulebricks.metrics.enabled`                 | boolean | `true`  | Rulebricks ServiceMonitors |
 | `kube-prometheus-stack.alertmanager.enabled` | boolean | `false` | Deploy Alertmanager        |
 | `kube-prometheus-stack.grafana.enabled`      | boolean | `false` | Deploy Grafana             |
+| `global.clickstack.enabled`                  | boolean | `true`  | Enable built-in ClickStack |
 
 ## What's Scraped
 
@@ -41,6 +44,28 @@ After install, verify scrape discovery:
 kubectl get servicemonitor -n rulebricks
 kubectl port-forward -n rulebricks svc/rulebricks-kube-prometheus-stack-prometheus 9090:9090
 ```
+
+## Built-in Observability
+
+With `global.clickstack.enabled: true`, the chart deploys the ClickStack observability backend:
+
+| Value prefix              | Purpose                                     |
+| :------------------------ | :------------------------------------------ |
+| `clickstack.hyperdx.*`    | HyperDX UI, ingress, and resources          |
+| `clickstack.collector.*`  | OpenTelemetry gateway and node-agent sizing |
+| `clickstack.ferretdb.*`   | Metadata store used by HyperDX              |
+| `clickstack.clickhouse.*` | Telemetry database and retention settings   |
+
+The default HyperDX ingress uses `observability.<global.domain>` when enabled. Keep access limited to your operational users, and use the ingress allow-list values if your cluster exposes it publicly.
+
+If your organization already has a telemetry platform, disable ClickStack and configure the BYO paths instead:
+
+| Value prefix       | Use when                                                                        |
+| :----------------- | :------------------------------------------------------------------------------ |
+| `global.tracing.*` | Send application, HPS, worker, and ingress traces to Elastic, OTLP, or Azure Monitor |
+| `vector-agent.*`   | Ship Kubernetes app/container logs to Elasticsearch, Loki, or a generic HTTP endpoint |
+
+`global.tracing.*` renders the chart-managed OpenTelemetry Collector only when ClickStack is disabled. The Rulebricks CLI asks these questions during `rulebricks init` and writes secret references where possible.
 
 ## Remote Write
 

@@ -46,6 +46,10 @@ graph TB
             ClickHouse[ClickHouse]
         end
 
+        subgraph Observability["Operational Observability"]
+            ClickStack[ClickStack / HyperDX]
+        end
+
         subgraph Support["Supporting Services"]
             CertManager[cert-manager]
             KEDA[KEDA]
@@ -83,6 +87,8 @@ graph TB
     Vector --> ObjectStorage
     ClickHouse --> ObjectStorage
     App --> ClickHouse
+    App --> ClickStack
+    HPS --> ClickStack
 
     CertManager --> LetsEncrypt
     ExternalDNS --> DNS
@@ -124,7 +130,8 @@ sequenceDiagram
 | **Kafka**       | Message queue, event streaming           | KRaft mode, single node default       |
 | **PostgreSQL**  | Persistent data storage                  | Single replica with PVC               |
 | **Vector**      | Decision log aggregation and forwarding  | Static replicas                       |
-| **ClickHouse**  | Decision log queries over object storage | Stateless, single replica default     |
+| **ClickHouse**  | Decision log queries and telemetry store | Single replica with persistence       |
+| **ClickStack**  | Traces, operational logs, and HyperDX UI | Single replica default                |
 | **Prometheus**  | Metrics collection                       | Single replica, optional remote write |
 
 ---
