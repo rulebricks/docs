@@ -60,24 +60,23 @@ helm install rulebricks oci://ghcr.io/rulebricks/helm/stack \
 
 See [Example Configurations](#example-configurations) below for minimal values files, and visit the [YAML Reference](/private-deployment/configuration-reference) for a complete breakdown of all available options.
 
----
-
 ## What am I deploying?
 
 You're deploying a complete Rulebricks stack to your existing Kubernetes cluster. The chart installs multiple integrated services, pre-configured for production workloads.
 
-| Component        | Purpose                                       | Enabled by Default |
-| :--------------- | :-------------------------------------------- | :----------------: |
-| **Rulebricks**   | Core application and high-performance solver  |         ✓          |
-| **Supabase**     | PostgreSQL database and authentication        |         ✓          |
-| **Kafka**        | Message queue for async rule execution        |         ✓          |
-| **Traefik**      | Ingress controller with automatic TLS         |         ✓          |
-| **cert-manager** | Let's Encrypt certificate provisioning        |         ✓          |
-| **KEDA**         | Event-driven autoscaling for workers          |         ✓          |
-| **Vector**       | Decision log aggregation and forwarding       |         ✓          |
-| **ClickHouse**   | Native decision log querying in the dashboard |         ✓          |
-| **Prometheus**   | Metrics collection (kube-prometheus-stack)    |         ✓          |
-| **external-dns** | Automatic DNS record management               |         ✗          |
+| Component                | Purpose                                                | Enabled by Default |
+| :----------------------- | :----------------------------------------------------- | :----------------: |
+| **Rulebricks**           | Core application and high-performance solver           |         ✓          |
+| **Supabase**             | PostgreSQL database and authentication                 |         ✓          |
+| **Kafka (Strimzi)**      | Message queue for async rule execution and logs        |         ✓          |
+| **Traefik**              | Ingress controller with automatic TLS                  |         ✓          |
+| **cert-manager**         | Let's Encrypt certificate provisioning                 |         ✓          |
+| **KEDA**                 | Event-driven autoscaling for workers                   |         ✓          |
+| **Vector**               | Decision log aggregation and forwarding                |         ✓          |
+| **ClickHouse**           | Decision log querying and ClickStack telemetry storage |         ✓          |
+| **ClickStack / HyperDX** | Built-in traces, operational logs, and observability UI |         ✓          |
+| **Prometheus**           | Metrics collection (kube-prometheus-stack)             |         ✓          |
+| **external-dns**         | Automatic DNS record management                        |         ✗          |
 
 For how these components interact, see [Architecture](/private-deployment/architecture).
 
@@ -86,8 +85,6 @@ For how these components interact, see [Architecture](/private-deployment/archit
 **Self-hosted (default):** PostgreSQL runs in your cluster with persistent storage. You have full control and data never leaves your infrastructure.
 
 **Managed Supabase:** Use Supabase Cloud instead. Set `supabase.enabled: false` and provide your project credentials. The chart automatically configures your managed project. We are also able to manage your database for you, should you prefer a hybrid deployment configuration.
-
----
 
 ## Example Configurations
 
@@ -148,7 +145,8 @@ supabase:
 # Ensure this is configured properly
 external-dns:
   enabled: true
-  provider: route53
+  provider:
+    name: route53
 ```
 
 ### Cloud-Specific Values
@@ -163,7 +161,8 @@ storageClass:
   type: gp3
 external-dns:
   enabled: true
-  provider: route53
+  provider:
+    name: route53
 ```
 
 ```yaml
@@ -174,7 +173,8 @@ storageClass:
   type: pd-ssd
 external-dns:
   enabled: true
-  provider: google
+  provider:
+    name: google
   google:
     project: 'your-gcp-project'
 ```
@@ -187,13 +187,12 @@ storageClass:
   type: Premium_LRS
 external-dns:
   enabled: true
-  provider: azure
+  provider:
+    name: azure
   azure:
     resourceGroup: 'your-resource-group'
     subscriptionId: 'your-subscription-id'
 ```
-
----
 
 ## Caveats & Limits
 
@@ -208,7 +207,9 @@ The Helm chart deploys to your **existing** Kubernetes cluster. You're responsib
 
 See [example-min-cluster.yaml](https://github.com/rulebricks/helm/blob/main/example-min-cluster.yaml) for minimum EKS cluster specifications, or the CLI's [cluster-setup resources](/private-deployment/cli#cluster-setup) for ready-made AWS, Azure, and GCP starting points.
 
-### Air-Gapped Deployments
+### Air-Gapped and Private Registry Deployments
+
+Rulebricks images are mirrored under the `rulebricks/*` image path. Set `global.imageRegistry` when your cluster must pull from a private registry mirror, and set the matching per-subchart image keys for upstream charts that do not read the parent global value. The Rulebricks CLI can generate those image overrides for you.
 
 Rulebricks can run nearly air-gapped with these exceptions:
 

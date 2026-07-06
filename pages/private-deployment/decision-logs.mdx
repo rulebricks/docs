@@ -21,7 +21,7 @@ flowchart LR
 
 1. HPS and the app produce decision log entries to the Kafka `logs` topic after each request completes (non-blocking, post-response).
 2. Vector consumes the topic and writes the entries to your bucket under `global.storage.paths.decisionLogs` as compressed NDJSON, partitioned by year/month/day/hour.
-3. ClickHouse queries the archive directly. It holds no data of its own, so it runs without a persistent volume and can be restarted freely.
+3. ClickHouse queries the archive directly for decision logs. When ClickStack is enabled, the same ClickHouse deployment also stores operational telemetry locally, so persistence stays enabled by default.
 4. The dashboard's native decision log search runs against ClickHouse. The archive remains plain NDJSON in your bucket, so you can also query it with your own tooling (Athena, DuckDB, and so on) or forward logs to additional sinks.
 
 Bucket configuration and identity are covered in [Storage & Backups](/private-deployment/storage-and-backups).
@@ -41,15 +41,16 @@ If you run your own Kafka cluster, see [External Kafka & Redis](/private-deploym
 
 ## Querying with ClickHouse
 
-Rulebricks deploys a stateless ClickHouse instance to power native decision log querying in the dashboard. All decision log data lives in the bucket; ClickHouse only queries it.
+Rulebricks deploys ClickHouse to power native decision log querying in the dashboard. Decision log data lives in your bucket; ClickHouse queries that archive through a generated named collection. Local ClickHouse persistence is used for operational telemetry when ClickStack is enabled.
 
-| Parameter                        | Type    | Default        | Description                             |
-| :------------------------------- | :------ | :------------- | :-------------------------------------- |
-| `clickhouse.enabled`             | boolean | `true`         | Deploy ClickHouse                       |
-| `clickhouse.auth.username`       | string  | `"rulebricks"` | Query user                              |
-| `clickhouse.replicaCount`        | integer | `1`            | Number of replicas                      |
-| `clickhouse.persistence.enabled` | boolean | `false`        | Stateless by design                     |
-| `clickhouse.queryLimits.*`       | object  | see values     | Memory, thread, and execution time caps |
+| Parameter                        | Type    | Default        | Description                                                     |
+| :------------------------------- | :------ | :------------- | :-------------------------------------------------------------- |
+| `clickhouse.enabled`             | boolean | `true`         | Deploy ClickHouse                                               |
+| `clickhouse.auth.username`       | string  | `"rulebricks"` | Query user                                                      |
+| `clickhouse.persistence.enabled` | boolean | `true`         | Keep local telemetry tables and query metadata across restarts  |
+| `clickhouse.persistence.size`    | string  | `"100Gi"`      | Persistent volume size                                          |
+| `clickhouse.queryLimits.*`       | object  | see values     | Memory, thread, row-read, and execution time caps               |
+| `clickhouse.otelQueryLimits.*`   | object  | see values     | Separate limits for ClickStack telemetry queries                |
 
 ClickHouse reads the archive through a named collection generated from `global.storage.*`, so no separate storage configuration is needed.
 

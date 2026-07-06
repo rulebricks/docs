@@ -125,14 +125,14 @@ rulebricks:
 
 The HPS producer sets `allowAutoTopicCreation: true`, but auto-created topics inherit the broker's default partition count, often just `1`. A single-partition `solution-response` will cause request timeouts under any meaningful replica count. **Always pre-create topics explicitly.**
 
-In-cluster chart deployments handle all of this automatically via `kafka.provisioning` plus the `kafka-topic-align` Job; this section applies to external/managed Kafka, where topics are customer-managed.
+In-cluster chart deployments handle all of this automatically with Strimzi `KafkaTopic` resources rendered from `kafka.topics`. For external managed Kafka, the chart can also create topics from the same list when `kafka.enabled: false` and `kafkaBridge.enabled: true`; otherwise topics are customer-managed.
 
 Ask your Kafka team to create (names take your configured topic prefix):
 
 | Topic               | Partition Count                                                         | Replication                             | Retention                                                          |
 | :------------------ | :---------------------------------------------------------------------- | :-------------------------------------- | :----------------------------------------------------------------- |
-| `solution`          | ~2x your maximum worker replica count (e.g. 48 for a 24-worker ceiling) | 1 is acceptable (transient RPC traffic) | Short: `retention.ms=300000`, `segment.ms=300000`, small segments  |
-| `solution-response` | Must equal `hps.workers.solutionPartitions`                             | Same as `solution`                      | Same as `solution`                                                 |
+| `solution`          | ~2x your maximum worker replica count (default 128)                     | 1 is acceptable (transient RPC traffic) | Short: `retention.ms=300000`, `segment.ms=300000`, small segments  |
+| `solution-response` | Must equal `rulebricks.hps.workers.solutionPartitions`                  | Same as `solution`                      | Same as `solution`                                                 |
 | `logs`              | 8-24 depending on volume                                                | 2-3 in production (long-lived data)     | Size to your Vector outage tolerance, e.g. `retention.ms=86400000` |
 
 Set `max.message.bytes` to at least `2097152` (2 MB) on all three topics. HPS chunks are byte-bounded well below this, but the headroom prevents edge-case produce failures, and a response chunk can exceed its request chunk when rules expand payloads.
@@ -151,7 +151,7 @@ The expected partition count is set in the Helm values:
 rulebricks:
   hps:
     workers:
-      solutionPartitions: 64
+      solutionPartitions: 128
 ```
 
 The HPS deployment template passes `solutionPartitions` to HPS as the `MAX_WORKERS` environment variable.
@@ -168,7 +168,7 @@ If you raise a topic's partition count later, HPS Kafka clients observe the chan
 
 HPS does not care how your Kafka cluster manages metadata. It never connects to ZooKeeper directly; it only speaks the Kafka wire protocol to brokers via a bootstrap address. Both ZooKeeper-backed clusters and KRaft-mode clusters work identically. Managed services like AWS MSK (in either mode), Confluent Cloud, Aiven, and Redpanda are all compatible.
 
-The bundled Kafka subchart ships in KRaft mode (`kraft.enabled: true`, `zookeeper.enabled: false`), but this is a deployment choice for the internal broker and has no bearing on external cluster compatibility.
+The bundled Kafka deployment is managed by Strimzi and runs in KRaft mode. That is an internal broker implementation detail and has no bearing on external cluster compatibility.
 
 ### Tuning and Idempotency
 
@@ -307,7 +307,7 @@ If `redis.enabled` is `false` and no `external` host is provided, Redis operates
 
 ## Supabase
 
-The Supabase stack itself stays in-cluster (or on Supabase Cloud); what you can externalize is the PostgreSQL server underneath it. Set `supabase.db.enabled: false` and configure `supabase.externalDatabase.*` to point the Supabase services and migration jobs at a server you manage. See [External PostgreSQL](/private-deployment/configuration-reference#external-postgresql) for the values.
+The Supabase stack itself stays in-cluster (or on Supabase Cloud); what you can externalize is the PostgreSQL server underneath it. Set `supabase.externalDatabase.enabled: true` and configure `supabase.externalDatabase.*` to point the Supabase services at a server you manage. See [External PostgreSQL](/private-deployment/configuration-reference#external-postgresql) for the values.
 
 The full self-hosted Supabase stack includes the following services:
 
