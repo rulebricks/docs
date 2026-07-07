@@ -15,38 +15,38 @@ If you deploy with the [Rulebricks CLI](/private-deployment/cli), these values a
 Workers are single-threaded processes doing CPU-bound rule evaluation. Three ideas hold the model together:
 
 1. **Partitions are the concurrency ceiling.** The `solution` Kafka topic's partition count (`rulebricks.hps.workers.solutionPartitions`) is the maximum number of workers that can consume in parallel. It is a ceiling, not a worker quota: idle partitions are effectively free, so the defaults carry roughly 2x headroom over the maximum worker count, because partition counts can be raised but never lowered.
-2. **Workers scale out, not up.** Each worker gets one full CPU core with request equal to limit, which avoids CFS throttling mid-batch. Adding replicas adds capacity; raising per-pod resources does not.
+2. **Workers scale out, not up.** Each worker can use up to one full CPU core. The default request is lower so a warm fleet packs efficiently, and bursts add replicas for throughput.
 3. **KEDA scales on backlog.** Workers run as a Deployment scaled by KEDA on Kafka consumer lag, so scale-out creates pods in parallel and delivers burst capacity in seconds.
 
 Two rules must always hold:
 
 - `keda.maxReplicaCount` must stay at or below `solutionPartitions`; a worker beyond the partition count would sit idle.
-- `solutionPartitions` must match the partition count of the actual `solution` topic, whether provisioned by the chart (`kafka.provisioning`) or pre-created on an [external Kafka cluster](/private-deployment/external-services#topics-to-pre-create).
+- `solutionPartitions` must match the partition count of the actual `solution` topic, whether reconciled by the chart from `kafka.topics` or pre-created on an [external Kafka cluster](/private-deployment/external-services#topics-to-pre-create).
 
 The CLI validates both rules before anything reaches your cluster.
 
 ## Worker Values
 
-| Parameter                                   | Type    | Default                      | Description                                           |
-| :------------------------------------------ | :------ | :--------------------------- | :---------------------------------------------------- |
-| `rulebricks.hps.replicas`                   | integer | `3`                          | HPS gateway replicas                                  |
-| `rulebricks.hps.workers.replicas`           | integer | `4`                          | Base worker replica count                             |
-| `rulebricks.hps.workers.solutionPartitions` | integer | `64`                         | Partition count of the `solution` topic (the ceiling) |
-| `rulebricks.hps.workers.resources.*`        | object  | 1 CPU / 1Gi, request = limit | Per-worker resources; keep request equal to limit     |
+| Parameter                                   | Type    | Default                                | Description                                           |
+| :------------------------------------------ | :------ | :------------------------------------- | :---------------------------------------------------- |
+| `rulebricks.hps.replicas`                   | integer | `3`                                    | HPS gateway replicas                                  |
+| `rulebricks.hps.workers.replicas`           | integer | `8`                                    | Base worker replica count                             |
+| `rulebricks.hps.workers.solutionPartitions` | integer | `128`                                  | Partition count of the `solution` topic (the ceiling) |
+| `rulebricks.hps.workers.resources.*`        | object  | 250m request / 1 CPU limit, 1Gi memory | Per-worker resources; scale out for throughput        |
 
 ## KEDA Autoscaling
 
 | Parameter                                     | Type    | Default | Description                    |
 | :-------------------------------------------- | :------ | :------ | :----------------------------- |
 | `rulebricks.hps.workers.keda.enabled`         | boolean | `true`  | Enable KEDA autoscaling        |
-| `rulebricks.hps.workers.keda.minReplicaCount` | integer | `4`     | Minimum workers                |
-| `rulebricks.hps.workers.keda.maxReplicaCount` | integer | `48`    | Maximum workers                |
-| `rulebricks.hps.workers.keda.pollingInterval` | integer | `10`    | Seconds between metric checks  |
+| `rulebricks.hps.workers.keda.minReplicaCount` | integer | `8`     | Minimum workers                |
+| `rulebricks.hps.workers.keda.maxReplicaCount` | integer | `64`    | Maximum workers                |
+| `rulebricks.hps.workers.keda.pollingInterval` | integer | `5`     | Seconds between metric checks  |
 | `rulebricks.hps.workers.keda.cooldownPeriod`  | integer | `300`   | Seconds before scale-down      |
-| `rulebricks.hps.workers.keda.lagThreshold`    | integer | `100`   | Kafka lag threshold (messages) |
+| `rulebricks.hps.workers.keda.lagThreshold`    | integer | `50`    | Kafka lag threshold (messages) |
 | `rulebricks.hps.workers.keda.cpuThreshold`    | integer | `25`    | CPU percentage backup trigger  |
 
-Lag is measured in messages. HPS splits bulk requests into bounded chunks, so each message represents roughly 50 to 150ms of work, and the default threshold of 100 approximates 10 to 15 seconds of backlog for a single worker.
+Lag is measured in messages. HPS splits bulk requests into bounded chunks, so each message represents roughly 50 to 150ms of work, and the default threshold of 50 biases toward early scale-out during bursts.
 
 ```mermaid
 flowchart LR
@@ -83,6 +83,18 @@ rulebricks:
   upgrade via the chart's topic provisioning; on external Kafka you raise the
   partition counts yourself.
 </Callout>
+
+## Burst Pools, Priorities, and Image Pre-Pull
+
+The chart is designed to keep stateful and ingress infrastructure stable while worker capacity scales elastically:
+
+| Parameter                                  | Default | Description                                                             |
+| :----------------------------------------- | :------ | :---------------------------------------------------------------------- |
+| `global.priorityClasses.enabled`           | `true`  | Creates release-scoped critical and burst PriorityClasses               |
+| `rulebricks.hps.imagePrepull.enabled`      | `true`  | Runs a DaemonSet that pre-pulls HPS server and worker images onto nodes |
+| `rulebricks.hps.workers.priorityClassName` | unset   | Defaults to the release burst class when priority classes are enabled   |
+
+The CLI's cluster-setup templates use a burst node pool labeled and tainted `rulebricks.com/pool=burst`. Worker pods tolerate and prefer that pool, while critical services such as Kafka, ClickHouse, and the database can use the release critical class. If you run a fixed cluster with no autoscaler or dedicated burst pool, consider disabling `global.priorityClasses.enabled` or explicitly setting worker priority to match your platform policy.
 
 ## Other Scaling Surfaces
 

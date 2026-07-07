@@ -8,12 +8,15 @@ import { Callout } from 'nextra/components'
 
 Monitoring is enabled by default through `kube-prometheus-stack`. Prometheus stores metrics in-cluster unless you configure a remote write destination.
 
+ClickStack is also enabled by default for operational logs, traces, and a HyperDX UI. It complements Prometheus rather than replacing it: Prometheus remains the metrics source, while ClickStack handles trace and log exploration for the deployment.
+
 | Parameter                                    | Type    | Default | Description                |
 | :------------------------------------------- | :------ | :------ | :------------------------- |
 | `monitoring.enabled`                         | boolean | `true`  | Enable monitoring          |
 | `rulebricks.metrics.enabled`                 | boolean | `true`  | Rulebricks ServiceMonitors |
 | `kube-prometheus-stack.alertmanager.enabled` | boolean | `false` | Deploy Alertmanager        |
 | `kube-prometheus-stack.grafana.enabled`      | boolean | `false` | Deploy Grafana             |
+| `global.clickstack.enabled`                  | boolean | `true`  | Enable built-in ClickStack |
 
 ## What's Scraped
 

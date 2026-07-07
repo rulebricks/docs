@@ -71,6 +71,8 @@ rulebricks deploy my-deployment
 
 The generated Helm values pin one Rulebricks product version under `global.version`. That single semantic version selects the app, HPS, and HPS worker images together, so there's no per-image tag to keep in sync.
 
+The wizard also handles cross-chart details that are easy to miss in hand-written values, including private registry image overrides, workload identity bindings, ClickStack vs. BYO tracing choices, app log shipping sinks, Kafka topic sizing, and external Redis/Kafka/PostgreSQL wiring.
+
 ## Commands
 
 | Command                     | Description                              |
@@ -95,7 +97,7 @@ See [Storage & Backups](/private-deployment/storage-and-backups) for the full pi
 
 ## Monitoring
 
-Self-hosted deployments enable Prometheus monitoring by default. The wizard only asks whether you want to configure a Prometheus `remote_write` destination; you can skip that step if you don't yet have a remote-write-compatible backend ready.
+Self-hosted deployments enable Prometheus monitoring and ClickStack observability by default. The wizard only asks whether you want to configure a Prometheus `remote_write` destination, or whether to disable ClickStack and send traces or app logs to a platform you already run. You can skip those steps and add them later.
 
 The optional features step can also enable Valkey Admin + cache metrics. Valkey Admin is internal-only by default (open it with `kubectl port-forward`), while Redis/Valkey and Kafka-lag exporters feed the same Prometheus remote-write pipeline.
 
