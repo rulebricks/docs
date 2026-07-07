@@ -319,6 +319,10 @@ The full self-hosted Supabase stack includes the following services:
 
 These services stay chart-managed even with an external database. Beyond providing a clear database layer for Rulebricks, Supabase is our interface for authentication, JWT management, and real-time features. There are database triggers between Supabase-managed identity tables (e.g., `auth.users`) and Rulebricks-managed application tables that depend on Supabase's internal wiring, so the external server must be a vanilla PostgreSQL that the Supabase services can fully manage.
 
+### Supported PostgreSQL Versions
+
+For an external database, run **PostgreSQL 17** (recommended — it matches the bundled in-cluster database and the CLI's managed-RDS default) or **PostgreSQL 16**. PostgreSQL 15 and below are not supported: the bootstrap job's replication grants require PostgreSQL 16+ role-inheritance syntax on AWS RDS, and Supabase Realtime does not support older majors without superuser access, which managed providers do not offer. The server must also have logical replication enabled (`wal_level = logical`; on RDS set `rds.logical_replication = 1` in the parameter group) for Realtime.
+
 It is worth noting **the database is likely not a bottleneck.** Because Redis aggressively caches entity definitions, and every pod has an in-process LRU in front of Redis, actual database read/write volumes under normal operation are generally minimal.
 
 ### Database Backups

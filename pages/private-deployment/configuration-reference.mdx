@@ -365,7 +365,7 @@ HPS and worker image tags are derived from `global.version` (`<version>` and `wo
 
 #### External PostgreSQL
 
-The Supabase services can run in-cluster while pointing at an external PostgreSQL server (e.g. a managed instance). Set `supabase.db.enabled: false` and configure the connection once:
+The Supabase services can run in-cluster while pointing at an external PostgreSQL server (e.g. a managed instance). PostgreSQL 17 (recommended) and 16 are supported; see [Supported PostgreSQL Versions](/private-deployment/external-services#supported-postgresql-versions). Set `supabase.db.enabled: false` and configure the connection once:
 
 | Parameter                                  | Type    | Default                          | Description                                         |
 | :----------------------------------------- | :------ | :------------------------------- | :-------------------------------------------------- |

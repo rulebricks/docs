@@ -1,0 +1,245 @@
+---
+metaDescription: Distributed tracing for private Rulebricks deployments - emit OpenTelemetry traces to Elastic APM, a generic OTLP/HTTP backend, or Azure Monitor, ship application logs to Elasticsearch, and view full request lineage.
+---
+
+import { Callout } from 'nextra/components'
+
+# Distributed Tracing
+
+Distributed tracing gives you the **full lineage of a request as it moves through every service** - from the ingress, through the app or the High Performance Server (HPS), across the Kafka work queue, into the worker that evaluates your rule, and back. Each hop is a span in a single trace, so you can see exactly where time is spent and where an error occurred.
+
+Tracing is **self-hosted only** and **off by default**. When enabled, Rulebricks deploys an in-cluster [OpenTelemetry Collector](https://opentelemetry.io/docs/collector/) that forwards traces to a **backend of your choice**. The instrumentation is backend-agnostic - the destination is selected at the collector's export step, so you can switch backends without touching the app. Three destinations are supported (works on both AWS and Azure):
+
+- **`elastic`** (default) - your own (BYO) **Elastic APM** endpoint (Elastic Cloud, the Elastic add-on from a cloud marketplace, or self-hosted). Traces are viewable in Kibana APM.
+- **`otlp`** - any **generic OTLP/HTTP** backend (Grafana Tempo, Honeycomb, Jaeger, vendor OTLP gateways, or a cloud provider's OTLP ingestion endpoint).
+- **`azure-monitor`** - **Azure Monitor / Application Insights**, using an Application Insights connection string.
+
+We do not bundle a tracing backend - you run it and point Rulebricks at the endpoint.
+
+<Callout type="info">
+  Tracing complements, and does not replace, the existing signals: **decision logs** still archive to object storage / ClickHouse, and **Prometheus metrics** still power Grafana. See [Decision Logs](/private-deployment/decision-logs) and [Monitoring](/private-deployment/monitoring).
+</Callout>
+
+## Topology
+
+```
+Client ─▶ Traefik ─▶ HPS API ─▶ Kafka (solution) ─▶ HPS Worker ─▶ evaluateRule
+                │         │                                │
+                └─────────┴──────── OTLP spans ────────────┘
+                                       │
+                          OpenTelemetry Collector
+                                       │
+                                       ▼
+            Elastic APM  |  generic OTLP backend  |  Azure Monitor
+```
+
+- **Traefik** is the root span and propagates the W3C `traceparent` header to backends.
+- **App** and **HPS API** continue the trace and propagate context on outgoing calls.
+- The **HPS API → worker** hop runs over Kafka. Rulebricks injects the trace context into the Kafka message headers and the worker extracts it, so the worker's rule-evaluation span is a child of the originating request - the cross-service hop that would otherwise break the lineage.
+
+## Enabling tracing (CLI)
+
+The deployment wizard exposes a **Distributed Tracing** feature. Enable it, pick a **destination** (Elastic APM, generic OTLP/HTTP, or Azure Monitor), and provide the endpoint/credentials for that backend. Equivalent config-file fields per destination:
+
+```yaml
+# Elastic APM (default)
+features:
+  tracing:
+    enabled: true
+    destination: "elastic"      # elastic | otlp | azure-monitor
+    samplingRatio: 1.0          # 0.0 - 1.0; applied at the source SDKs
+    elastic:
+      endpoint: "https://<deployment>.apm.<region>.cloud.es.io:443"
+      authMode: "secret-token"  # secret-token | api-key | none
+      secretToken: "<elastic-apm-secret-token>"
+```
+
+```yaml
+# Generic OTLP/HTTP backend (Grafana Tempo, Honeycomb, Jaeger, ...)
+features:
+  tracing:
+    enabled: true
+    destination: "otlp"
+    otlp:
+      endpoint: "https://otlp-gateway.example.com/otlp"
+      authMode: "bearer"        # none | bearer | api-key | header
+      token: "<token>"          # bearer/api-key credential
+```
+
+```yaml
+# Azure Monitor / Application Insights
+features:
+  tracing:
+    enabled: true
+    destination: "azure-monitor"
+    azureMonitor:
+      connectionString: "InstrumentationKey=...;IngestionEndpoint=https://..."
+```
+
+The CLI wires the collector, the app/HPS/worker OTLP endpoints, and Traefik tracing automatically, regardless of destination.
+
+## Enabling tracing (Helm)
+
+Tracing config lives under `global.tracing` so the application subcharts can read it. The `destination` key selects which backend block applies:
+
+| Parameter                                       | Type    | Default        | Description                                                  |
+| :---------------------------------------------- | :------ | :------------- | :---------------------------------------------------------- |
+| `global.tracing.enabled`                        | boolean | `false`        | Deploy the collector and instrument workloads               |
+| `global.tracing.destination`                    | string  | `elastic`      | `elastic` \| `otlp` \| `azure-monitor`                      |
+| `global.tracing.samplingRatio`                  | number  | `1.0`          | Head-sampling ratio applied by the app SDKs                 |
+| `global.tracing.collector.replicas`             | int     | `1`            | OpenTelemetry Collector replicas                            |
+| `global.tracing.elastic.endpoint`               | string  | `""`           | OTLP endpoint of your Elastic APM (`destination: elastic`)  |
+| `global.tracing.elastic.authMode`               | string  | `secret-token` | `secret-token` \| `api-key` \| `none`                       |
+| `global.tracing.elastic.secretToken` / `apiKey` | string  | `""`           | Inline credential (or use `elastic.existingSecret`)         |
+| `global.tracing.otlp.endpoint`                  | string  | `""`           | OTLP/HTTP endpoint of the backend (`destination: otlp`)     |
+| `global.tracing.otlp.authMode`                  | string  | `none`         | `none` \| `bearer` \| `api-key` \| `header`                 |
+| `global.tracing.otlp.token` / `apiKey` / `headerValue` | string | `""`     | Inline credential (or use `otlp.existingSecret`)            |
+| `global.tracing.otlp.headers`                   | object  | `{}`           | Extra static (non-secret) export headers                    |
+| `global.tracing.azureMonitor.connectionString`  | string  | `""`           | App Insights connection string (`destination: azure-monitor`) |
+
+```yaml
+# Elastic APM (default destination)
+global:
+  tracing:
+    enabled: true
+    destination: "elastic"
+    elastic:
+      endpoint: "https://<deployment>.apm.<region>.cloud.es.io:443"
+      authMode: "secret-token"
+      # Recommended for production: reference an existing Secret.
+      existingSecret:
+        name: "elastic-apm"
+        secretTokenKey: "secret-token"
+```
+
+```yaml
+# Generic OTLP backend
+global:
+  tracing:
+    enabled: true
+    destination: "otlp"
+    otlp:
+      endpoint: "https://otlp-gateway.example.com/otlp"
+      authMode: "bearer"
+      existingSecret:
+        name: "otlp-creds"
+        tokenKey: "token"
+```
+
+```yaml
+# Azure Monitor
+global:
+  tracing:
+    enabled: true
+    destination: "azure-monitor"
+    azureMonitor:
+      existingSecret:
+        name: "app-insights"
+        connectionStringKey: "connection-string"
+```
+
+The collector service is `http://<release>-otel-collector.<namespace>.svc.cluster.local:4318` (HTTP) / `:4317` (gRPC).
+
+<Callout type="warning">
+  When `global.tracing.enabled` is `true`, the endpoint (or connection string) for the selected `destination` is required - `elastic.endpoint`, `otlp.endpoint`, or `azureMonitor.connectionString`. The chart's schema and the CLI both reject an enabled-but-unconfigured tracing block before install.
+</Callout>
+
+## Application & container logs
+
+Tracing is most useful when logs **join** traces. Enable application/container log shipping to send pod logs to a customer-managed backend via a Vector agent (a DaemonSet, separate from the decision-log pipeline). Supported destinations are Elasticsearch/Kibana, Grafana Loki, and generic HTTP. The agent parses structured JSON log lines and lifts `trace_id` / `span_id` so your log backend can link a log to its trace.
+
+<Callout type="info">
+  On AKS and EKS, prefer the cloud-native container log collector when you want
+  logs in Azure Monitor / Log Analytics or Amazon CloudWatch Logs. Rulebricks
+  emits structured JSON with `trace_id` / `span_id`, so Azure Container Insights
+  and the Amazon CloudWatch Observability EKS add-on can collect and correlate
+  pod stdout without Rulebricks deploying a cloud-specific log shipper.
+</Callout>
+
+```yaml
+features:
+  logging:
+    appLogs:
+      enabled: true
+      destination: "elasticsearch"
+      elasticsearch:
+        endpoint: "https://<host>.es.<region>.cloud.es.io:9243"
+        index: "rulebricks-app-logs"
+        authMode: "basic"        # basic | api-key | none
+        username: "elastic"
+        password: "<password>"
+```
+
+```yaml
+features:
+  logging:
+    appLogs:
+      enabled: true
+      destination: "loki"
+      loki:
+        endpoint: "https://<loki-host>/loki/api/v1/push"
+```
+
+```yaml
+features:
+  logging:
+    appLogs:
+      enabled: true
+      destination: "generic"
+      generic:
+        endpoint: "https://logs.example.com/ingest"
+        authHeader: "Bearer <token>"
+```
+
+## BYO log sink validation
+
+The Rulebricks Vector agent uses the same collection and transform pipeline for all BYO sinks:
+
+- It tails Kubernetes pod stdout/stderr via `kubernetes_logs`.
+- It excludes the decision-log Vector pods to avoid double-shipping decision logs.
+- It parses JSON service log lines and lifts `trace_id` / `span_id`; non-JSON lines still pass through.
+- It then writes the normalized event to exactly one sink: Elasticsearch, Loki, or generic HTTP.
+
+The generated Vector configs are validated by the CLI/chart verification suite, so the pipeline is structurally sound before deployment. Runtime reliability depends on the destination accepting the generated payload and credentials:
+
+- **Elasticsearch/Kibana**: uses Vector's `elasticsearch` sink in bulk mode, with optional basic auth or API key auth and TLS certificate verification.
+- **Grafana Loki**: uses Vector's `loki` sink with JSON encoding and default labels (`app`, `namespace`, `pod`, `container`). If your Loki tenant has strict label-cardinality rules, override labels to keep only the labels you want indexed.
+- **Generic HTTP**: uses Vector's `http` sink with JSON encoding and an optional `Authorization` header. Use this only for endpoints that accept Vector-style JSON log events; provider-specific signing flows (for example Azure Data Collection Rules or AWS SigV4) are intentionally not handled here.
+
+For Azure Monitor Log Analytics and Amazon CloudWatch Logs, prefer the cloud-native collectors below instead of the generic HTTP sink.
+
+<Callout type="info">
+  **Decision logs stay in ClickHouse.** They are not double-written to Elasticsearch. The agent explicitly excludes the Vector pods (`app.kubernetes.io/name notin (vector,vector-agent)`), so the decision logs the aggregator prints to stdout are never shipped to Elastic. To correlate decision logs with traces, query the `trace_id` / `span_id` columns now present on decision-log records.
+</Callout>
+
+## Cloud-native log collection
+
+For cloud-managed Kubernetes logs, let the cloud provider own the log agent:
+
+- **Azure AKS**: enable Container Insights / Azure Monitor Agent so stdout and stderr land in Log Analytics (`ContainerLogV2`). Pair it with Azure Managed Prometheus + Azure Managed Grafana for metrics and Application Insights for traces.
+- **AWS EKS**: enable the Amazon CloudWatch Observability EKS add-on with container logs / OTel Container Insights. It collects application pod logs into CloudWatch Logs and can be managed outside the Rulebricks chart.
+
+This keeps the Rulebricks chart cloud-neutral while still giving operators a complete logs + traces story. Search for the `X-Rulebricks-Trace-Id` response header value in your trace backend, then search the cloud log table or log group for the same `trace_id`.
+
+## Viewing lineage
+
+How you view traces depends on the destination: **Kibana APM** for `elastic`, your backend's UI (Grafana Tempo, Honeycomb, Jaeger, etc.) for `otlp`, or **Application Insights / Azure Monitor** for `azure-monitor`. Either way the spans are emitted identically, so the same `rulebricks-app` → `rulebricks-hps` → `rulebricks-hps-worker` waterfall appears. The steps below use Kibana as the example.
+
+1. Copy the `X-Rulebricks-Trace-Id` response header from any API response or error. HPS and self-hosted app APIs also echo a W3C `traceparent` header.
+2. Paste that trace id into **Kibana APM**, **Grafana Tempo**, **Jaeger**, or your OTLP backend's trace search.
+3. Open the transaction (for example `POST /api/v1/solve/:slug`) to see the **waterfall**: Traefik → HPS API → Kafka produce → worker `solve` → rule evaluation.
+4. Use the logs view on that trace to see app/HPS/worker log lines that share the trace's `trace_id`.
+5. Decision logs (in ClickHouse) carry the same `trace_id` / `span_id`, so you can pivot from a trace to its decision record.
+
+## Verifying the collector
+
+```bash
+kubectl get deploy -n rulebricks -l app.kubernetes.io/name=otel-collector
+kubectl logs -n rulebricks deploy/<release>-otel-collector
+```
+
+If traces are not arriving in Elastic, check the collector logs for export errors (endpoint reachability, auth) and confirm `OTEL_EXPORTER_OTLP_ENDPOINT` is set on the app/HPS pods:
+
+```bash
+kubectl set env deploy/<release>-app --list -n rulebricks | grep OTEL
+```

@@ -1,0 +1,228 @@
+---
+metaDescription: Reference for Rulebricks private deployment metrics, labels, meanings, and useful PromQL queries.
+---
+
+# Metrics Reference
+
+This page lists the primary metrics exported by a private Rulebricks deployment. It focuses on metrics owned by Rulebricks services plus the optional exporters the Helm chart can deploy. Kubernetes, node, container, and PVC metrics come from `kube-prometheus-stack` and use standard Prometheus ecosystem names.
+
+## Label Policy
+
+Rulebricks labels are intentionally bounded. Metrics use route templates, status classes, coarse reasons, operation names, result states, and backend names. They do **not** include API keys, users, organizations, IP addresses, raw URLs, rule slugs, flow slugs, request payloads, or error messages.
+
+## App Metrics
+
+Served at `/api/metrics` by the Rulebricks app.
+
+| Metric | Type | Labels | Meaning |
+| :----- | :--- | :----- | :------ |
+| `rulebricks_app_http_requests_total` | counter | `route`, `method`, `status_class` | App/API request count. |
+| `rulebricks_app_http_request_duration_seconds` | histogram | `route`, `method`, `status_class` | App/API request duration. |
+| `rulebricks_app_http_rejections_total` | counter | `route`, `reason` | App/API rejected requests by coarse reason. |
+| `rulebricks_app_frontend_errors_total` | counter | `source` | Browser-side errors reported by the app. |
+| `rulebricks_app_redis_operations_total` | counter | `operation`, `result`, `backend` | Self-hosted app Redis/Valkey operations. |
+| `rulebricks_app_redis_operation_duration_seconds` | histogram | `operation`, `result`, `backend` | Self-hosted app Redis/Valkey operation latency. |
+
+App Redis metrics are self-hosted only. They cover app cache reads/writes/deletes/expirations and cache invalidation publishes. Filament build quota counters are intentionally excluded.
+
+Useful queries:
+
+```promql
+sum by (status_class) (rate(rulebricks_app_http_requests_total[5m]))
+histogram_quantile(0.95, sum by (le, route) (rate(rulebricks_app_http_request_duration_seconds_bucket[5m])))
+sum by (operation, result) (rate(rulebricks_app_redis_operations_total[5m]))
+histogram_quantile(0.95, sum by (le, operation) (rate(rulebricks_app_redis_operation_duration_seconds_bucket[5m])))
+```
+
+## HPS Metrics
+
+Served at `/metrics` by HPS.
+
+| Metric | Type | Labels | Meaning |
+| :----- | :--- | :----- | :------ |
+| `rulebricks_hps_http_requests_total` | counter | `route`, `method`, `status_class` | HPS request count for solve, bulk solve, flows, and parallel solve routes. |
+| `rulebricks_hps_http_request_duration_seconds` | histogram | `route`, `method`, `status_class` | End-to-end HPS HTTP duration. |
+| `rulebricks_hps_rejections_total` | counter | `route`, `reason` | HPS rejected requests by coarse reason. |
+| `rulebricks_hps_kafka_request_duration_seconds` | histogram | `operation` | Kafka-backed request/response duration observed by HPS. |
+| `rulebricks_hps_kafka_errors_total` | counter | `operation`, `reason` | Kafka-backed request errors. |
+| `rulebricks_hps_bulk_items_total` | counter | `operation` | Total bulk or parallel payload items accepted by HPS. |
+| `rulebricks_hps_decision_log_failures_total` | counter | `reason` | Decision-log records that failed to produce to Kafka. |
+| `rulebricks_hps_decision_logs_total` | counter | `operation`, `result` | Decision-log records attempted by HPS. |
+| `rulebricks_hps_decision_log_bytes_total` | counter | `operation` | Serialized decision-log bytes successfully produced to Kafka. |
+| `rulebricks_hps_chunks_per_request` | histogram | `operation` | Kafka chunks emitted per request. |
+| `rulebricks_hps_chunk_failures_total` | counter | `operation`, `reason` | Chunk-level failures in chunked bulk requests. |
+| `rulebricks_hps_chunk_processing_ms` | histogram | `operation` | Worker processing time reported per chunk. |
+| `rulebricks_hps_chunk_cost_ms_per_item` | gauge | `operation` | Learned chunk planner cost per item. |
+| `rulebricks_hps_chunk_cost_ms_per_byte` | gauge | `operation` | Learned chunk planner cost per input byte. |
+| `rulebricks_hps_cache_items` | gauge | `state` | In-process HPS memory cache item counts. |
+| `rulebricks_hps_cache_max_entries` | gauge | none | HPS memory cache capacity. |
+| `rulebricks_hps_cache_requests_total` | counter | `result` | HPS memory cache hits and misses. |
+| `rulebricks_hps_redis_cache_operations_total` | counter | `operation`, `result`, `backend` | HPS shared Redis/Valkey operations. |
+| `rulebricks_hps_redis_cache_operation_duration_seconds` | histogram | `operation`, `result`, `backend` | HPS shared Redis/Valkey operation latency. |
+
+Useful queries:
+
+```promql
+sum by (route, status_class) (rate(rulebricks_hps_http_requests_total[5m]))
+histogram_quantile(0.95, sum by (le, route) (rate(rulebricks_hps_http_request_duration_seconds_bucket[5m])))
+histogram_quantile(0.95, sum by (le, operation) (rate(rulebricks_hps_kafka_request_duration_seconds_bucket[5m])))
+sum by (operation, result) (rate(rulebricks_hps_decision_logs_total[5m]))
+sum by (operation) (rate(rulebricks_hps_decision_log_bytes_total[5m]))
+sum by (operation, result) (rate(rulebricks_hps_redis_cache_operations_total[5m]))
+```
+
+## Worker Metrics
+
+Served at `/metrics` by HPS worker pods.
+
+| Metric | Type | Labels | Meaning |
+| :----- | :--- | :----- | :------ |
+| `rulebricks_worker_messages_total` | counter | `operation`, `status` | Worker Kafka messages processed. |
+| `rulebricks_worker_processing_duration_seconds` | histogram | `operation`, `status` | Worker processing duration. |
+| `rulebricks_worker_redis_cache_operations_total` | counter | `operation`, `result`, `backend` | Worker Redis/Valkey operations. |
+| `rulebricks_worker_redis_cache_operation_duration_seconds` | histogram | `operation`, `result`, `backend` | Worker Redis/Valkey operation latency. |
+
+Useful queries:
+
+```promql
+sum by (operation, status) (rate(rulebricks_worker_messages_total[5m]))
+histogram_quantile(0.95, sum by (le, operation) (rate(rulebricks_worker_processing_duration_seconds_bucket[5m])))
+sum by (operation, result) (rate(rulebricks_worker_redis_cache_operations_total[5m]))
+```
+
+## Default Node.js and Process Metrics
+
+App, HPS, and workers also export default `prom-client` process metrics with service-specific prefixes:
+
+- `rulebricks_app_*`
+- `rulebricks_hps_*`
+- `rulebricks_worker_*`
+
+Common examples:
+
+| Metric suffix | Meaning |
+| :------------ | :------ |
+| `process_cpu_seconds_total` | Process CPU time. |
+| `process_resident_memory_bytes` | Resident memory. |
+| `process_open_fds` | Open file descriptors. |
+| `nodejs_heap_size_used_bytes` | V8 heap used. |
+| `nodejs_eventloop_lag_p99_seconds` | Event loop lag p99. |
+| `nodejs_gc_duration_seconds` | Garbage collection duration histogram. |
+
+## Valkey / Redis Exporter Metrics
+
+Requires `rulebricks.cache.redisExporter.enabled`.
+
+| Metric | Meaning |
+| :----- | :------ |
+| `redis_commands_processed_total` | Total Valkey commands processed. |
+| `redis_connected_clients` | Connected client count. |
+| `redis_memory_used_bytes` | Current memory used. |
+| `redis_memory_max_bytes` | Configured max memory when available. |
+| `redis_keyspace_hits_total` | Keyspace cache hits. |
+| `redis_keyspace_misses_total` | Keyspace cache misses. |
+| `redis_evicted_keys_total` | Evicted keys. |
+
+Useful queries:
+
+```promql
+sum(rate(redis_commands_processed_total[5m]))
+redis_memory_used_bytes
+redis_connected_clients
+sum(rate(redis_keyspace_hits_total[5m])) / (sum(rate(redis_keyspace_hits_total[5m])) + sum(rate(redis_keyspace_misses_total[5m])))
+sum(rate(redis_evicted_keys_total[5m]))
+```
+
+## Kafka Metrics
+
+Kafka JMX metrics are enabled by the Kafka chart. Kafka consumer-group lag requires `rulebricks.kafkaExporter.enabled`.
+
+| Metric | Source | Meaning |
+| :----- | :----- | :------ |
+| `kafka_server_brokertopicmetrics_total_messagesinpersec_count` | Kafka JMX | Broker messages in. |
+| `kafka_server_brokertopicmetrics_total_bytesinpersec_count` | Kafka JMX | Broker bytes in. |
+| `kafka_server_brokertopicmetrics_total_bytesoutpersec_count` | Kafka JMX | Broker bytes out. |
+| `kafka_network_requestchannel_requestqueuesize_value` | Kafka JMX | Broker request queue size. |
+| `kafka_network_requestchannel_responsequeuesize_value` | Kafka JMX | Broker response queue size. |
+| `kafka_log_log_size` | Kafka JMX | Topic log size. |
+| `kafka_consumergroup_lag` | Kafka exporter | Consumer-group lag by group/topic/partition. |
+
+Useful queries:
+
+```promql
+sum by (consumergroup, topic) (kafka_consumergroup_lag)
+sum(rate(kafka_server_brokertopicmetrics_total_messagesinpersec_count[5m]))
+sum by (topic) (kafka_log_log_size)
+```
+
+## Traefik Metrics
+
+Traefik metrics are scraped when the Traefik ServiceMonitor is active.
+
+| Metric | Meaning |
+| :----- | :------ |
+| `traefik_service_requests_total` | Requests by Traefik service/status. |
+| `traefik_service_request_duration_seconds` | Request duration histogram by service. |
+| `traefik_entrypoint_open_connections` | Open connections by entrypoint/protocol. |
+| `traefik_entrypoint_requests_total` | Entrypoint request count. |
+| `traefik_config_reloads_total` | Traefik config reloads. |
+
+Useful queries:
+
+```promql
+sum by (service, code) (rate(traefik_service_requests_total[5m]))
+histogram_quantile(0.95, sum by (le, service) (rate(traefik_service_request_duration_seconds_bucket[5m])))
+sum by (entrypoint, protocol) (traefik_entrypoint_open_connections)
+```
+
+## Kubernetes and Infrastructure Metrics
+
+These come from kube-prometheus-stack and are cloud-portable:
+
+| Metric family | Meaning |
+| :------------ | :------ |
+| `kube_deployment_*` | Desired, available, unavailable deployment replicas. |
+| `kube_horizontalpodautoscaler_*` | HPA current, desired, min, and max replicas. |
+| `kube_pod_*` | Pod phase, labels, ownership, restarts, readiness. |
+| `kube_node_*` | Node labels, allocatable resources, readiness. |
+| `container_cpu_usage_seconds_total` | Container CPU usage from cAdvisor. |
+| `container_memory_working_set_bytes` | Container memory working set. |
+| `container_cpu_cfs_throttled_periods_total` | CPU throttling periods. |
+| `node_cpu_seconds_total` | Node CPU time from node-exporter. |
+| `node_memory_*` | Node memory from node-exporter. |
+| `node_filesystem_*` | Node filesystem capacity/usage. |
+| `kubelet_volume_stats_*` | PVC volume capacity and usage. |
+
+Useful queries:
+
+```promql
+100 * (1 - avg by (node) (rate(node_cpu_seconds_total{mode="idle"}[5m])))
+100 * (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes))
+100 * kubelet_volume_stats_used_bytes / kubelet_volume_stats_capacity_bytes
+kube_horizontalpodautoscaler_status_desired_replicas
+kube_deployment_status_replicas_available
+```
+
+## ClickHouse Metrics
+
+ClickHouse exposes a large metric surface. The Rulebricks dashboard uses a small set of high-level signals to avoid noise:
+
+| Metric | Meaning |
+| :----- | :------ |
+| `ClickHouseMetrics_Query` | Active ClickHouse queries. |
+| `ClickHouseMetrics_MemoryTracking` | Memory tracked by ClickHouse. |
+| `ClickHouseProfileEvents_Query` | Query event count. |
+
+Use ClickHouse's own dashboards or direct ClickHouse queries when investigating storage/query internals in detail.
+
+## Alert Starting Points
+
+These are good first alerts for production:
+
+```promql
+sum(rate(rulebricks_hps_rejections_total[5m])) > 0
+histogram_quantile(0.95, sum by (le) (rate(rulebricks_hps_kafka_request_duration_seconds_bucket[5m]))) > 5
+sum by (consumergroup, topic) (kafka_consumergroup_lag) > 1000
+100 * kubelet_volume_stats_used_bytes / kubelet_volume_stats_capacity_bytes > 85
+sum(rate(rulebricks_hps_decision_log_failures_total[5m])) > 0
+```

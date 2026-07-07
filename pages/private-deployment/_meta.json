@@ -7,6 +7,8 @@
   "storage-and-backups": "Storage & Backups",
   "decision-logs": "Decision Logs",
   "monitoring": "Monitoring",
+  "tracing": "Distributed Tracing",
+  "cache-observability": "Cache Observability",
   "performance": "Performance & Scaling",
   "troubleshooting": "Troubleshooting",
   "---integrations": {
@@ -17,6 +19,7 @@
   "---reference": {
     "type": "separator"
   },
+  "metrics-reference": "Metrics Reference",
   "configuration-reference": "YAML Reference",
   "architecture": "Architecture"
 }

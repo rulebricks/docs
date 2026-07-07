@@ -1340,7 +1340,7 @@ Rulebricks signs each request with your webhook secret (available in settings). 
 ## Why Rulebricks Embedded?
 /embedding-rulebricks/about-embedded
 
-![Embedded Visual](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/embedding.png)
+Rulebricks Embedded lets engineering teams ship enterprise-grade, user-configurable rule editing inside their own product, without building a rule engine from scratch.
 
 # Why Rulebricks Embedded?
 
@@ -1369,7 +1369,7 @@ While we ship primarily as a React component, Rulebricks Embedded is designed to
 ## API Reference & Customization
 /embedding-rulebricks/api-reference-and-customization
 
-This reference covers the `` component props, the server-side helper, customization options, and troubleshooting.
+Complete API reference for Rulebricks Embedded, covering the Rule component props, the server-side token helper, customization options, and troubleshooting.
 
 # API Reference & Customization
 
@@ -1479,7 +1479,7 @@ Pass an `onError` handler to the component to catch and log issues:
 ## Core Concepts & Security
 /embedding-rulebricks/core-concepts-and-security
 
-Understanding the architecture, permission model, and security best practices is crucial for a production deployment of Rulebricks Embedded.
+Understand the architecture, token flow, permission model, and security best practices for deploying Rulebricks Embedded in production.
 
 # Core Concepts & Security
 
@@ -1576,7 +1576,7 @@ If your app uses CSP, allow connections to Rulebricks:
 ## Installation & Setup
 /embedding-rulebricks/installation-and-setup
 
-Install the package using your preferred package manager:
+Install the Rulebricks Embedded package, generate scoped embed tokens on your server, and render the embedded rule editor in your React app.
 
 # Installation & Setup
 
@@ -3543,13 +3543,13 @@ sequenceDiagram
 
     User->>Proxy: Request
     Proxy->>MW: Request + X-Auth-Token header
-    alt First request or token changed
+    alt First request or identity changed
         MW->>MW: Decode JWT payload (no verify)
         MW->>SB: Upsert auth.users (email match)
         Note over SB: DB trigger creates public.users row
         MW->>MW: Mint Supabase-compatible JWT
         MW->>App: Forward with Supabase session cookie
-    else Token unchanged (fingerprint cache hit)
+    else Same identity (fingerprint cache hit)
         MW->>App: Forward unchanged
     end
     App->>User: Dashboard rendered as authenticated user
@@ -3557,13 +3557,13 @@ sequenceDiagram
 
 1. Every request enters our application's middleware.
 2. If passthrough is enabled, the middleware extracts the token from a configurable header.
-3. On first sight of a token (or a changed token), the middleware:
+3. On first sight of a token (or a changed identity), the middleware:
    - Decodes the JWT payload (base64, no signature verification).
    - Upserts a user in Supabase `auth.users` matched by email.
    - Mints a fresh Supabase-signed JWT (HMAC-SHA256 with your project's JWT secret) with `sub` equal to the Supabase user UUID.
    - Sets the standard Supabase session cookie. All downstream Rulebricks code uses this cookie as if the user had logged in normally.
-4. On subsequent requests with the same token, a SHA-256 fingerprint cache short-circuits the work: the middleware returns immediately and the existing session cookie is reused.
-5. A user session lasts 24 hours by default. The upstream proxy must continue forwarding a token on every request; otherwise the session cookie alone is enough for the cookie's 24h lifetime, and a new token will trigger re-upsert + re-mint.
+4. On subsequent requests for the same email identity, a SHA-256 fingerprint cache short-circuits the work: the middleware returns immediately and the existing session cookie is reused, even if the upstream proxy rotates the JWT string.
+5. A user session lasts 24 hours by default. The upstream proxy must continue forwarding a token on every request; otherwise the session cookie alone is enough for the cookie's 24h lifetime, and a new identity or expired session will trigger re-upsert + re-mint.
 
 ## Enabling Passthrough via the Helm Chart
 
@@ -3613,7 +3613,7 @@ These three chart values **must** be set when passthrough is enabled. The app re
 | `global.externalAuth.claims.id`    | `sub`           | JWT claim path to read as the external stable user identifier. Stored in `user_metadata.external_sub` for reference. Not used for auth — Supabase UUIDs are the real identity.                                                                      |
 | `global.externalAuth.claims.email` | `email`         | JWT claim path to read as the user's email. This is the only claim Rulebricks actually uses for user upsert, so it must exist and be unique per user.                                                                                               |
 | `global.externalAuth.claims.name`  | `name`          | JWT claim path to read as the user's display name. Copied into `user_metadata.full_name`, which a DB trigger writes to `public.users.name`.                                                                                                         |
-| `global.externalAuth.publicPaths`  | `[]`            | YAML list of URL-path prefixes that should NOT require the token. The chart joins them with commas for the app. Useful for public forms (e.g. `['/form/', '/api/form/']`). Requests matching any prefix pass through middleware untouched.          |
+| `global.externalAuth.publicPaths`  | `[]`            | YAML list of URL-path prefixes that should NOT require the token. The chart joins them with commas for the app. Useful for public forms (e.g. `['/form/', '/api/form/']`). Requests matching any prefix pass through middleware untouched. `/api/health`, `/api/metrics`, `/auth/denied`, `/api/self-hosted-branding`, and requests carrying `x-api-key` are always auto-exempt by the app. |
 
 ## Token Shape
 
@@ -3686,7 +3686,7 @@ This is the expected behavior — in passthrough mode, the proxy owns the sessio
 
 ## Claim Mapping
 
-Once the admin has logged in, they should visit **Team → SSO** in the Rulebricks UI. This page automatically loads the claim schema from the most recent token and lets the admin configure access, role, tenant, and profile mappings from the same interface used for traditional SSO.
+Once the admin has logged in, they should visit **Team → SSO** in the Rulebricks UI. This page automatically loads the claim schema from `user_metadata.external_claims` through an authenticated Rulebricks endpoint, avoiding large browser cookies for enterprise tokens with many groups, and lets the admin configure access, role, tenant, and profile mappings from the same interface used for traditional SSO.
 
 See [Claim Mapping](/private-deployment/authentication/claim-mapping) for the full reference on each section.
 
@@ -3705,9 +3705,10 @@ When `global.externalAuth.enabled: true`:
 - The top-nav **Sign in** and **Sign up** links are hidden.
 - The dashboard-nav **Account** and **Sign out** links are hidden.
 - Email / password signup, SSO sign-in, magic links, and password reset are disabled. Calling them does nothing meaningful.
-- Supabase auto-token-refresh is disabled in the browser. Token rotation is entirely driven by the middleware's fingerprint cache.
-- Public routes listed in `global.externalAuth.publicPaths` bypass the token check. Useful for customer-facing embedded forms.
+- Supabase auto-token-refresh is disabled in the browser. Token rotation is handled by the middleware's identity fingerprint cache; non-identity claim changes apply when the session is re-minted.
+- Public routes listed in `global.externalAuth.publicPaths` bypass the token check. Useful for customer-facing embedded forms. `/api/health`, `/api/metrics`, `/auth/denied`, `/api/self-hosted-branding`, and `x-api-key` API calls are auto-exempt without extra configuration.
 - `/api/sso-provision` accepts an `identity_claims` body field (the decoded token) so it can apply access / role / tenant / profile mappings without calling an IdP userinfo endpoint.
+- `/api/passthrough-claims` returns the current user's stored external claims to the Team → SSO UI. Claims are not stored in a browser cookie.
 
 ## RLS and Tenant Isolation
 
@@ -3820,7 +3821,7 @@ Likely cause: `global.supabase.jwtSecret` does not match the Supabase project's 
 Expected state until the admin configures role mappings. Go to **Team → SSO**, pick a role claim (e.g. `groups`), add mappings, and save.
 
 **Non-admin users keep landing at `/auth/denied`**
-The `accessMapping` rule in the admin's SSO configuration is rejecting their token. Verify the configured `claimPath` exists on the token and that its value is in the allowed list.
+The `accessMapping` rule in the admin's SSO configuration is rejecting their token. Rulebricks clears the local Supabase session before redirecting to `/auth/denied`; the upstream proxy must stop forwarding an allowed token, or the next proxied request can create a new session attempt. Verify the configured `claimPath` exists on the token and that its value is in the allowed list.
 
 **Two "parent" users appear in the database**
 Should never happen if the workflow above is followed. If it does, it means `global.email` was unset or changed between deploys. Fix: manually re-point the orphaned rows to a single parent via SQL, or contact support.
@@ -3913,22 +3914,6 @@ The generated Helm values pin one Rulebricks product version under `global.versi
 
 Use `rulebricks -h` to explore all commands, and add `-h` to any command for its options.
 
-## Performance Tiers
-
-During `init`, the wizard asks you to pick a performance tier. The tier drives worker replica counts, resource requests, Kafka topic partition sizing, and storage allocations in the generated values.
-
-| Tier       | Intended Use          | Throughput\*               | Cluster Resources   |
-| :--------- | :-------------------- | :------------------------- | :------------------ |
-| **Small**  | Development & Testing | Up to ~5,000 rules/sec     | 8 vCPU, 16GB RAM    |
-| **Medium** | Production            | ~5,000 to 25,000 rules/sec | 16+ vCPU, 32GB+ RAM |
-| **Large**  | High Performance      | 25,000+ rules/sec          | 40+ vCPU, 80GB+ RAM |
-
-\* Throughput varies with rule complexity. These figures assume typical decision table workloads submitted in bulk.
-
-The CLI validates the generated values against the chart's schema plus cross-field invariants the schema can't express, like keeping the worker autoscaling ceiling at or below the Kafka partition count. If you hand-edit the generated `values.yaml`, the CLI will catch sizing mistakes before they reach the cluster.
-
-For the sizing model behind these numbers (and how to tune beyond a tier), see [Performance & Scaling](/private-deployment/performance).
-
 ## Object Storage and Backups
 
 The wizard collects a shared object storage backend (S3, Azure Blob, or GCS) for every deployment, and optionally enables scheduled database backups for self-hosted Supabase. `rulebricks backup` triggers an on-demand backup, and `rulebricks restore` lists backups in object storage and interactively restores one.
@@ -3939,7 +3924,11 @@ See [Storage & Backups](/private-deployment/storage-and-backups) for the full pi
 
 Self-hosted deployments enable Prometheus monitoring by default. The wizard only asks whether you want to configure a Prometheus `remote_write` destination; you can skip that step if you don't yet have a remote-write-compatible backend ready.
 
-See [Monitoring](/private-deployment/monitoring) for what's scraped, the metric label policy, and remote write configuration.
+The optional features step can also enable Valkey Admin + cache metrics. Valkey Admin is internal-only by default (open it with `kubectl port-forward`), while Redis/Valkey and Kafka-lag exporters feed the same Prometheus remote-write pipeline.
+
+Application log shipping supports BYO Elasticsearch/Kibana and config-file targets for Loki or generic HTTP sinks. Distributed tracing remains one toggle with destination-specific configuration for Elastic APM, generic OTLP/HTTP (Tempo, Jaeger, Honeycomb, etc.), or Azure Monitor.
+
+See [Monitoring](/private-deployment/monitoring), [Distributed Tracing](/private-deployment/tracing), and [Cache Observability](/private-deployment/cache-observability) for the full details.
 
 <Callout type="info">
   The CLI offers a uniquely wide variety of customization options (multi-cloud,
@@ -4315,7 +4304,7 @@ HPS and worker image tags are derived from `global.version` (`<version>` and `wo
 
 #### External PostgreSQL
 
-The Supabase services can run in-cluster while pointing at an external PostgreSQL server (e.g. a managed instance). Set `supabase.db.enabled: false` and configure the connection once:
+The Supabase services can run in-cluster while pointing at an external PostgreSQL server (e.g. a managed instance). PostgreSQL 17 (recommended) and 16 are supported; see [Supported PostgreSQL Versions](/private-deployment/external-services#supported-postgresql-versions). Set `supabase.db.enabled: false` and configure the connection once:
 
 | Parameter                                  | Type    | Default                          | Description                                         |
 | :----------------------------------------- | :------ | :------------------------------- | :-------------------------------------------------- |
@@ -4971,6 +4960,10 @@ The full self-hosted Supabase stack includes the following services:
 
 These services stay chart-managed even with an external database. Beyond providing a clear database layer for Rulebricks, Supabase is our interface for authentication, JWT management, and real-time features. There are database triggers between Supabase-managed identity tables (e.g., `auth.users`) and Rulebricks-managed application tables that depend on Supabase's internal wiring, so the external server must be a vanilla PostgreSQL that the Supabase services can fully manage.
 
+### Supported PostgreSQL Versions
+
+For an external database, run **PostgreSQL 17** (recommended — it matches the bundled in-cluster database and the CLI's managed-RDS default) or **PostgreSQL 16**. PostgreSQL 15 and below are not supported: the bootstrap job's replication grants require PostgreSQL 16+ role-inheritance syntax on AWS RDS, and Supabase Realtime does not support older majors without superuser access, which managed providers do not offer. The server must also have logical replication enabled (`wal_level = logical`; on RDS set `rds.logical_replication = 1` in the parameter group) for Realtime.
+
 It is worth noting **the database is likely not a bottleneck.** Because Redis aggressively caches entity definitions, and every pod has an in-process LRU in front of Redis, actual database read/write volumes under normal operation are generally minimal.
 
 ### Database Backups
@@ -5030,6 +5023,236 @@ A 200 response confirms Kafka, Redis, Supabase, and the worker pipeline are all 
 | Persistent consumer lag on `solution`                                        | Not enough worker replicas                                                  | Scale up `hps.workers.replicas` or `hps.workers.keda.minReplicaCount`                                            |
 | Decision logs stop reaching ClickHouse / S3 / SIEM after externalizing Kafka | Vector can't reach or authenticate to the external broker                   | Check Vector pod logs and network reachability; for token-auth Kafka verify the `kafkaBridge` sidecar is enabled |
 
+## Metrics Reference
+/private-deployment/metrics-reference
+
+Reference for Rulebricks private deployment metrics, labels, meanings, and useful PromQL queries.
+
+# Metrics Reference
+
+This page lists the primary metrics exported by a private Rulebricks deployment. It focuses on metrics owned by Rulebricks services plus the optional exporters the Helm chart can deploy. Kubernetes, node, container, and PVC metrics come from `kube-prometheus-stack` and use standard Prometheus ecosystem names.
+
+## Label Policy
+
+Rulebricks labels are intentionally bounded. Metrics use route templates, status classes, coarse reasons, operation names, result states, and backend names. They do **not** include API keys, users, organizations, IP addresses, raw URLs, rule slugs, flow slugs, request payloads, or error messages.
+
+## App Metrics
+
+Served at `/api/metrics` by the Rulebricks app.
+
+| Metric | Type | Labels | Meaning |
+| :----- | :--- | :----- | :------ |
+| `rulebricks_app_http_requests_total` | counter | `route`, `method`, `status_class` | App/API request count. |
+| `rulebricks_app_http_request_duration_seconds` | histogram | `route`, `method`, `status_class` | App/API request duration. |
+| `rulebricks_app_http_rejections_total` | counter | `route`, `reason` | App/API rejected requests by coarse reason. |
+| `rulebricks_app_frontend_errors_total` | counter | `source` | Browser-side errors reported by the app. |
+| `rulebricks_app_redis_operations_total` | counter | `operation`, `result`, `backend` | Self-hosted app Redis/Valkey operations. |
+| `rulebricks_app_redis_operation_duration_seconds` | histogram | `operation`, `result`, `backend` | Self-hosted app Redis/Valkey operation latency. |
+
+App Redis metrics are self-hosted only. They cover app cache reads/writes/deletes/expirations and cache invalidation publishes. Filament build quota counters are intentionally excluded.
+
+Useful queries:
+
+```promql
+sum by (status_class) (rate(rulebricks_app_http_requests_total[5m]))
+histogram_quantile(0.95, sum by (le, route) (rate(rulebricks_app_http_request_duration_seconds_bucket[5m])))
+sum by (operation, result) (rate(rulebricks_app_redis_operations_total[5m]))
+histogram_quantile(0.95, sum by (le, operation) (rate(rulebricks_app_redis_operation_duration_seconds_bucket[5m])))
+```
+
+## HPS Metrics
+
+Served at `/metrics` by HPS.
+
+| Metric | Type | Labels | Meaning |
+| :----- | :--- | :----- | :------ |
+| `rulebricks_hps_http_requests_total` | counter | `route`, `method`, `status_class` | HPS request count for solve, bulk solve, flows, and parallel solve routes. |
+| `rulebricks_hps_http_request_duration_seconds` | histogram | `route`, `method`, `status_class` | End-to-end HPS HTTP duration. |
+| `rulebricks_hps_rejections_total` | counter | `route`, `reason` | HPS rejected requests by coarse reason. |
+| `rulebricks_hps_kafka_request_duration_seconds` | histogram | `operation` | Kafka-backed request/response duration observed by HPS. |
+| `rulebricks_hps_kafka_errors_total` | counter | `operation`, `reason` | Kafka-backed request errors. |
+| `rulebricks_hps_bulk_items_total` | counter | `operation` | Total bulk or parallel payload items accepted by HPS. |
+| `rulebricks_hps_decision_log_failures_total` | counter | `reason` | Decision-log records that failed to produce to Kafka. |
+| `rulebricks_hps_decision_logs_total` | counter | `operation`, `result` | Decision-log records attempted by HPS. |
+| `rulebricks_hps_decision_log_bytes_total` | counter | `operation` | Serialized decision-log bytes successfully produced to Kafka. |
+| `rulebricks_hps_chunks_per_request` | histogram | `operation` | Kafka chunks emitted per request. |
+| `rulebricks_hps_chunk_failures_total` | counter | `operation`, `reason` | Chunk-level failures in chunked bulk requests. |
+| `rulebricks_hps_chunk_processing_ms` | histogram | `operation` | Worker processing time reported per chunk. |
+| `rulebricks_hps_chunk_cost_ms_per_item` | gauge | `operation` | Learned chunk planner cost per item. |
+| `rulebricks_hps_chunk_cost_ms_per_byte` | gauge | `operation` | Learned chunk planner cost per input byte. |
+| `rulebricks_hps_cache_items` | gauge | `state` | In-process HPS memory cache item counts. |
+| `rulebricks_hps_cache_max_entries` | gauge | none | HPS memory cache capacity. |
+| `rulebricks_hps_cache_requests_total` | counter | `result` | HPS memory cache hits and misses. |
+| `rulebricks_hps_redis_cache_operations_total` | counter | `operation`, `result`, `backend` | HPS shared Redis/Valkey operations. |
+| `rulebricks_hps_redis_cache_operation_duration_seconds` | histogram | `operation`, `result`, `backend` | HPS shared Redis/Valkey operation latency. |
+
+Useful queries:
+
+```promql
+sum by (route, status_class) (rate(rulebricks_hps_http_requests_total[5m]))
+histogram_quantile(0.95, sum by (le, route) (rate(rulebricks_hps_http_request_duration_seconds_bucket[5m])))
+histogram_quantile(0.95, sum by (le, operation) (rate(rulebricks_hps_kafka_request_duration_seconds_bucket[5m])))
+sum by (operation, result) (rate(rulebricks_hps_decision_logs_total[5m]))
+sum by (operation) (rate(rulebricks_hps_decision_log_bytes_total[5m]))
+sum by (operation, result) (rate(rulebricks_hps_redis_cache_operations_total[5m]))
+```
+
+## Worker Metrics
+
+Served at `/metrics` by HPS worker pods.
+
+| Metric | Type | Labels | Meaning |
+| :----- | :--- | :----- | :------ |
+| `rulebricks_worker_messages_total` | counter | `operation`, `status` | Worker Kafka messages processed. |
+| `rulebricks_worker_processing_duration_seconds` | histogram | `operation`, `status` | Worker processing duration. |
+| `rulebricks_worker_redis_cache_operations_total` | counter | `operation`, `result`, `backend` | Worker Redis/Valkey operations. |
+| `rulebricks_worker_redis_cache_operation_duration_seconds` | histogram | `operation`, `result`, `backend` | Worker Redis/Valkey operation latency. |
+
+Useful queries:
+
+```promql
+sum by (operation, status) (rate(rulebricks_worker_messages_total[5m]))
+histogram_quantile(0.95, sum by (le, operation) (rate(rulebricks_worker_processing_duration_seconds_bucket[5m])))
+sum by (operation, result) (rate(rulebricks_worker_redis_cache_operations_total[5m]))
+```
+
+## Default Node.js and Process Metrics
+
+App, HPS, and workers also export default `prom-client` process metrics with service-specific prefixes:
+
+- `rulebricks_app_*`
+- `rulebricks_hps_*`
+- `rulebricks_worker_*`
+
+Common examples:
+
+| Metric suffix | Meaning |
+| :------------ | :------ |
+| `process_cpu_seconds_total` | Process CPU time. |
+| `process_resident_memory_bytes` | Resident memory. |
+| `process_open_fds` | Open file descriptors. |
+| `nodejs_heap_size_used_bytes` | V8 heap used. |
+| `nodejs_eventloop_lag_p99_seconds` | Event loop lag p99. |
+| `nodejs_gc_duration_seconds` | Garbage collection duration histogram. |
+
+## Valkey / Redis Exporter Metrics
+
+Requires `rulebricks.cache.redisExporter.enabled`.
+
+| Metric | Meaning |
+| :----- | :------ |
+| `redis_commands_processed_total` | Total Valkey commands processed. |
+| `redis_connected_clients` | Connected client count. |
+| `redis_memory_used_bytes` | Current memory used. |
+| `redis_memory_max_bytes` | Configured max memory when available. |
+| `redis_keyspace_hits_total` | Keyspace cache hits. |
+| `redis_keyspace_misses_total` | Keyspace cache misses. |
+| `redis_evicted_keys_total` | Evicted keys. |
+
+Useful queries:
+
+```promql
+sum(rate(redis_commands_processed_total[5m]))
+redis_memory_used_bytes
+redis_connected_clients
+sum(rate(redis_keyspace_hits_total[5m])) / (sum(rate(redis_keyspace_hits_total[5m])) + sum(rate(redis_keyspace_misses_total[5m])))
+sum(rate(redis_evicted_keys_total[5m]))
+```
+
+## Kafka Metrics
+
+Kafka JMX metrics are enabled by the Kafka chart. Kafka consumer-group lag requires `rulebricks.kafkaExporter.enabled`.
+
+| Metric | Source | Meaning |
+| :----- | :----- | :------ |
+| `kafka_server_brokertopicmetrics_total_messagesinpersec_count` | Kafka JMX | Broker messages in. |
+| `kafka_server_brokertopicmetrics_total_bytesinpersec_count` | Kafka JMX | Broker bytes in. |
+| `kafka_server_brokertopicmetrics_total_bytesoutpersec_count` | Kafka JMX | Broker bytes out. |
+| `kafka_network_requestchannel_requestqueuesize_value` | Kafka JMX | Broker request queue size. |
+| `kafka_network_requestchannel_responsequeuesize_value` | Kafka JMX | Broker response queue size. |
+| `kafka_log_log_size` | Kafka JMX | Topic log size. |
+| `kafka_consumergroup_lag` | Kafka exporter | Consumer-group lag by group/topic/partition. |
+
+Useful queries:
+
+```promql
+sum by (consumergroup, topic) (kafka_consumergroup_lag)
+sum(rate(kafka_server_brokertopicmetrics_total_messagesinpersec_count[5m]))
+sum by (topic) (kafka_log_log_size)
+```
+
+## Traefik Metrics
+
+Traefik metrics are scraped when the Traefik ServiceMonitor is active.
+
+| Metric | Meaning |
+| :----- | :------ |
+| `traefik_service_requests_total` | Requests by Traefik service/status. |
+| `traefik_service_request_duration_seconds` | Request duration histogram by service. |
+| `traefik_entrypoint_open_connections` | Open connections by entrypoint/protocol. |
+| `traefik_entrypoint_requests_total` | Entrypoint request count. |
+| `traefik_config_reloads_total` | Traefik config reloads. |
+
+Useful queries:
+
+```promql
+sum by (service, code) (rate(traefik_service_requests_total[5m]))
+histogram_quantile(0.95, sum by (le, service) (rate(traefik_service_request_duration_seconds_bucket[5m])))
+sum by (entrypoint, protocol) (traefik_entrypoint_open_connections)
+```
+
+## Kubernetes and Infrastructure Metrics
+
+These come from kube-prometheus-stack and are cloud-portable:
+
+| Metric family | Meaning |
+| :------------ | :------ |
+| `kube_deployment_*` | Desired, available, unavailable deployment replicas. |
+| `kube_horizontalpodautoscaler_*` | HPA current, desired, min, and max replicas. |
+| `kube_pod_*` | Pod phase, labels, ownership, restarts, readiness. |
+| `kube_node_*` | Node labels, allocatable resources, readiness. |
+| `container_cpu_usage_seconds_total` | Container CPU usage from cAdvisor. |
+| `container_memory_working_set_bytes` | Container memory working set. |
+| `container_cpu_cfs_throttled_periods_total` | CPU throttling periods. |
+| `node_cpu_seconds_total` | Node CPU time from node-exporter. |
+| `node_memory_*` | Node memory from node-exporter. |
+| `node_filesystem_*` | Node filesystem capacity/usage. |
+| `kubelet_volume_stats_*` | PVC volume capacity and usage. |
+
+Useful queries:
+
+```promql
+100 * (1 - avg by (node) (rate(node_cpu_seconds_total{mode="idle"}[5m])))
+100 * (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes))
+100 * kubelet_volume_stats_used_bytes / kubelet_volume_stats_capacity_bytes
+kube_horizontalpodautoscaler_status_desired_replicas
+kube_deployment_status_replicas_available
+```
+
+## ClickHouse Metrics
+
+ClickHouse exposes a large metric surface. The Rulebricks dashboard uses a small set of high-level signals to avoid noise:
+
+| Metric | Meaning |
+| :----- | :------ |
+| `ClickHouseMetrics_Query` | Active ClickHouse queries. |
+| `ClickHouseMetrics_MemoryTracking` | Memory tracked by ClickHouse. |
+| `ClickHouseProfileEvents_Query` | Query event count. |
+
+Use ClickHouse's own dashboards or direct ClickHouse queries when investigating storage/query internals in detail.
+
+## Alert Starting Points
+
+These are good first alerts for production:
+
+```promql
+sum(rate(rulebricks_hps_rejections_total[5m])) > 0
+histogram_quantile(0.95, sum by (le) (rate(rulebricks_hps_kafka_request_duration_seconds_bucket[5m]))) > 5
+sum by (consumergroup, topic) (kafka_consumergroup_lag) > 1000
+100 * kubelet_volume_stats_used_bytes / kubelet_volume_stats_capacity_bytes > 85
+sum(rate(rulebricks_hps_decision_log_failures_total[5m])) > 0
+```
+
 ## Monitoring
 /private-deployment/monitoring
 
@@ -5051,8 +5274,9 @@ Monitoring is enabled by default through `kube-prometheus-stack`. Prometheus sto
 The chart adds ServiceMonitors for:
 
 - **App** (`/api/metrics`): app/admin API request counts, latency histograms, coarse rejections, and frontend error counts.
-- **HPS** (`/metrics`): rule-engine request counts, latency histograms, rejections, Kafka worker wait time, bulk item volume, and memory cache stats.
-- **Supporting infrastructure** where available: Kafka JMX and ClickHouse metrics. Traefik's Prometheus endpoint is enabled, but its ServiceMonitor is an explicit opt-in because the Traefik chart validates Prometheus Operator CRDs at render time.
+- **HPS** (`/metrics`): rule-engine request counts, latency histograms, rejections, Kafka worker wait time, bulk item volume, memory cache stats, HPS-side Redis/Valkey operations, and decision-log produce throughput.
+- **HPS workers** (`/metrics`): per-worker message throughput (`rulebricks_worker_messages_total`), processing-time histograms (`rulebricks_worker_processing_duration_seconds`), and worker Redis/Valkey operations by operation/result/backend, scraped from the headless worker Service.
+- **Supporting infrastructure** where available: Kafka JMX, ClickHouse metrics, and Traefik edge metrics.
 
 Metric labels are intentionally bounded to avoid cardinality problems: route templates, methods, status classes, operations, and coarse reasons. They never include API keys, users, organizations, IP addresses, raw URLs, rule slugs, flow slugs, or error messages.
 
@@ -5072,6 +5296,33 @@ After install, verify scrape discovery:
 kubectl get servicemonitor -n rulebricks
 kubectl port-forward -n rulebricks svc/rulebricks-kube-prometheus-stack-prometheus 9090:9090
 ```
+
+## Signals at a Glance
+
+Prometheus captures the main operational signals you need to run Rulebricks:
+
+- **Traffic and latency** for the app, HPS, workers, and Traefik.
+- **Queue health** for Kafka request/response topics and consumer groups.
+- **Cache health** from app/HPS/worker Redis operation metrics plus Valkey backend metrics.
+- **Decision-log pipeline health** from HPS, Vector, and ClickHouse metrics.
+- **Infrastructure health** from Kubernetes, node, container, HPA, and PVC metrics.
+
+For the complete list of metric names, labels, meanings, useful PromQL, and alert starting points, see [Metrics Reference](/private-deployment/metrics-reference).
+
+## Exporters
+
+The chart enables the standard exporters needed for the dashboard where it can do so safely:
+
+- `rulebricks.cache.redisExporter.enabled` exports Valkey metrics such as memory, clients, hit ratio, evictions, and operations per second.
+- `rulebricks.kafkaExporter.enabled` exports Kafka topic and consumer-group lag for embedded Kafka.
+- Traefik's ServiceMonitor exports ingress request rate, status codes, latency, and connection metrics.
+
+<Callout type="info">
+  App-side Redis metrics are self-hosted only. They cover app cache reads,
+  writes, deletes, expirations, and cache-invalidation publishes, but intentionally
+  exclude Filament build quota counters. Contexts runtime state is included under
+  ordinary app Redis `get`/`set`/`del` operations.
+</Callout>
 
 ## Remote Write
 
@@ -5096,6 +5347,48 @@ kube-prometheus-stack:
   The [Rulebricks CLI](/private-deployment/cli) wizard asks for a remote write
   destination during `rulebricks init` and generates this block for you. You can
   skip that step and add it later.
+</Callout>
+
+## Cloud-native Logs
+
+Rulebricks does not deploy provider-specific log agents for Azure Monitor or
+Amazon CloudWatch Logs. On managed Kubernetes, use the platform collector:
+
+- **AKS**: Azure Container Insights / Azure Monitor Agent collects pod stdout
+  into Log Analytics (`ContainerLogV2`).
+- **EKS**: the Amazon CloudWatch Observability EKS add-on collects pod logs into
+  CloudWatch Logs using Fluent Bit or the OTel Container Insights pipeline.
+
+The app, HPS, and worker emit structured JSON service logs with `trace_id` and
+`span_id`, so these cloud-native collectors can correlate logs with traces
+without Rulebricks shipping a cloud-specific Vector sink.
+
+## Grafana Dashboards
+
+Enabling in-cluster Grafana (the CLI's **local-grafana** monitoring destination, or `kube-prometheus-stack.grafana.enabled: true`) provisions a **Rulebricks Overview** dashboard automatically via the Grafana dashboard sidecar. The dashboard is shipped as a labeled ConfigMap (`grafana_dashboard: "1"`), so the sidecar imports it on startup with no manual upload. You can also import the same JSON into a customer-managed Grafana or Azure Managed Grafana instance.
+
+The dashboard is organized as an operational cockpit:
+
+- **Executive Health**: total app/HPS request rate, error/rejection rate, HPS latency, Kafka RPC latency, worker latency, Kafka lag, and Valkey health.
+- **Ingress / Traefik**: ingress request rate by service/status, Traefik p95 service latency, open connections, entrypoint traffic, TLS certificate metadata, and config reloads.
+- **HPS Request Plane**: route/status throughput, route latency, Kafka RPC latency, Kafka errors, bulk payload throughput, chunk counts, and chunk failures.
+- **Worker Fleet**: worker throughput, processing quantiles, CPU/memory by worker pod, restarts, and OOM events.
+- **App + API Surface**: app request rate and latency, frontend/app rejection rates, app Redis operation rate and latency, event-loop lag, and GC duration.
+- **Cache / Valkey**: service-level app/HPS/worker Redis operations plus backend Valkey ops, memory, clients, hit ratio, misses, and evictions.
+- **Kafka / Queue Health**: consumer-group lag, broker traffic, request queues, topic disk usage, and produce/fetch errors.
+- **Decision Logs / Logging Pipeline**: decision-log produce rate, bytes, failures, Vector pod resources, and selected ClickHouse health.
+- **Infrastructure / Nodes / Node Pools**: node CPU, memory, filesystem usage, pod CPU/memory by Rulebricks workload group, CPU throttling, and PVC usage.
+- **Scaling / Scheduling**: HPA current/desired/max replicas, deployment availability, pending/unschedulable pods, restarts, and node allocatable resources.
+
+Most panels use kube-prometheus-stack defaults (`kube-state-metrics`, node-exporter, kubelet/cAdvisor) and are cloud-portable. A few panels depend on optional exporters:
+
+- **Valkey backend panels** require `rulebricks.cache.redisExporter.enabled`.
+- **Kafka consumer-group lag panels** require `rulebricks.kafkaExporter.enabled`.
+
+Node-pool views are best-effort because AKS, EKS, GKE, and self-managed clusters expose different node labels. The dashboard defaults to node-level infrastructure panels and only groups by common labels where the metric exists.
+
+<Callout type="info">
+  Grafana is the pane of glass for **metrics**. For **traces** and **logs** (request lineage), see [Distributed Tracing](/private-deployment/tracing), which forwards to your chosen backend (Elastic APM, a generic OTLP backend, or Azure Monitor).
 </Callout>
 
 ## In-Cluster Retention
@@ -5125,7 +5418,7 @@ How rule execution capacity scales in a private Rulebricks deployment, and which
 
 Rule execution capacity is determined by the HPS worker fleet. This page explains the sizing model and the values that control it.
 
-If you deploy with the [Rulebricks CLI](/private-deployment/cli#performance-tiers), a performance tier (Small, Medium, or Large) sets all of these values consistently for you. Tune by hand only when you need to go beyond a tier.
+If you deploy with the [Rulebricks CLI](/private-deployment/cli), these values are generated from the chart's baseline defaults and autoscale with load. Tune them by hand (or pick larger node instance types) when you need more sustained throughput.
 
 ## The Sizing Model
 
@@ -5183,6 +5476,7 @@ flowchart LR
 ```yaml
 # Higher-throughput configuration
 # (update kafka.provisioning topic partitions to match solutionPartitions)
+# Your node-pool should have enough capacity to support the maximum number of workers
 rulebricks:
   hps:
     replicas: 4
@@ -5572,6 +5866,251 @@ The restore command lists available backups from object storage and asks for con
 ### Block-Level Snapshots
 
 As a secondary measure on AWS with EBS-backed PVCs, you can also schedule EBS snapshots of the database volume. This captures a point-in-time copy at the block level without impacting the running database.
+
+## Distributed Tracing
+/private-deployment/tracing
+
+Distributed tracing for private Rulebricks deployments - emit OpenTelemetry traces to Elastic APM, a generic OTLP/HTTP backend, or Azure Monitor, ship application logs to Elasticsearch, and view full request lineage.
+
+# Distributed Tracing
+
+Distributed tracing gives you the **full lineage of a request as it moves through every service** - from the ingress, through the app or the High Performance Server (HPS), across the Kafka work queue, into the worker that evaluates your rule, and back. Each hop is a span in a single trace, so you can see exactly where time is spent and where an error occurred.
+
+Tracing is **self-hosted only** and **off by default**. When enabled, Rulebricks deploys an in-cluster [OpenTelemetry Collector](https://opentelemetry.io/docs/collector/) that forwards traces to a **backend of your choice**. The instrumentation is backend-agnostic - the destination is selected at the collector's export step, so you can switch backends without touching the app. Three destinations are supported (works on both AWS and Azure):
+
+- **`elastic`** (default) - your own (BYO) **Elastic APM** endpoint (Elastic Cloud, the Elastic add-on from a cloud marketplace, or self-hosted). Traces are viewable in Kibana APM.
+- **`otlp`** - any **generic OTLP/HTTP** backend (Grafana Tempo, Honeycomb, Jaeger, vendor OTLP gateways, or a cloud provider's OTLP ingestion endpoint).
+- **`azure-monitor`** - **Azure Monitor / Application Insights**, using an Application Insights connection string.
+
+We do not bundle a tracing backend - you run it and point Rulebricks at the endpoint.
+
+<Callout type="info">
+  Tracing complements, and does not replace, the existing signals: **decision logs** still archive to object storage / ClickHouse, and **Prometheus metrics** still power Grafana. See [Decision Logs](/private-deployment/decision-logs) and [Monitoring](/private-deployment/monitoring).
+</Callout>
+
+## Topology
+
+```
+Client ─▶ Traefik ─▶ HPS API ─▶ Kafka (solution) ─▶ HPS Worker ─▶ evaluateRule
+                │         │                                │
+                └─────────┴──────── OTLP spans ────────────┘
+                                       │
+                          OpenTelemetry Collector
+                                       │
+                                       ▼
+            Elastic APM  |  generic OTLP backend  |  Azure Monitor
+```
+
+- **Traefik** is the root span and propagates the W3C `traceparent` header to backends.
+- **App** and **HPS API** continue the trace and propagate context on outgoing calls.
+- The **HPS API → worker** hop runs over Kafka. Rulebricks injects the trace context into the Kafka message headers and the worker extracts it, so the worker's rule-evaluation span is a child of the originating request - the cross-service hop that would otherwise break the lineage.
+
+## Enabling tracing (CLI)
+
+The deployment wizard exposes a **Distributed Tracing** feature. Enable it, pick a **destination** (Elastic APM, generic OTLP/HTTP, or Azure Monitor), and provide the endpoint/credentials for that backend. Equivalent config-file fields per destination:
+
+```yaml
+# Elastic APM (default)
+features:
+  tracing:
+    enabled: true
+    destination: "elastic"      # elastic | otlp | azure-monitor
+    samplingRatio: 1.0          # 0.0 - 1.0; applied at the source SDKs
+    elastic:
+      endpoint: "https://<deployment>.apm.<region>.cloud.es.io:443"
+      authMode: "secret-token"  # secret-token | api-key | none
+      secretToken: "<elastic-apm-secret-token>"
+```
+
+```yaml
+# Generic OTLP/HTTP backend (Grafana Tempo, Honeycomb, Jaeger, ...)
+features:
+  tracing:
+    enabled: true
+    destination: "otlp"
+    otlp:
+      endpoint: "https://otlp-gateway.example.com/otlp"
+      authMode: "bearer"        # none | bearer | api-key | header
+      token: "<token>"          # bearer/api-key credential
+```
+
+```yaml
+# Azure Monitor / Application Insights
+features:
+  tracing:
+    enabled: true
+    destination: "azure-monitor"
+    azureMonitor:
+      connectionString: "InstrumentationKey=...;IngestionEndpoint=https://..."
+```
+
+The CLI wires the collector, the app/HPS/worker OTLP endpoints, and Traefik tracing automatically, regardless of destination.
+
+## Enabling tracing (Helm)
+
+Tracing config lives under `global.tracing` so the application subcharts can read it. The `destination` key selects which backend block applies:
+
+| Parameter                                       | Type    | Default        | Description                                                  |
+| :---------------------------------------------- | :------ | :------------- | :---------------------------------------------------------- |
+| `global.tracing.enabled`                        | boolean | `false`        | Deploy the collector and instrument workloads               |
+| `global.tracing.destination`                    | string  | `elastic`      | `elastic` \| `otlp` \| `azure-monitor`                      |
+| `global.tracing.samplingRatio`                  | number  | `1.0`          | Head-sampling ratio applied by the app SDKs                 |
+| `global.tracing.collector.replicas`             | int     | `1`            | OpenTelemetry Collector replicas                            |
+| `global.tracing.elastic.endpoint`               | string  | `""`           | OTLP endpoint of your Elastic APM (`destination: elastic`)  |
+| `global.tracing.elastic.authMode`               | string  | `secret-token` | `secret-token` \| `api-key` \| `none`                       |
+| `global.tracing.elastic.secretToken` / `apiKey` | string  | `""`           | Inline credential (or use `elastic.existingSecret`)         |
+| `global.tracing.otlp.endpoint`                  | string  | `""`           | OTLP/HTTP endpoint of the backend (`destination: otlp`)     |
+| `global.tracing.otlp.authMode`                  | string  | `none`         | `none` \| `bearer` \| `api-key` \| `header`                 |
+| `global.tracing.otlp.token` / `apiKey` / `headerValue` | string | `""`     | Inline credential (or use `otlp.existingSecret`)            |
+| `global.tracing.otlp.headers`                   | object  | `{}`           | Extra static (non-secret) export headers                    |
+| `global.tracing.azureMonitor.connectionString`  | string  | `""`           | App Insights connection string (`destination: azure-monitor`) |
+
+```yaml
+# Elastic APM (default destination)
+global:
+  tracing:
+    enabled: true
+    destination: "elastic"
+    elastic:
+      endpoint: "https://<deployment>.apm.<region>.cloud.es.io:443"
+      authMode: "secret-token"
+      # Recommended for production: reference an existing Secret.
+      existingSecret:
+        name: "elastic-apm"
+        secretTokenKey: "secret-token"
+```
+
+```yaml
+# Generic OTLP backend
+global:
+  tracing:
+    enabled: true
+    destination: "otlp"
+    otlp:
+      endpoint: "https://otlp-gateway.example.com/otlp"
+      authMode: "bearer"
+      existingSecret:
+        name: "otlp-creds"
+        tokenKey: "token"
+```
+
+```yaml
+# Azure Monitor
+global:
+  tracing:
+    enabled: true
+    destination: "azure-monitor"
+    azureMonitor:
+      existingSecret:
+        name: "app-insights"
+        connectionStringKey: "connection-string"
+```
+
+The collector service is `http://<release>-otel-collector.<namespace>.svc.cluster.local:4318` (HTTP) / `:4317` (gRPC).
+
+<Callout type="warning">
+  When `global.tracing.enabled` is `true`, the endpoint (or connection string) for the selected `destination` is required - `elastic.endpoint`, `otlp.endpoint`, or `azureMonitor.connectionString`. The chart's schema and the CLI both reject an enabled-but-unconfigured tracing block before install.
+</Callout>
+
+## Application & container logs
+
+Tracing is most useful when logs **join** traces. Enable application/container log shipping to send pod logs to a customer-managed backend via a Vector agent (a DaemonSet, separate from the decision-log pipeline). Supported destinations are Elasticsearch/Kibana, Grafana Loki, and generic HTTP. The agent parses structured JSON log lines and lifts `trace_id` / `span_id` so your log backend can link a log to its trace.
+
+<Callout type="info">
+  On AKS and EKS, prefer the cloud-native container log collector when you want
+  logs in Azure Monitor / Log Analytics or Amazon CloudWatch Logs. Rulebricks
+  emits structured JSON with `trace_id` / `span_id`, so Azure Container Insights
+  and the Amazon CloudWatch Observability EKS add-on can collect and correlate
+  pod stdout without Rulebricks deploying a cloud-specific log shipper.
+</Callout>
+
+```yaml
+features:
+  logging:
+    appLogs:
+      enabled: true
+      destination: "elasticsearch"
+      elasticsearch:
+        endpoint: "https://<host>.es.<region>.cloud.es.io:9243"
+        index: "rulebricks-app-logs"
+        authMode: "basic"        # basic | api-key | none
+        username: "elastic"
+        password: "<password>"
+```
+
+```yaml
+features:
+  logging:
+    appLogs:
+      enabled: true
+      destination: "loki"
+      loki:
+        endpoint: "https://<loki-host>/loki/api/v1/push"
+```
+
+```yaml
+features:
+  logging:
+    appLogs:
+      enabled: true
+      destination: "generic"
+      generic:
+        endpoint: "https://logs.example.com/ingest"
+        authHeader: "Bearer <token>"
+```
+
+## BYO log sink validation
+
+The Rulebricks Vector agent uses the same collection and transform pipeline for all BYO sinks:
+
+- It tails Kubernetes pod stdout/stderr via `kubernetes_logs`.
+- It excludes the decision-log Vector pods to avoid double-shipping decision logs.
+- It parses JSON service log lines and lifts `trace_id` / `span_id`; non-JSON lines still pass through.
+- It then writes the normalized event to exactly one sink: Elasticsearch, Loki, or generic HTTP.
+
+The generated Vector configs are validated by the CLI/chart verification suite, so the pipeline is structurally sound before deployment. Runtime reliability depends on the destination accepting the generated payload and credentials:
+
+- **Elasticsearch/Kibana**: uses Vector's `elasticsearch` sink in bulk mode, with optional basic auth or API key auth and TLS certificate verification.
+- **Grafana Loki**: uses Vector's `loki` sink with JSON encoding and default labels (`app`, `namespace`, `pod`, `container`). If your Loki tenant has strict label-cardinality rules, override labels to keep only the labels you want indexed.
+- **Generic HTTP**: uses Vector's `http` sink with JSON encoding and an optional `Authorization` header. Use this only for endpoints that accept Vector-style JSON log events; provider-specific signing flows (for example Azure Data Collection Rules or AWS SigV4) are intentionally not handled here.
+
+For Azure Monitor Log Analytics and Amazon CloudWatch Logs, prefer the cloud-native collectors below instead of the generic HTTP sink.
+
+<Callout type="info">
+  **Decision logs stay in ClickHouse.** They are not double-written to Elasticsearch. The agent explicitly excludes the Vector pods (`app.kubernetes.io/name notin (vector,vector-agent)`), so the decision logs the aggregator prints to stdout are never shipped to Elastic. To correlate decision logs with traces, query the `trace_id` / `span_id` columns now present on decision-log records.
+</Callout>
+
+## Cloud-native log collection
+
+For cloud-managed Kubernetes logs, let the cloud provider own the log agent:
+
+- **Azure AKS**: enable Container Insights / Azure Monitor Agent so stdout and stderr land in Log Analytics (`ContainerLogV2`). Pair it with Azure Managed Prometheus + Azure Managed Grafana for metrics and Application Insights for traces.
+- **AWS EKS**: enable the Amazon CloudWatch Observability EKS add-on with container logs / OTel Container Insights. It collects application pod logs into CloudWatch Logs and can be managed outside the Rulebricks chart.
+
+This keeps the Rulebricks chart cloud-neutral while still giving operators a complete logs + traces story. Search for the `X-Rulebricks-Trace-Id` response header value in your trace backend, then search the cloud log table or log group for the same `trace_id`.
+
+## Viewing lineage
+
+How you view traces depends on the destination: **Kibana APM** for `elastic`, your backend's UI (Grafana Tempo, Honeycomb, Jaeger, etc.) for `otlp`, or **Application Insights / Azure Monitor** for `azure-monitor`. Either way the spans are emitted identically, so the same `rulebricks-app` → `rulebricks-hps` → `rulebricks-hps-worker` waterfall appears. The steps below use Kibana as the example.
+
+1. Copy the `X-Rulebricks-Trace-Id` response header from any API response or error. HPS and self-hosted app APIs also echo a W3C `traceparent` header.
+2. Paste that trace id into **Kibana APM**, **Grafana Tempo**, **Jaeger**, or your OTLP backend's trace search.
+3. Open the transaction (for example `POST /api/v1/solve/:slug`) to see the **waterfall**: Traefik → HPS API → Kafka produce → worker `solve` → rule evaluation.
+4. Use the logs view on that trace to see app/HPS/worker log lines that share the trace's `trace_id`.
+5. Decision logs (in ClickHouse) carry the same `trace_id` / `span_id`, so you can pivot from a trace to its decision record.
+
+## Verifying the collector
+
+```bash
+kubectl get deploy -n rulebricks -l app.kubernetes.io/name=otel-collector
+kubectl logs -n rulebricks deploy/<release>-otel-collector
+```
+
+If traces are not arriving in Elastic, check the collector logs for export errors (endpoint reachability, auth) and confirm `OTEL_EXPORTER_OTLP_ENDPOINT` is set on the app/HPS pods:
+
+```bash
+kubectl set env deploy/<release>-app --list -n rulebricks | grep OTEL
+```
 
 ## Troubleshooting
 /private-deployment/troubleshooting

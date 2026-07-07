@@ -10,7 +10,108 @@ import {
 import moment from 'moment'
 import { useRouter } from 'next/router'
 
+const DOCS_ORIGIN = 'https://rulebricks.com/docs'
+
+// Section folders that have an index.mdx — only these get a linked
+// intermediate breadcrumb (a crumb URL must not 404).
+const SECTIONS_WITH_INDEX = new Set([
+  'analysis-tools',
+  'contexts',
+  'objects',
+  'releases',
+  'warnings',
+])
+
+// Escapes "<" so page content can never break out of the JSON-LD script tag.
+const serializeJsonLd = (data: object) =>
+  JSON.stringify(data).replace(/</g, '\\u003c')
+
+const SEGMENT_NAME_OVERRIDES: Record<string, string> = {
+  api: 'API',
+  ai: 'AI',
+  sso: 'SSO',
+  urls: 'URLs',
+}
+
+const segmentName = (segment: string) =>
+  segment
+    .split('-')
+    .map(
+      (word) =>
+        SEGMENT_NAME_OVERRIDES[word] ||
+        word.charAt(0).toUpperCase() + word.slice(1)
+    )
+    .join(' ')
+
+/**
+ * TechArticle + BreadcrumbList JSON-LD for every docs page, canonicalized
+ * to the rulebricks.com/docs proxy host.
+ */
+function JsonLdHead() {
+  const { asPath } = useRouter()
+  const { title, frontMatter } = useConfig()
+  const cleanPath = asPath.split('#')[0].split('?')[0]
+  if (cleanPath === '/') return null
+
+  const canonicalUrl = `${DOCS_ORIGIN}${cleanPath}`
+  const segments = cleanPath.split('/').filter(Boolean)
+  const pageName = title || segmentName(segments[segments.length - 1])
+
+  const crumbs: Array<{ name: string; item?: string }> = [
+    { name: 'User Guide', item: DOCS_ORIGIN },
+  ]
+  if (segments.length > 1 && SECTIONS_WITH_INDEX.has(segments[0])) {
+    crumbs.push({
+      name: segmentName(segments[0]),
+      item: `${DOCS_ORIGIN}/${segments[0]}`,
+    })
+  }
+  crumbs.push({ name: pageName })
+
+  const breadcrumbList = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: crumbs.map((crumb, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      name: crumb.name,
+      item: crumb.item || undefined,
+    })),
+  }
+
+  const techArticle = {
+    '@context': 'https://schema.org',
+    '@type': 'TechArticle',
+    headline: pageName,
+    description: frontMatter.metaDescription || undefined,
+    url: canonicalUrl,
+    publisher: {
+      '@type': 'Organization',
+      name: 'Rulebricks',
+      url: 'https://rulebricks.com',
+      logo: {
+        '@type': 'ImageObject',
+        url: 'https://rulebricks.com/android-chrome-256x256.png',
+      },
+    },
+  }
+
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(techArticle) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbList) }}
+      />
+    </>
+  )
+}
+
 const config: DocsThemeConfig = {
+  head: JsonLdHead,
   logo: NavbarLogo,
   project: {
     icon: null,
@@ -41,10 +142,19 @@ const config: DocsThemeConfig = {
     } else {
       seoOptions['description'] = frontMatter.metaDescription
     }
+    // Docs are reachable both via the rulebricks.com/docs proxy and directly
+    // on docs.rulebricks.com — a per-page canonical pointing at the proxy
+    // host consolidates the duplicate into the URLs we want indexed.
+    // (asPath excludes the /docs basePath; strip query/hash.)
+    const cleanPath = asPath.split('#')[0].split('?')[0]
+    const canonicalUrl = `https://rulebricks.com/docs${
+      cleanPath === '/' ? '' : cleanPath
+    }`
+    seoOptions['canonical'] = canonicalUrl
     seoOptions['openGraph'] = {
       type: 'website',
       locale: 'en_US',
-      url: 'https://rulebricks.com/docs',
+      url: canonicalUrl,
       site_name: 'Rulebricks User Guide',
       images: [
         {

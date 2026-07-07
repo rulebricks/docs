@@ -8,7 +8,7 @@ import { Callout } from 'nextra/components'
 
 Rule execution capacity is determined by the HPS worker fleet. This page explains the sizing model and the values that control it.
 
-If you deploy with the [Rulebricks CLI](/private-deployment/cli#performance-tiers), a performance tier (Small, Medium, or Large) sets all of these values consistently for you. Tune by hand only when you need to go beyond a tier.
+If you deploy with the [Rulebricks CLI](/private-deployment/cli), these values are generated from the chart's baseline defaults and autoscale with load. Tune them by hand (or pick larger node instance types) when you need more sustained throughput.
 
 ## The Sizing Model
 
@@ -66,6 +66,7 @@ flowchart LR
 ```yaml
 # Higher-throughput configuration
 # (update kafka.provisioning topic partitions to match solutionPartitions)
+# Your node-pool should have enough capacity to support the maximum number of workers
 rulebricks:
   hps:
     replicas: 4

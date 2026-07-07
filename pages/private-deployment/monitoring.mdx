@@ -20,8 +20,9 @@ Monitoring is enabled by default through `kube-prometheus-stack`. Prometheus sto
 The chart adds ServiceMonitors for:
 
 - **App** (`/api/metrics`): app/admin API request counts, latency histograms, coarse rejections, and frontend error counts.
-- **HPS** (`/metrics`): rule-engine request counts, latency histograms, rejections, Kafka worker wait time, bulk item volume, and memory cache stats.
-- **Supporting infrastructure** where available: Kafka JMX and ClickHouse metrics. Traefik's Prometheus endpoint is enabled, but its ServiceMonitor is an explicit opt-in because the Traefik chart validates Prometheus Operator CRDs at render time.
+- **HPS** (`/metrics`): rule-engine request counts, latency histograms, rejections, Kafka worker wait time, bulk item volume, memory cache stats, HPS-side Redis/Valkey operations, and decision-log produce throughput.
+- **HPS workers** (`/metrics`): per-worker message throughput (`rulebricks_worker_messages_total`), processing-time histograms (`rulebricks_worker_processing_duration_seconds`), and worker Redis/Valkey operations by operation/result/backend, scraped from the headless worker Service.
+- **Supporting infrastructure** where available: Kafka JMX, ClickHouse metrics, and Traefik edge metrics.
 
 Metric labels are intentionally bounded to avoid cardinality problems: route templates, methods, status classes, operations, and coarse reasons. They never include API keys, users, organizations, IP addresses, raw URLs, rule slugs, flow slugs, or error messages.
 
@@ -41,6 +42,33 @@ After install, verify scrape discovery:
 kubectl get servicemonitor -n rulebricks
 kubectl port-forward -n rulebricks svc/rulebricks-kube-prometheus-stack-prometheus 9090:9090
 ```
+
+## Signals at a Glance
+
+Prometheus captures the main operational signals you need to run Rulebricks:
+
+- **Traffic and latency** for the app, HPS, workers, and Traefik.
+- **Queue health** for Kafka request/response topics and consumer groups.
+- **Cache health** from app/HPS/worker Redis operation metrics plus Valkey backend metrics.
+- **Decision-log pipeline health** from HPS, Vector, and ClickHouse metrics.
+- **Infrastructure health** from Kubernetes, node, container, HPA, and PVC metrics.
+
+For the complete list of metric names, labels, meanings, useful PromQL, and alert starting points, see [Metrics Reference](/private-deployment/metrics-reference).
+
+## Exporters
+
+The chart enables the standard exporters needed for the dashboard where it can do so safely:
+
+- `rulebricks.cache.redisExporter.enabled` exports Valkey metrics such as memory, clients, hit ratio, evictions, and operations per second.
+- `rulebricks.kafkaExporter.enabled` exports Kafka topic and consumer-group lag for embedded Kafka.
+- Traefik's ServiceMonitor exports ingress request rate, status codes, latency, and connection metrics.
+
+<Callout type="info">
+  App-side Redis metrics are self-hosted only. They cover app cache reads,
+  writes, deletes, expirations, and cache-invalidation publishes, but intentionally
+  exclude Filament build quota counters. Contexts runtime state is included under
+  ordinary app Redis `get`/`set`/`del` operations.
+</Callout>
 
 ## Remote Write
 
@@ -65,6 +93,48 @@ kube-prometheus-stack:
   The [Rulebricks CLI](/private-deployment/cli) wizard asks for a remote write
   destination during `rulebricks init` and generates this block for you. You can
   skip that step and add it later.
+</Callout>
+
+## Cloud-native Logs
+
+Rulebricks does not deploy provider-specific log agents for Azure Monitor or
+Amazon CloudWatch Logs. On managed Kubernetes, use the platform collector:
+
+- **AKS**: Azure Container Insights / Azure Monitor Agent collects pod stdout
+  into Log Analytics (`ContainerLogV2`).
+- **EKS**: the Amazon CloudWatch Observability EKS add-on collects pod logs into
+  CloudWatch Logs using Fluent Bit or the OTel Container Insights pipeline.
+
+The app, HPS, and worker emit structured JSON service logs with `trace_id` and
+`span_id`, so these cloud-native collectors can correlate logs with traces
+without Rulebricks shipping a cloud-specific Vector sink.
+
+## Grafana Dashboards
+
+Enabling in-cluster Grafana (the CLI's **local-grafana** monitoring destination, or `kube-prometheus-stack.grafana.enabled: true`) provisions a **Rulebricks Overview** dashboard automatically via the Grafana dashboard sidecar. The dashboard is shipped as a labeled ConfigMap (`grafana_dashboard: "1"`), so the sidecar imports it on startup with no manual upload. You can also import the same JSON into a customer-managed Grafana or Azure Managed Grafana instance.
+
+The dashboard is organized as an operational cockpit:
+
+- **Executive Health**: total app/HPS request rate, error/rejection rate, HPS latency, Kafka RPC latency, worker latency, Kafka lag, and Valkey health.
+- **Ingress / Traefik**: ingress request rate by service/status, Traefik p95 service latency, open connections, entrypoint traffic, TLS certificate metadata, and config reloads.
+- **HPS Request Plane**: route/status throughput, route latency, Kafka RPC latency, Kafka errors, bulk payload throughput, chunk counts, and chunk failures.
+- **Worker Fleet**: worker throughput, processing quantiles, CPU/memory by worker pod, restarts, and OOM events.
+- **App + API Surface**: app request rate and latency, frontend/app rejection rates, app Redis operation rate and latency, event-loop lag, and GC duration.
+- **Cache / Valkey**: service-level app/HPS/worker Redis operations plus backend Valkey ops, memory, clients, hit ratio, misses, and evictions.
+- **Kafka / Queue Health**: consumer-group lag, broker traffic, request queues, topic disk usage, and produce/fetch errors.
+- **Decision Logs / Logging Pipeline**: decision-log produce rate, bytes, failures, Vector pod resources, and selected ClickHouse health.
+- **Infrastructure / Nodes / Node Pools**: node CPU, memory, filesystem usage, pod CPU/memory by Rulebricks workload group, CPU throttling, and PVC usage.
+- **Scaling / Scheduling**: HPA current/desired/max replicas, deployment availability, pending/unschedulable pods, restarts, and node allocatable resources.
+
+Most panels use kube-prometheus-stack defaults (`kube-state-metrics`, node-exporter, kubelet/cAdvisor) and are cloud-portable. A few panels depend on optional exporters:
+
+- **Valkey backend panels** require `rulebricks.cache.redisExporter.enabled`.
+- **Kafka consumer-group lag panels** require `rulebricks.kafkaExporter.enabled`.
+
+Node-pool views are best-effort because AKS, EKS, GKE, and self-managed clusters expose different node labels. The dashboard defaults to node-level infrastructure panels and only groups by common labels where the metric exists.
+
+<Callout type="info">
+  Grafana is the pane of glass for **metrics**. For **traces** and **logs** (request lineage), see [Distributed Tracing](/private-deployment/tracing), which forwards to your chosen backend (Elastic APM, a generic OTLP backend, or Azure Monitor).
 </Callout>
 
 ## In-Cluster Retention

@@ -87,22 +87,6 @@ The generated Helm values pin one Rulebricks product version under `global.versi
 
 Use `rulebricks -h` to explore all commands, and add `-h` to any command for its options.
 
-## Performance Tiers
-
-During `init`, the wizard asks you to pick a performance tier. The tier drives worker replica counts, resource requests, Kafka topic partition sizing, and storage allocations in the generated values.
-
-| Tier       | Intended Use          | Throughput\*               | Cluster Resources   |
-| :--------- | :-------------------- | :------------------------- | :------------------ |
-| **Small**  | Development & Testing | Up to ~5,000 rules/sec     | 8 vCPU, 16GB RAM    |
-| **Medium** | Production            | ~5,000 to 25,000 rules/sec | 16+ vCPU, 32GB+ RAM |
-| **Large**  | High Performance      | 25,000+ rules/sec          | 40+ vCPU, 80GB+ RAM |
-
-\* Throughput varies with rule complexity. These figures assume typical decision table workloads submitted in bulk.
-
-The CLI validates the generated values against the chart's schema plus cross-field invariants the schema can't express, like keeping the worker autoscaling ceiling at or below the Kafka partition count. If you hand-edit the generated `values.yaml`, the CLI will catch sizing mistakes before they reach the cluster.
-
-For the sizing model behind these numbers (and how to tune beyond a tier), see [Performance & Scaling](/private-deployment/performance).
-
 ## Object Storage and Backups
 
 The wizard collects a shared object storage backend (S3, Azure Blob, or GCS) for every deployment, and optionally enables scheduled database backups for self-hosted Supabase. `rulebricks backup` triggers an on-demand backup, and `rulebricks restore` lists backups in object storage and interactively restores one.
@@ -113,7 +97,11 @@ See [Storage & Backups](/private-deployment/storage-and-backups) for the full pi
 
 Self-hosted deployments enable Prometheus monitoring by default. The wizard only asks whether you want to configure a Prometheus `remote_write` destination; you can skip that step if you don't yet have a remote-write-compatible backend ready.
 
-See [Monitoring](/private-deployment/monitoring) for what's scraped, the metric label policy, and remote write configuration.
+The optional features step can also enable Valkey Admin + cache metrics. Valkey Admin is internal-only by default (open it with `kubectl port-forward`), while Redis/Valkey and Kafka-lag exporters feed the same Prometheus remote-write pipeline.
+
+Application log shipping supports BYO Elasticsearch/Kibana and config-file targets for Loki or generic HTTP sinks. Distributed tracing remains one toggle with destination-specific configuration for Elastic APM, generic OTLP/HTTP (Tempo, Jaeger, Honeycomb, etc.), or Azure Monitor.
+
+See [Monitoring](/private-deployment/monitoring), [Distributed Tracing](/private-deployment/tracing), and [Cache Observability](/private-deployment/cache-observability) for the full details.
 
 <Callout type="info">
   The CLI offers a uniquely wide variety of customization options (multi-cloud,

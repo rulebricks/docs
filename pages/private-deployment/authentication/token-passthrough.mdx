@@ -30,13 +30,13 @@ sequenceDiagram
 
     User->>Proxy: Request
     Proxy->>MW: Request + X-Auth-Token header
-    alt First request or token changed
+    alt First request or identity changed
         MW->>MW: Decode JWT payload (no verify)
         MW->>SB: Upsert auth.users (email match)
         Note over SB: DB trigger creates public.users row
         MW->>MW: Mint Supabase-compatible JWT
         MW->>App: Forward with Supabase session cookie
-    else Token unchanged (fingerprint cache hit)
+    else Same identity (fingerprint cache hit)
         MW->>App: Forward unchanged
     end
     App->>User: Dashboard rendered as authenticated user
@@ -44,13 +44,13 @@ sequenceDiagram
 
 1. Every request enters our application's middleware.
 2. If passthrough is enabled, the middleware extracts the token from a configurable header.
-3. On first sight of a token (or a changed token), the middleware:
+3. On first sight of a token (or a changed identity), the middleware:
    - Decodes the JWT payload (base64, no signature verification).
    - Upserts a user in Supabase `auth.users` matched by email.
    - Mints a fresh Supabase-signed JWT (HMAC-SHA256 with your project's JWT secret) with `sub` equal to the Supabase user UUID.
    - Sets the standard Supabase session cookie. All downstream Rulebricks code uses this cookie as if the user had logged in normally.
-4. On subsequent requests with the same token, a SHA-256 fingerprint cache short-circuits the work: the middleware returns immediately and the existing session cookie is reused.
-5. A user session lasts 24 hours by default. The upstream proxy must continue forwarding a token on every request; otherwise the session cookie alone is enough for the cookie's 24h lifetime, and a new token will trigger re-upsert + re-mint.
+4. On subsequent requests for the same email identity, a SHA-256 fingerprint cache short-circuits the work: the middleware returns immediately and the existing session cookie is reused, even if the upstream proxy rotates the JWT string.
+5. A user session lasts 24 hours by default. The upstream proxy must continue forwarding a token on every request; otherwise the session cookie alone is enough for the cookie's 24h lifetime, and a new identity or expired session will trigger re-upsert + re-mint.
 
 ## Enabling Passthrough via the Helm Chart
 
@@ -100,7 +100,7 @@ These three chart values **must** be set when passthrough is enabled. The app re
 | `global.externalAuth.claims.id`    | `sub`           | JWT claim path to read as the external stable user identifier. Stored in `user_metadata.external_sub` for reference. Not used for auth — Supabase UUIDs are the real identity.                                                                      |
 | `global.externalAuth.claims.email` | `email`         | JWT claim path to read as the user's email. This is the only claim Rulebricks actually uses for user upsert, so it must exist and be unique per user.                                                                                               |
 | `global.externalAuth.claims.name`  | `name`          | JWT claim path to read as the user's display name. Copied into `user_metadata.full_name`, which a DB trigger writes to `public.users.name`.                                                                                                         |
-| `global.externalAuth.publicPaths`  | `[]`            | YAML list of URL-path prefixes that should NOT require the token. The chart joins them with commas for the app. Useful for public forms (e.g. `['/form/', '/api/form/']`). Requests matching any prefix pass through middleware untouched.          |
+| `global.externalAuth.publicPaths`  | `[]`            | YAML list of URL-path prefixes that should NOT require the token. The chart joins them with commas for the app. Useful for public forms (e.g. `['/form/', '/api/form/']`). Requests matching any prefix pass through middleware untouched. `/api/health`, `/api/metrics`, `/auth/denied`, `/api/self-hosted-branding`, and requests carrying `x-api-key` are always auto-exempt by the app. |
 
 ## Token Shape
 
@@ -173,7 +173,7 @@ This is the expected behavior — in passthrough mode, the proxy owns the sessio
 
 ## Claim Mapping
 
-Once the admin has logged in, they should visit **Team → SSO** in the Rulebricks UI. This page automatically loads the claim schema from the most recent token and lets the admin configure access, role, tenant, and profile mappings from the same interface used for traditional SSO.
+Once the admin has logged in, they should visit **Team → SSO** in the Rulebricks UI. This page automatically loads the claim schema from `user_metadata.external_claims` through an authenticated Rulebricks endpoint, avoiding large browser cookies for enterprise tokens with many groups, and lets the admin configure access, role, tenant, and profile mappings from the same interface used for traditional SSO.
 
 See [Claim Mapping](/private-deployment/authentication/claim-mapping) for the full reference on each section.
 
@@ -192,9 +192,10 @@ When `global.externalAuth.enabled: true`:
 - The top-nav **Sign in** and **Sign up** links are hidden.
 - The dashboard-nav **Account** and **Sign out** links are hidden.
 - Email / password signup, SSO sign-in, magic links, and password reset are disabled. Calling them does nothing meaningful.
-- Supabase auto-token-refresh is disabled in the browser. Token rotation is entirely driven by the middleware's fingerprint cache.
-- Public routes listed in `global.externalAuth.publicPaths` bypass the token check. Useful for customer-facing embedded forms.
+- Supabase auto-token-refresh is disabled in the browser. Token rotation is handled by the middleware's identity fingerprint cache; non-identity claim changes apply when the session is re-minted.
+- Public routes listed in `global.externalAuth.publicPaths` bypass the token check. Useful for customer-facing embedded forms. `/api/health`, `/api/metrics`, `/auth/denied`, `/api/self-hosted-branding`, and `x-api-key` API calls are auto-exempt without extra configuration.
 - `/api/sso-provision` accepts an `identity_claims` body field (the decoded token) so it can apply access / role / tenant / profile mappings without calling an IdP userinfo endpoint.
+- `/api/passthrough-claims` returns the current user's stored external claims to the Team → SSO UI. Claims are not stored in a browser cookie.
 
 ## RLS and Tenant Isolation
 
@@ -307,7 +308,7 @@ Likely cause: `global.supabase.jwtSecret` does not match the Supabase project's 
 Expected state until the admin configures role mappings. Go to **Team → SSO**, pick a role claim (e.g. `groups`), add mappings, and save.
 
 **Non-admin users keep landing at `/auth/denied`**
-The `accessMapping` rule in the admin's SSO configuration is rejecting their token. Verify the configured `claimPath` exists on the token and that its value is in the allowed list.
+The `accessMapping` rule in the admin's SSO configuration is rejecting their token. Rulebricks clears the local Supabase session before redirecting to `/auth/denied`; the upstream proxy must stop forwarding an allowed token, or the next proxied request can create a new session attempt. Verify the configured `claimPath` exists on the token and that its value is in the allowed list.
 
 **Two "parent" users appear in the database**
 Should never happen if the workflow above is followed. If it does, it means `global.email` was unset or changed between deploys. Fix: manually re-point the orphaned rows to a single parent via SQL, or contact support.
