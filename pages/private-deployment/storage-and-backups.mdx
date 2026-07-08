@@ -13,8 +13,8 @@ Rulebricks uses one cloud provider, one identity, and one bucket (or container) 
 | Parameter                           | Type   | Default           | Description                                          |
 | :---------------------------------- | :----- | :---------------- | :--------------------------------------------------- |
 | `global.storage.provider`           | string | `"s3"`            | Storage backend: `s3`, `azure-blob`, or `gcs`        |
-| `global.storage.bucket`             | string | `""`              | Bucket name (S3/GCS) or storage account (Azure Blob) |
-| `global.storage.region`             | string | `""`              | Bucket region                                        |
+| `global.storage.bucket`             | string | must be set       | Bucket name (S3/GCS) or storage account (Azure Blob) |
+| `global.storage.region`             | string | must be set       | Bucket region                                        |
 | `global.storage.paths.decisionLogs` | string | `"decision-logs"` | Key prefix for the decision log archive              |
 | `global.storage.paths.dbBackups`    | string | `"db-backups"`    | Key prefix for database backups                      |
 
@@ -53,13 +53,13 @@ If you use the [Rulebricks CLI](/private-deployment/cli), the wizard collects th
 What lands in the bucket:
 
 - **Decision logs** under `paths.decisionLogs`: a compressed NDJSON archive written by Vector and queried by ClickHouse. See [Decision Logs](/private-deployment/decision-logs).
-- **Database backups** under `paths.dbBackups`: Barman base backups of the self-hosted Supabase database, covered below.
+- **Database backups** under `paths.dbBackups`: logical dumps of the self-hosted Supabase database, covered below.
 
 ## Database Backups
 
 The Supabase PostgreSQL instance holds all application state and should be backed up regularly if self-hosting. The bundled deployment uses a PersistentVolumeClaim, so data survives pod restarts, but PVCs are not a meaningful backup strategy.
 
-Enable `backup.enabled` and the chart schedules Barman base backups to your bucket under `global.storage.paths.dbBackups`:
+Enable `backup.enabled` and the chart schedules logical backups (`pg_dumpall` for roles plus `pg_dump` in custom format, uploaded via `rclone`) to your bucket under `global.storage.paths.dbBackups`:
 
 ```yaml
 backup:
@@ -71,7 +71,7 @@ backup:
 | Parameter                        | Type    | Default            | Description                                                 |
 | :------------------------------- | :------ | :----------------- | :---------------------------------------------------------- |
 | `backup.enabled`                 | boolean | `false`            | Enable scheduled database backups                           |
-| `backup.schedule`                | string  | `"0 2 * * *"`      | Cron schedule for Barman base backups                       |
+| `backup.schedule`                | string  | `"0 2 * * *"`      | Cron schedule for the backup CronJob                        |
 | `backup.retentionDays`           | integer | `30`               | Days to retain restorable backup data                       |
 | `backup.superuser`               | string  | `"supabase_admin"` | Postgres superuser role used for logical dumps and restores |
 | `backup.ttlSecondsAfterFinished` | integer | `2592000`          | Seconds to retain completed backup Jobs and their pod logs  |
@@ -89,7 +89,7 @@ Logical dumps run as `backup.superuser` so they can read schemas owned by `supab
 
 ### On-Demand Backups and Restores
 
-The [Rulebricks CLI](/private-deployment/cli) manages backups outside the schedule:
+The [Rulebricks CLI](/private-deployment/cli) manages backups outside the schedule. Both commands require `backup.enabled: true` on the deployment (in addition to self-hosted Supabase and configured object storage):
 
 ```bash
 # Trigger an on-demand backup

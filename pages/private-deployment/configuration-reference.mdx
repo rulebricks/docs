@@ -37,6 +37,7 @@ For private registry or air-gapped installs, the chart can repoint images to you
 | `global.imageRegistry`           | string  | `""`    | Repoints Rulebricks image references to your registry host while keeping the `rulebricks/*` path       |
 | `global.imageDigests`            | object  | `{}`    | Optional image digest map generated from the chart image manifest                                     |
 | `global.imagePullSecrets`        | list    | `[]`    | Pull secrets for private image registries                                                             |
+| `global.images.*`                | object  | pinned  | Shared leaf images (init/hook/test utilities: `postgres17`, `node24`, `rclone`, and so on) used by migrations, backups, and bootstrap jobs |
 | `global.priorityClasses.enabled` | boolean | `true`  | Creates release-scoped `critical` and `burst` scheduling priorities for infrastructure and worker pods |
 
 The single `global.imageRegistry` value covers images rendered through the Rulebricks chart helpers. Some upstream subcharts use their own image keys; the Rulebricks CLI rewrites those keys for you when you configure a registry mirror. Hand-installs should check the image comments in the chart's `values.yaml` for the matching Traefik, KEDA, cert-manager, Vector, Strimzi, and external-dns overrides.
@@ -213,13 +214,14 @@ global:
       licenseKey: 'RULEBRICKS_LICENSE'
       smtpUser: 'SMTP_USERNAME'
       smtpPass: 'SMTP_PASSWORD'
-      supabaseAnonKey: 'SUPABASE_ANON'
       supabaseServiceKey: 'SUPABASE_SERVICE'
       supabaseAccessToken: 'SUPABASE_TOKEN'
       openaiApiKey: 'OPENAI_KEY'
       ssoClientId: 'SSO_CLIENT_ID'
       ssoClientSecret: 'SSO_CLIENT_SECRET'
 ```
+
+The Supabase anon key is public by design and is configured via `global.supabase.anonKey` rather than through the secret reference.
 
 ### External Authentication (Token Passthrough)
 
@@ -269,7 +271,7 @@ Image tags are selected by `global.version`, the single product semver shared by
 | `rulebricks.app.logging.kafkaTopic`       | string  | `"logs"`            | Kafka topic for logs                                                                  |
 | `rulebricks.app.logging.kafkaTopicPrefix` | string  | `"com.rulebricks."` | Prefix applied to all Kafka topic names; set `""` to disable prefixing                |
 | `rulebricks.app.logging.kafkaSsl`         | boolean | `false`             | Enable TLS for external Kafka brokers                                                 |
-| `rulebricks.app.logging.kafkaSasl.*`      | object  | `{}`                | SASL auth for external Kafka: `aws-iam`, `scram-sha-256`, `scram-sha-512`, or `plain` |
+| `rulebricks.app.logging.kafkaSasl.*`      | object  | `{}`                | SASL auth for external Kafka: `aws-iam`, `oauthbearer`, `scram-sha-256`, `scram-sha-512`, or `plain` |
 
 For how decision logs flow through the system, see [Decision Logs](/private-deployment/decision-logs). For external Kafka authentication (including AWS MSK IAM and Azure Event Hubs examples), see [External Kafka & Redis](/private-deployment/external-services#authentication-sslsasl).
 
@@ -289,7 +291,7 @@ Gateway API mode requires an implementation (Envoy Gateway, Cilium, Istio) in yo
 
 ### Redis
 
-Redis is used for caching and session management.
+A Redis-compatible cache is used for caching and session management. The bundled deployment runs [Valkey](https://valkey.io/) (the OSI-licensed Redis fork); the `redis` values key is retained for compatibility with existing overrides.
 
 | Parameter                                    | Type    | Default   | Recommendation               |
 | :------------------------------------------- | :------ | :-------- | :--------------------------- |
@@ -309,11 +311,18 @@ To use a managed Redis instance (ElastiCache, Memorystore, Upstash, and so on) i
 | `rulebricks.redis.external.port`              | integer | `6379`  | Redis port                                                 |
 | `rulebricks.redis.external.password`          | string  | `""`    | Inline password (injected at runtime, never in ConfigMaps) |
 | `rulebricks.redis.external.existingSecret`    | string  | `""`    | Existing secret name (preferred for production)            |
-| `rulebricks.redis.external.existingSecretKey` | string  | `""`    | Key within the secret                                      |
+| `rulebricks.redis.external.existingSecretKey` | string  | `"redis-password"` | Key within the secret                             |
 | `rulebricks.redis.external.tls.enabled`       | boolean | `false` | Use `rediss://`                                            |
 | `rulebricks.redis.external.httpApi.*`         | object  | `{}`    | Upstash-style HTTP API (url/token or existing secret)      |
 
 See [External Kafka & Redis](/private-deployment/external-services#externalizing-redis) for how each component connects.
+
+#### Cache Observability
+
+| Parameter                                | Type    | Default | Description                                                                     |
+| :---------------------------------------- | :------ | :------ | :------------------------------------------------------------------------------ |
+| `rulebricks.cache.redisExporter.enabled` | boolean | `true`  | Deploys a Prometheus exporter for the cache (works for bundled and external)    |
+| `rulebricks.cache.valkeyAdmin.enabled`   | boolean | `false` | Optional Valkey Admin web console; internal-only unless exposed through ingress |
 
 ### High Performance Server (HPS)
 
@@ -329,6 +338,20 @@ HPS handles rule execution with horizontal scaling. For the sizing model behind 
 | `rulebricks.hps.workers.resources.*`        | object  | 250m request / 1 CPU limit, 1Gi memory                                        | Per-worker resources; scale out for throughput                                  |
 | `rulebricks.hps.workers.keda.*`             | object  | see [Performance & Scaling](/private-deployment/performance#keda-autoscaling) | KEDA autoscaling configuration                                                  |
 | `rulebricks.hps.imagePrepull.enabled`       | boolean | `true`                                                                        | Pre-pulls HPS server and worker images on nodes before burst scale-out          |
+
+#### HPS Gateway Autoscaling
+
+The HPS gateway (the API pods, distinct from the workers) is also KEDA-scaled by default, on `solution-response` topic lag and CPU:
+
+| Parameter                                | Type    | Default | Description                             |
+| :---------------------------------------- | :------ | :------ | :--------------------------------------- |
+| `rulebricks.hps.keda.enabled`            | boolean | `true`  | Enable gateway autoscaling              |
+| `rulebricks.hps.keda.minReplicaCount`    | integer | `3`     | Baseline gateway fleet                  |
+| `rulebricks.hps.keda.maxReplicaCount`    | integer | `8`     | Gateway scale-out ceiling               |
+| `rulebricks.hps.keda.pollingInterval`    | integer | `15`    | Metric poll interval (seconds)          |
+| `rulebricks.hps.keda.cooldownPeriod`     | integer | `600`   | Wait before scaling down (seconds)      |
+| `rulebricks.hps.keda.lagThreshold`       | integer | `300`   | `solution-response` lag per replica     |
+| `rulebricks.hps.keda.cpuThreshold`       | integer | `60`    | CPU utilization target (%)              |
 
 #### HPS Image
 
@@ -381,7 +404,7 @@ HPS and worker image tags are derived from `global.version` (`<version>` and `wo
 
 #### External PostgreSQL
 
-The Supabase services can run in-cluster while pointing at an external PostgreSQL server (e.g. a managed instance). PostgreSQL 17 (recommended) and 16 are supported; see [Supported PostgreSQL Versions](/private-deployment/external-services#supported-postgresql-versions). Set `supabase.db.enabled: false` and configure the connection once:
+The Supabase services can run in-cluster while pointing at an external PostgreSQL server (e.g. a managed instance). PostgreSQL 17 (recommended) and 16 are supported; see [Supported PostgreSQL Versions](/private-deployment/external-services#supported-postgresql-versions). The primary switch is `supabase.externalDatabase.enabled: true`, which stops the bundled database from deploying and points every Supabase service at your server; also set `supabase.db.enabled: false` so the chart renders the in-cluster `db` alias (an `ExternalName` service some components expect). Configure the connection once:
 
 | Parameter                                  | Type    | Default                          | Description                                         |
 | :----------------------------------------- | :------ | :------------------------------- | :-------------------------------------------------- |
@@ -389,7 +412,7 @@ The Supabase services can run in-cluster while pointing at an external PostgreSQ
 | `supabase.externalDatabase.host`           | string  | `""`                             | PostgreSQL host shared across Supabase services     |
 | `supabase.externalDatabase.port`           | integer | `5432`                           | PostgreSQL port                                     |
 | `supabase.externalDatabase.secretRef`      | string  | `""`                             | Existing secret with credentials (else `secret.db`) |
-| `supabase.externalDatabase.secretRefKey.*` | object  | `username`/`password`/`database` | Key mappings within the secret                      |
+| `supabase.externalDatabase.secretRefKey.*` | object  | `username`/`password`/`database` | Key mappings within the secret; set `host`/`port` keys to source those from the same secret too |
 | `supabase.externalDatabase.bootstrap.*`    | object  | enabled                          | Optional one-time initialization of a bare database |
 
 Migration jobs reach the same server through `migrations.externalDb.*`.
@@ -433,6 +456,8 @@ Kafka handles async rule execution and logging.
 | `strimzi-kafka-operator.*` | object  | see values | Operator images and namespace watch settings                  |
 
 The bundled broker is managed by Strimzi and runs in KRaft mode. The chart does not expose the old Bitnami `kafka.kraft.*`, `kafka.zookeeper.*`, or `kafka.controller.*` values.
+
+A Kafka Prometheus exporter is also deployed by default (`rulebricks.kafkaExporter.enabled: true`) for consumer-group lag metrics; it inherits `rulebricks.app.logging.kafkaSsl` / `kafkaSasl` for external brokers, so no exporter-specific auth values are needed.
 
 ### Kafka Topics
 
@@ -479,6 +504,7 @@ When external Kafka uses a token-based SASL mechanism (AWS MSK IAM, GCP OAUTHBEA
 | `kafkaBridge.region`                 | string  | `""`    | Region (required for AWS MSK IAM signing)     |
 | `kafkaBridge.brokers`                | string  | `""`    | Upstream managed-Kafka broker list            |
 | `kafkaBridge.localPort`              | integer | `19092` | Local plaintext port Vector consumes from     |
+| `kafkaBridge.image`                  | string  | `"docker.io/rulebricks/kafka-proxy:0.4.3"` | kafka-proxy sidecar image (override for registry mirrors) |
 | `kafkaBridge.awsRoleArn`             | string  | `""`    | IRSA role ARN (AWS)                           |
 | `kafkaBridge.gcpServiceAccountEmail` | string  | `""`    | Workload Identity service account email (GCP) |
 
@@ -489,10 +515,9 @@ The CLI sets all of this automatically when you externalize Kafka with AWS MSK I
 ```yaml
 kafka:
   replicas: 3
-  config:
-    default.replication.factor: '3'
-    min.insync.replicas: '2'
 ```
+
+Internal replication factors (`default.replication.factor`, offsets, transaction log) are derived from `kafka.replicas` automatically. The chart pins `min.insync.replicas: 1` on the broker so a replica loss never blocks the latency-sensitive RPC topics; entries for these keys under `kafka.config` are overridden by the chart-managed values. Per-topic replication for long-lived data (e.g. `logs`) is set on `kafka.topics`.
 
 ## Ingress (Traefik)
 

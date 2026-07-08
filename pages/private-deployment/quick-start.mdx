@@ -170,7 +170,8 @@ external-dns:
 storageClass:
   create: true
   provisioner: pd.csi.storage.gke.io
-  type: pd-ssd
+  parameters:
+    type: pd-balanced
 external-dns:
   enabled: true
   provider:
@@ -184,7 +185,8 @@ external-dns:
 storageClass:
   create: true
   provisioner: disk.csi.azure.com
-  type: Premium_LRS
+  parameters:
+    skuName: Premium_LRS
 external-dns:
   enabled: true
   provider:

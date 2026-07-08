@@ -25,7 +25,7 @@ graph TB
             App[Rulebricks App]
             HPS[HPS Gateway]
             Workers[HPS Workers]
-            Redis[Redis Cache]
+            Redis["Valkey Cache (Redis-compatible)"]
         end
 
         subgraph Data["Data Layer"]
@@ -70,7 +70,7 @@ graph TB
     Traefik --> Kong
 
     App --> Redis
-    App --> Kafka
+    HPS --> Kafka
     HPS --> Workers
     Workers --> Kafka
     Workers --> Redis
@@ -122,11 +122,11 @@ sequenceDiagram
 
 | Component       | Purpose                                  | Scaling                               |
 | :-------------- | :--------------------------------------- | :------------------------------------ |
-| **Traefik**     | Ingress, TLS termination, routing        | HPA (2-3 replicas default)            |
+| **Traefik**     | Ingress, TLS termination, routing        | HPA (1-4 replicas default)            |
 | **App**         | Web UI, rule editor, management API      | Single replica                        |
-| **HPS Gateway** | API gateway for rule execution           | Static replicas                       |
+| **HPS Gateway** | API gateway for rule execution           | KEDA-scaled (3-8 replicas default)    |
 | **HPS Workers** | Rule execution engines                   | KEDA-scaled Deployment                |
-| **Redis**       | Rule cache, session storage              | Single replica with persistence       |
+| **Valkey (Redis-compatible cache)** | Rule cache, session storage | Single replica with persistence  |
 | **Kafka**       | Message queue, event streaming           | KRaft mode, single node default       |
 | **PostgreSQL**  | Persistent data storage                  | Single replica with PVC               |
 | **Vector**      | Decision log aggregation and forwarding  | Static replicas                       |
@@ -138,11 +138,11 @@ sequenceDiagram
 
 ## Decision Log Pipeline
 
-Every rule execution emits a structured decision log. HPS and the app produce entries to the Kafka `logs` topic; Vector archives them to object storage as NDJSON; ClickHouse queries the archive on demand for the dashboard:
+Every rule execution emits a structured decision log. HPS API and worker pods produce entries to the Kafka `logs` topic (`com.rulebricks.logs` with the default topic prefix); Vector archives them to object storage as NDJSON; ClickHouse queries the archive on demand for the dashboard:
 
 ```mermaid
 flowchart LR
-    HPS["HPS / App"] -->|produce| LogsTopic["Kafka logs topic"]
+    HPS["HPS API / worker pods"] -->|produce| LogsTopic["Kafka logs topic"]
     LogsTopic -->|consume| Vector[Vector]
     Vector -->|"NDJSON archive (hourly partitions)"| Bucket["Object Storage (global.storage)"]
     Bucket -->|query on demand| ClickHouse[ClickHouse]
@@ -209,11 +209,12 @@ If a migration job fails, see [Troubleshooting](/private-deployment/troubleshoot
 
 ## Scaling Considerations
 
-| Component   | Scaling Method | Trigger         |
-| :---------- | :------------- | :-------------- |
-| Traefik     | HPA            | CPU utilization |
-| HPS Workers | KEDA           | Kafka lag, CPU  |
-| Vector      | Manual         | Log volume      |
+| Component   | Scaling Method | Trigger                          |
+| :---------- | :------------- | :------------------------------- |
+| Traefik     | HPA            | CPU utilization                  |
+| HPS Gateway | KEDA           | `solution-response` lag, CPU     |
+| HPS Workers | KEDA           | Kafka lag, CPU                   |
+| Vector      | Manual         | Log volume                       |
 
 Workers run as a Deployment scaled by KEDA, so scale-out creates pods in parallel and delivers burst capacity in seconds. Worker concurrency is bounded by the partition count of the `solution` Kafka topic; the full sizing model and the values that control it live in [Performance & Scaling](/private-deployment/performance).
 

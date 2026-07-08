@@ -12,14 +12,14 @@ Every rule execution emits a structured decision log. The pipeline that stores a
 
 ```mermaid
 flowchart LR
-    HPS["HPS / App"] -->|produce| LogsTopic["Kafka logs topic"]
+    HPS["HPS API / worker pods"] -->|produce| LogsTopic["Kafka logs topic"]
     LogsTopic -->|consume| Vector[Vector]
     Vector -->|"NDJSON archive (hourly partitions)"| Bucket["Object Storage (global.storage)"]
     Bucket -->|query on demand| ClickHouse[ClickHouse]
     ClickHouse --> Dashboard[Rulebricks Dashboard]
 ```
 
-1. HPS and the app produce decision log entries to the Kafka `logs` topic after each request completes (non-blocking, post-response).
+1. HPS API and worker pods produce decision log entries to the Kafka `logs` topic after each request completes (non-blocking, post-response). All solve traffic executes on HPS, so it owns the decision-log producer; the main app does not produce to Kafka.
 2. Vector consumes the topic and writes the entries to your bucket under `global.storage.paths.decisionLogs` as compressed NDJSON, partitioned by year/month/day/hour.
 3. ClickHouse queries the archive directly for decision logs. When ClickStack is enabled, the same ClickHouse deployment also stores operational telemetry locally, so persistence stays enabled by default.
 4. The dashboard's native decision log search runs against ClickHouse. The archive remains plain NDJSON in your bucket, so you can also query it with your own tooling (Athena, DuckDB, and so on) or forward logs to additional sinks.
@@ -65,7 +65,7 @@ When `clickhouse.enabled` is on and `global.storage` is configured, the chart ad
 
 ## Forwarding to Other Destinations
 
-Vector can forward decision logs to additional destinations alongside the archive: SIEMs, data lakes, or HTTP endpoints. The chart templates Vector's `kafka` source automatically (brokers, TLS/SASL, and the prefixed log topic come from a generated `vector-kafka-env` ConfigMap), so you only add sinks that take `kafka` as their input under `vector.customConfig.sinks`:
+Vector can forward decision logs to additional destinations alongside the archive: SIEMs, data lakes, or HTTP endpoints. The chart templates Vector's `kafka` source automatically (brokers, TLS/SASL, and the prefixed log topic come from a generated `vector-kafka-env` ConfigMap), so you only add sinks under `vector.customConfig.sinks`. Use `normalize_logs` as the input to receive the same schema-normalized records the archive sink writes (raw `kafka` also works but skips normalization):
 
 ```yaml
 vector:
@@ -74,7 +74,7 @@ vector:
       # Additional S3 sink example
       s3:
         type: aws_s3
-        inputs: [kafka]
+        inputs: [normalize_logs]
         bucket: 'your-logs-bucket'
         region: 'us-east-1'
         key_prefix: 'rulebricks/logs/%Y/%m/%d/'

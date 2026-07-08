@@ -65,7 +65,8 @@ flowchart LR
 
 ```yaml
 # Higher-throughput configuration
-# (update kafka.provisioning topic partitions to match solutionPartitions)
+# (update the kafka.topics partition counts to match solutionPartitions;
+# kafka.provisioning only applies to external Kafka)
 # Your node-pool should have enough capacity to support the maximum number of workers
 rulebricks:
   hps:

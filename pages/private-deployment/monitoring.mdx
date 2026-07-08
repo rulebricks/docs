@@ -137,7 +137,7 @@ Most panels use kube-prometheus-stack defaults (`kube-state-metrics`, node-expor
 Node-pool views are best-effort because AKS, EKS, GKE, and self-managed clusters expose different node labels. The dashboard defaults to node-level infrastructure panels and only groups by common labels where the metric exists.
 
 <Callout type="info">
-  Grafana is the pane of glass for **metrics**. For **traces** and **logs** (request lineage), see [Distributed Tracing](/private-deployment/tracing), which forwards to your chosen backend (Elastic APM, a generic OTLP backend, or Azure Monitor).
+  Grafana is the pane of glass for **metrics**. For **traces** and **logs** (request lineage), see [Distributed Tracing](/private-deployment/tracing) - viewed in the bundled ClickStack/HyperDX UI by default, or forwarded to a backend of your choice (Elastic APM, a generic OTLP backend, or Azure Monitor).
 </Callout>
 
 ## In-Cluster Retention

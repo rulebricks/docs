@@ -22,7 +22,7 @@ Before running the CLI, you'll need:
 
 - A valid **Rulebricks license key** (requested during configuration)
 - An **available Kubernetes cluster** to deploy to
-- **Node.js** >= 20
+- **Node.js** >= 18
 - **kubectl** configured for your cluster
 - **Helm** >= 3.0
 - A cloud CLI (`aws`, `gcloud`, or `az`) configured for your provider, if you want the wizard to discover clusters or refresh kubeconfig
@@ -75,19 +75,23 @@ The wizard also handles cross-chart details that are easy to miss in hand-writte
 
 ## Commands
 
-| Command                     | Description                              |
-| :-------------------------- | :--------------------------------------- |
-| `rulebricks init`           | Interactive setup wizard                 |
-| `rulebricks deploy [name]`  | Deploy to Kubernetes                     |
-| `rulebricks upgrade [name]` | Upgrade to a new version                 |
-| `rulebricks destroy [name]` | Remove a deployment                      |
-| `rulebricks status [name]`  | Show deployment health                   |
-| `rulebricks logs [name]`    | Inspect services                         |
-| `rulebricks open [name]`    | Open the generated configuration files   |
-| `rulebricks backup [name]`  | Run an on-demand database backup         |
-| `rulebricks restore [name]` | Restore the database from object storage |
+| Command                                | Description                                                     |
+| :------------------------------------- | :--------------------------------------------------------------- |
+| `rulebricks init`                      | Interactive setup wizard                                        |
+| `rulebricks configure [name]`          | Update an existing deployment's configuration (deploy to apply) |
+| `rulebricks deploy [name]`             | Deploy to Kubernetes                                            |
+| `rulebricks upgrade [name]`            | Upgrade to a new version                                        |
+| `rulebricks destroy <name>`            | Remove a deployment (name required)                             |
+| `rulebricks status [name]`             | Show deployment health                                          |
+| `rulebricks logs [name] [component]`   | Inspect services (`app`, `hps`, `workers`, `kafka`, `supabase`, `traefik`) |
+| `rulebricks list`                      | List all deployments                                            |
+| `rulebricks clone <source> <target>`   | Clone a deployment configuration                                |
+| `rulebricks open <name>`               | Open the generated configuration files (name required)         |
+| `rulebricks benchmark [name]`          | Run load tests against a deployment                             |
+| `rulebricks backup [name]`             | Run an on-demand database backup                                |
+| `rulebricks restore [name]`            | Restore the database from object storage                        |
 
-Use `rulebricks -h` to explore all commands, and add `-h` to any command for its options.
+Where `[name]` is omitted, the CLI prompts you to pick a deployment interactively. Use `rulebricks -h` to explore all commands, and add `-h` to any command for its options.
 
 ## Object Storage and Backups
 

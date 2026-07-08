@@ -1,5 +1,5 @@
 ---
-metaDescription: Distributed tracing for private Rulebricks deployments - emit OpenTelemetry traces to Elastic APM, a generic OTLP/HTTP backend, or Azure Monitor, ship application logs to Elasticsearch, and view full request lineage.
+metaDescription: Distributed tracing for private Rulebricks deployments - view traces in the bundled ClickStack/HyperDX UI by default, or emit OpenTelemetry traces to Elastic APM, a generic OTLP/HTTP backend, or Azure Monitor.
 ---
 
 import { Callout } from 'nextra/components'
@@ -8,13 +8,13 @@ import { Callout } from 'nextra/components'
 
 Distributed tracing gives you the **full lineage of a request as it moves through every service** - from the ingress, through the app or the High Performance Server (HPS), across the Kafka work queue, into the worker that evaluates your rule, and back. Each hop is a span in a single trace, so you can see exactly where time is spent and where an error occurred.
 
-Tracing is **self-hosted only** and **off by default**. When enabled, Rulebricks deploys an in-cluster [OpenTelemetry Collector](https://opentelemetry.io/docs/collector/) that forwards traces to a **backend of your choice**. The instrumentation is backend-agnostic - the destination is selected at the collector's export step, so you can switch backends without touching the app. Three destinations are supported (works on both AWS and Azure):
+Tracing is **self-hosted only** and **on by default**: default installs ship [ClickStack](https://clickhouse.com/use-cases/observability) (`global.clickstack.enabled: true`) - an in-cluster OpenTelemetry collector backed by ClickHouse, with the HyperDX UI at `observability.<your-domain>` - and the app, HPS, and workers emit OTLP spans to it out of the box.
+
+If you would rather use your own backend, disable ClickStack and configure `global.tracing.*` instead. Rulebricks then deploys a standalone [OpenTelemetry Collector](https://opentelemetry.io/docs/collector/) that forwards traces to a **backend of your choice**. The instrumentation is backend-agnostic - the destination is selected at the collector's export step, so you can switch backends without touching the app. Three BYO destinations are supported (works on both AWS and Azure):
 
 - **`elastic`** (default) - your own (BYO) **Elastic APM** endpoint (Elastic Cloud, the Elastic add-on from a cloud marketplace, or self-hosted). Traces are viewable in Kibana APM.
 - **`otlp`** - any **generic OTLP/HTTP** backend (Grafana Tempo, Honeycomb, Jaeger, vendor OTLP gateways, or a cloud provider's OTLP ingestion endpoint).
 - **`azure-monitor`** - **Azure Monitor / Application Insights**, using an Application Insights connection string.
-
-We do not bundle a tracing backend - you run it and point Rulebricks at the endpoint.
 
 <Callout type="info">
   Tracing complements, and does not replace, the existing signals: **decision logs** still archive to object storage / ClickHouse, and **Prometheus metrics** still power Grafana. See [Decision Logs](/private-deployment/decision-logs) and [Monitoring](/private-deployment/monitoring).
@@ -30,7 +30,7 @@ Client ─▶ Traefik ─▶ HPS API ─▶ Kafka (solution) ─▶ HPS Worker �
                           OpenTelemetry Collector
                                        │
                                        ▼
-            Elastic APM  |  generic OTLP backend  |  Azure Monitor
+   ClickStack / HyperDX (default)  |  Elastic APM  |  generic OTLP backend  |  Azure Monitor
 ```
 
 - **Traefik** is the root span and propagates the W3C `traceparent` header to backends.
@@ -39,7 +39,7 @@ Client ─▶ Traefik ─▶ HPS API ─▶ Kafka (solution) ─▶ HPS Worker �
 
 ## Enabling tracing (CLI)
 
-The deployment wizard exposes a **Distributed Tracing** feature. Enable it, pick a **destination** (Elastic APM, generic OTLP/HTTP, or Azure Monitor), and provide the endpoint/credentials for that backend. Equivalent config-file fields per destination:
+With the default ClickStack observability feature enabled, tracing works out of the box and nothing below is required. To use a BYO backend instead, the deployment wizard exposes a **Distributed Tracing** feature: enable it, pick a **destination** (Elastic APM, generic OTLP/HTTP, or Azure Monitor), and provide the endpoint/credentials for that backend. Equivalent config-file fields per destination:
 
 ```yaml
 # Elastic APM (default)
@@ -80,7 +80,9 @@ The CLI wires the collector, the app/HPS/worker OTLP endpoints, and Traefik trac
 
 ## Enabling tracing (Helm)
 
-Tracing config lives under `global.tracing` so the application subcharts can read it. The `destination` key selects which backend block applies:
+With the default ClickStack install there is nothing to enable - the ClickStack gateway owns the `<release>-otel-collector` service and traces land in ClickHouse/HyperDX automatically.
+
+For a BYO backend, disable ClickStack (`global.clickstack.enabled: false`) and configure `global.tracing` so the application subcharts can read it; the standalone collector only deploys when ClickStack is off. The `destination` key selects which backend block applies:
 
 | Parameter                                       | Type    | Default        | Description                                                  |
 | :---------------------------------------------- | :------ | :------------- | :---------------------------------------------------------- |

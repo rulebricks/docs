@@ -290,7 +290,7 @@ This is the intended trust model for the internal-network deployment scenario th
 ## Troubleshooting
 
 **Every request returns 500 "Token passthrough is enabled but required env vars are missing: …"**
-Confirm that `global.externalAuth.enabled`, `global.supabase.jwtSecret`, and `global.email` are all set in your chart values, then redeploy. The chart's value schema also enforces `global.supabase.jwtSecret` is non-empty whenever passthrough is enabled, so a missing secret should fail at `helm install` time rather than at runtime.
+Confirm that `global.externalAuth.enabled`, `global.supabase.jwtSecret`, and `global.email` are all set in your chart values, then redeploy. The preflight check also requires the standard Supabase environment the chart wires for any install (the Supabase URL and service key); the error message lists exactly which variables are missing. The chart's value schema also enforces `global.supabase.jwtSecret` is non-empty whenever passthrough is enabled, so a missing secret should fail at `helm install` time rather than at runtime.
 
 **Every request returns 401 "Missing authentication token"**
 The header configured at `global.externalAuth.header` is not present on the incoming request. Verify the upstream proxy is adding the header and that its name matches exactly (case-insensitive, but the `Bearer ` prefix stripping only applies when the value is left at the default `Authorization`).
