@@ -29,7 +29,7 @@ Redis sits in front of Supabase as a shared cache layer. API key authentication 
 
 ### How Rulebricks Uses Kafka
 
-Rulebricks uses three Kafka topics. Topic names carry the configured `rulebricks.app.logging.kafkaTopicPrefix` (default `com.rulebricks.`, so the actual topic is `com.rulebricks.solution` and so on). The prefix exists so Rulebricks topics don't collide on shared or managed clusters; set it to `""` to disable prefixing.
+Rulebricks uses three Kafka topics. Topic names carry the configured `rulebricks.app.logging.kafkaTopicPrefix` (default `com.rulebricks.`, so the actual topic is `com.rulebricks.solution` and so on). Consumer group IDs carry the same prefix (e.g. `com.rulebricks.generic-workers`): Kafka group membership and rebalancing are group-wide rather than per-topic, so two Rulebricks deployments sharing one cluster must join distinct groups — otherwise every deploy of one stalls the other's consumers. The prefix exists so neither topics nor groups collide on shared or managed clusters; set it to `""` to disable prefixing of both.
 
 | Topic               | Purpose                                                 | Producers        | Consumers                                             |
 | :------------------ | :------------------------------------------------------ | :--------------- | :---------------------------------------------------- |
@@ -198,6 +198,7 @@ Admission is byte-first; item counts are not limited by default. Useful when set
 - **Item count:** unlimited by default. Operators can opt into a cap with `BULK_MAX_ITEMS` (HTTP 400 above it).
 - **Response amplification:** each chunk's response must fit the topic's `max.message.bytes` (2 MB default). Rules that expand outputs beyond roughly 16 KB average per payload will fail the request with an explicit error.
 - The whole request shares one 30-second execution deadline regardless of size.
+- **Context batch requests** (`POST /api/v1/contexts/batch/{slug}`, self-hosted bulk mode) share the same body ceiling and additionally cap records per request at 10,000 by default (HTTP 413 above it; configurable via `CONTEXT_BATCH_MAX_ITEMS` on HPS). Database writes are chunked at 500 records per statement (`CONTEXT_BATCH_DB_CHUNK`). See [Bulk Ingestion](/contexts/bulk-ingestion) for the endpoint contract.
 
 ### KEDA Autoscaling with External Kafka
 
@@ -211,8 +212,8 @@ The Rulebricks chart ships a Vector pod by default as the consumer of the `logs`
 
 A few things to know when externalizing Kafka:
 
-- **Consumer group.** Vector joins Kafka as `vector-consumers` (configured in `vector.customConfig.sources.kafka.group_id`). This is the group ID to use in `kafka-consumer-groups.sh` commands and any ACL rules.
-- **Consume-only.** In the default chart configuration Vector only reads from the `logs` topic; it does not produce back to Kafka. If your cluster enforces ACLs, the Vector principal needs `Read` and `Describe` on `logs` with group id `vector-consumers`, and no `Write`.
+- **Consumer group.** Vector joins Kafka as `vector-consumers` with the topic prefix applied (default `com.rulebricks.vector-consumers`). The chart wires this automatically through the templated `vector-kafka-env` ConfigMap into `vector.customConfig.sources.kafka.group_id`. This prefixed name is the group ID to use in `kafka-consumer-groups.sh` commands and any ACL rules.
+- **Consume-only.** In the default chart configuration Vector only reads from the `logs` topic; it does not produce back to Kafka. If your cluster enforces ACLs, the Vector principal needs `Read` and `Describe` on the prefixed `logs` topic with the prefixed group id (default `com.rulebricks.vector-consumers`), and no `Write`.
 - **Network reachability.** Vector must be able to reach the external brokers from inside the cluster, the same as HPS and the workers. Check network policies, security groups, and VPC peering accordingly.
 
 To verify Vector is healthy after pointing it at external Kafka:
@@ -221,7 +222,7 @@ To verify Vector is healthy after pointing it at external Kafka:
 kubectl get pods | grep vector
 kubectl logs <vector-pod> | grep -i "kafka\|partition"
 kafka-consumer-groups.sh --bootstrap-server <broker> \
-  --describe --group vector-consumers
+  --describe --group com.rulebricks.vector-consumers
 ```
 
 The pod should be `Running`, the logs should show a successful Kafka connection and partition assignment at startup, and consumer-group lag on `logs` should stay near zero under normal load. Growing lag almost always means Vector cannot reach the brokers or is missing ACL permissions.

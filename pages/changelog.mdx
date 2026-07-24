@@ -4,6 +4,46 @@ metaDescription: Track the latest updates, improvements, and bug fixes to the Ru
 
 ![SDK Banner](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/changelog-banner-dark.png)
 
+## June 13 - July 23, 2026 🪆
+
+### Flow Builder
+
+- **Flows Inside Flows**: Use existing flows as steps within other flows, making it possible to compose and reuse logic across your workspace instead of rebuilding it
+- **Flow Search**: A new search bar in the flow editor helps you quickly locate steps in large flows
+- **Redesigned Code Steps**: A dedicated code step editing experience, with support for dynamically loaded libraries
+- **Easier Connections**: Redesigned connection lines, drop targets, and live connection previews make wiring steps together faster and more predictable
+- **Smarter For Each Handling**: Results that share output keys are now merged intelligently, and connections can no longer accidentally cross For Each iteration boundaries
+- **Forms from Flows**: Publish a no-code form directly from a flow, not just from individual rules
+
+### Contexts
+
+- **Faster Instance Browsing**: Browsing context instances now uses server-side pagination with fast counts and prefix-based ID search, staying responsive at scale
+- **Drag-and-Drop Schema Editing**: Reorder facts in the context schema editor by simply dragging rows
+- **Clearer Relationships**: A new related facts section shows exactly what data each relationship provides to a context
+
+### Vocabulary & Logs
+
+- **Rename Collections Safely**: Rename value collections with bulk propagation to dependent rules, including optional republishing of affected rules
+- **Propagate Field Changes**: Push field changes across every rule that references them in a single action
+- **Filter Logs by Folder**: Decision logs can now be filtered by workspace folder, with more reliable rule-based filtering
+
+### Private Deployment
+
+- **OpenTelemetry Observability**: Self-hosted deployments now emit traces, metrics, and structured access logs via OpenTelemetry, including Redis operation metrics for deeper visibility into system health
+- **More Reliable Startup**: Clearer startup logging and more dependable health checks make deployments easier to monitor and troubleshoot
+- **Session Stability**: Improved handling of large sessions and token passthrough behavior, reducing unexpected logouts in SSO configurations
+
+### Performance & Security
+
+- **Higher Payload Limits**: Increased request size limits for flow testing and solve APIs across cloud and private deployments
+- **New Edge Regions**: Additional edge regions for lower API latency
+- **Group-Aware Imports**: Imported assets now automatically inherit the importing member's access groups
+- **Security Upgrades**: Stricter sandboxing for code evaluation, a strict allowlist for remote images, hardened email transport, and dependency updates addressing known vulnerabilities
+
+_These changes are now available in Rulebricks version 2.0.14_
+
+---
+
 ## May 22 - June 12, 2026 🧵
 
 ### Filament AI

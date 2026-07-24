@@ -63,10 +63,11 @@ The most common cause is enabling `global.tlsEnabled` before DNS records resolve
 kubectl get scaledobject -n rulebricks
 kubectl describe scaledobject rulebricks-hps-worker-scaler -n rulebricks
 
-# Check Kafka consumer lag
+# Check Kafka consumer lag (group names carry the configured topic prefix,
+# default com.rulebricks.)
 kubectl exec -it rulebricks-kafka-combined-0 -n rulebricks -- \
   kafka-consumer-groups.sh --bootstrap-server localhost:9092 \
-  --describe --group generic-workers
+  --describe --group com.rulebricks.generic-workers
 ```
 
 **Common causes:**

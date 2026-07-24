@@ -1,0 +1,135 @@
+---
+metaDescription: Submit large volumes of records to a context in synchronous batches.
+---
+
+# Bulk Ingestion
+
+import { Callout } from 'nextra/components'
+
+Bulk mode lets you stream large datasets into a context by submitting them in chunks. Each chunk is one synchronous API call: the records merge into their context instances, any bound rules or flows whose inputs became satisfied execute, and the response returns the **resolved state of every touched instance** along with what executed.
+
+There are no job IDs, no polling, and no separate result-retrieval step. Instances waiting on dependent data simply persist with `pending` status until a later chunk (or an interactive update) completes them—the same progressive semantics as single-record submissions, at volume.
+
+## Submitting Batches
+
+```
+POST /api/v1/contexts/batch/{context-slug}
+```
+
+The body is a JSON array of records (private deployments also accept NDJSON with `Content-Type: application/x-ndjson`). Every record must carry the context's **identity fact**; records for the same identity within one batch merge in array order.
+
+```json
+[
+  { "loan_id": "APP-1", "amount": 12000, "region": "us-east" },
+  { "loan_id": "APP-2", "amount": 7300, "region": "eu-west" },
+  { "loan_id": "APP-1", "credit_score": 715 }
+]
+```
+
+Send chunks sequentially or in parallel from your pipeline—each request is independent.
+
+**Chunk limits by platform:**
+
+- **Cloud:** a batch may not contain more records than your plan has monthly rule executions remaining (HTTP 402 above it—the batch size cap *is* your plan headroom), with a 4.5MB request body limit. Rules and flows executed by batches count toward plan usage; batches that only merge data cost nothing.
+- **Private deployments:** recommended **1,000–10,000 records per request** (default cap: 10,000 records and 6 MiB per request, configurable via `CONTEXT_BATCH_MAX_ITEMS` and `HTTP_BODY_LIMIT_BYTES`). No plan gating.
+
+## The Response
+
+Each response reports admission results, execution outcomes, and the full resolved state per instance:
+
+```json
+{
+  "context": "loan-application",
+  "accepted": 2,
+  "rejected": 0,
+  "executed": 1,
+  "rejections": [],
+  "results": [
+    {
+      "instance_id": "APP-1",
+      "positions": [0, 2],
+      "is_new": true,
+      "status": "complete",
+      "have": ["loan_id", "amount", "credit_score"],
+      "need": [],
+      "state": { "loan_id": "APP-1", "amount": 12000, "risk_tier": "low" },
+      "executed": [
+        {
+          "type": "rule",
+          "slug": "credit-check",
+          "status": "success",
+          "written_to_context": ["risk_tier"]
+        }
+      ],
+      "triggered": true
+    },
+    {
+      "instance_id": "APP-2",
+      "positions": [1],
+      "is_new": true,
+      "status": "pending",
+      "have": ["loan_id", "amount"],
+      "need": ["credit_score"],
+      "state": { "loan_id": "APP-2", "amount": 7300 },
+      "executed": [],
+      "triggered": false,
+      "reason": "not_ready"
+    }
+  ]
+}
+```
+
+Per-record validation failures appear in `rejections` with their array position. Execution outcomes per bound asset are `success`, `evaluation_error`, `infrastructure_error`, or `skipped_already_run`, and each instance's `executions` metadata records the trace IDs that join into your decision logs.
+
+**Record what each response tells you.** Since the response is the complete record of what happened to that chunk, your pipeline should capture rejections and execution errors as it goes—there is no server-side job ledger to consult later.
+
+### Slimming the Response
+
+By default each result carries the instance's full resolved state, so response size scales with your data. If you only need outcomes, narrow the per-instance fields with `?include=`:
+
+```
+POST /api/v1/contexts/batch/loan-application?include=status,executed
+```
+
+`instance_id` is always present; everything else (`positions`, `is_new`, `status`, `have`, `need`, `state`, `expires_at`, `executions`, `executed`, `triggered`, `reason`) is opt-in when `include` is set. Top-level counts and rejections are unaffected.
+
+## Retries Are Always Safe
+
+Retrying a chunk—after a timeout, a crash, or just to be sure—always converges:
+
+- **Merges are idempotent.** Re-sending the same facts changes nothing.
+- **Executions are deduplicated by input hash.** An asset re-runs only when its inputs differ from its last *successful* run. A retry after success skips execution (`skipped_already_run`); a retry after a crash or failure runs the work that never completed.
+
+This means a failed or interrupted load can simply be re-run from the start.
+
+## Execution Semantics
+
+Bound rules and flows follow the same triggering model as interactive submissions: an asset executes when all of its inputs are present and those inputs changed. Rules execute in dependency order (writers before readers) with outputs written back to the context between rounds; flows run afterward and write back through their own Context Operations steps. All execution flows through the platform's bulk-solve and flow machinery, so decision logging, tracing, and worker autoscaling behave exactly as direct API calls.
+
+Manual execution mode (`auto_execute_decisions: false`) is honored: batches merge data without executing anything.
+
+## Working with Relationships
+
+Computed facts that aggregate related contexts (`$relations`) are supported in bulk mode. Relation lookups add per-chunk query cost, so prefer smaller chunks for relation-heavy schemas.
+
+### Dependent Contexts Re-Evaluate Automatically
+
+When a batch changes records that other **bulk-mode** contexts depend on through relationships, those dependents are re-evaluated in the same request—one level deep, coalesced to one evaluation per dependent instance regardless of how many related records changed, and only for instances that already exist. Dependents whose asset inputs didn't actually change are skipped via the same input-hash mechanism. The response summarizes each cascade:
+
+```json
+{
+  "cascaded": [
+    {
+      "context": "customers",
+      "relation": "transactions",
+      "instances": 1840,
+      "executed": 1710,
+      "skipped": 130,
+      "evaluation_errors": 0,
+      "infrastructure_errors": 0
+    }
+  ]
+}
+```
+
+Two cases still call for an explicit follow-up batch of identity-only payloads (`[{ "customer_id": "C-1" }, ...]`): dependents that are **interactive** contexts (never push-triggered at batch scale; their computed facts stay correct at read time regardless), and chains deeper than one level. Input-hash triggering makes that follow-up cheap—only instances whose aggregates actually changed re-execute.

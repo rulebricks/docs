@@ -4,5 +4,6 @@
   "key-concepts": "Key Concepts",
   "binding-rules": "Linking Rules & Flows",
   "webhooks": "Webhooks",
+  "bulk-ingestion": "Bulk Ingestion",
   "gradient": "Rulebricks Gradient"
 }
