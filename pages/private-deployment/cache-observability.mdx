@@ -1,0 +1,103 @@
+---
+metaDescription: Monitor the Valkey cache in private Rulebricks deployments using Prometheus metrics and the optional Valkey Admin console.
+---
+
+import { Callout } from 'nextra/components'
+
+# Cache Observability
+
+Rulebricks uses a Redis-compatible cache for API key lookups, rule and flow definitions, named-environment routing, and short-lived flow-node results. The bundled cache is Valkey, but the chart keeps the `redis` values path for compatibility with existing overrides.
+
+Cache observability has two layers:
+
+- **Metrics**, enabled by default through the Valkey exporter and Prometheus ServiceMonitor.
+- **Valkey Admin**, an optional web console for inspecting the cache during operations.
+
+For the application-level cache model and external Redis setup, see [External Kafka & Redis](/private-deployment/external-services#externalizing-redis). For metric names and PromQL examples, see [Metrics Reference](/private-deployment/metrics-reference#valkey--redis-exporter-metrics).
+
+## Metrics
+
+The chart deploys the cache exporter by default:
+
+| Parameter | Default | Purpose |
+| :-------- | :------ | :------ |
+| `rulebricks.cache.redisExporter.enabled` | `true` | Deploys the Valkey/Redis exporter |
+| `rulebricks.cache.redisExporter.serviceMonitor.enabled` | `true` | Lets Prometheus scrape the exporter |
+| `rulebricks.redis.resources.*` | see values | Sizes the bundled Valkey pod |
+
+Useful signals include memory usage, connected clients, command rate, hit ratio, misses, and evictions. A healthy deployment usually shows high cache hit ratio and zero sustained evictions. If evictions rise, increase the bundled cache memory limit or review the capacity of your managed Redis service.
+
+```promql
+sum(rate(redis_commands_processed_total[5m]))
+redis_memory_used_bytes
+sum(rate(redis_keyspace_hits_total[5m])) / (sum(rate(redis_keyspace_hits_total[5m])) + sum(rate(redis_keyspace_misses_total[5m])))
+sum(rate(redis_evicted_keys_total[5m]))
+```
+
+<Callout type="info">
+  Rulebricks also emits service-side Redis operation metrics from the app, HPS,
+  and workers. Use those to understand which component is generating cache load,
+  and use the Valkey exporter to understand backend health.
+</Callout>
+
+## Valkey Admin
+
+Valkey Admin is disabled by default and is intended for short-lived operational access:
+
+| Parameter | Default | Purpose |
+| :-------- | :------ | :------ |
+| `rulebricks.cache.valkeyAdmin.enabled` | `false` | Deploys the Valkey Admin service |
+| `rulebricks.cache.valkeyAdmin.exposure` | `internal` | Keeps the console internal unless set to `ingress` |
+| `rulebricks.cache.valkeyAdmin.ingress.enabled` | `false` | Creates external routing when ingress exposure is selected |
+| `rulebricks.cache.valkeyAdmin.ingress.hostname` | `""` | Defaults to `valkey.<global.domain>` when exposed |
+| `rulebricks.cache.valkeyAdmin.ingress.basicAuth.users` | `[]` | BasicAuth users in htpasswd format |
+| `rulebricks.cache.valkeyAdmin.ingress.allowedIPs` | `[]` | Optional IP allowlist for exposed access |
+
+For internal access, enable the service and use `kubectl port-forward`:
+
+```yaml
+rulebricks:
+  cache:
+    valkeyAdmin:
+      enabled: true
+      exposure: internal
+```
+
+```bash
+kubectl port-forward -n rulebricks svc/<release>-valkey-admin 8080:8080
+```
+
+Only expose Valkey Admin through ingress when your platform team has approved the access path:
+
+```yaml
+rulebricks:
+  cache:
+    valkeyAdmin:
+      enabled: true
+      exposure: ingress
+      ingress:
+        enabled: true
+        hostname: valkey.rulebricks.example.com
+        basicAuth:
+          users:
+            - '<htpasswd-user-entry>'
+        allowedIPs:
+          - 203.0.113.0/24
+```
+
+<Callout type="warning">
+  Valkey Admin can reveal cache keys and operational state. Keep it internal by
+  default, require authentication when exposing it, and prefer short-lived access
+  during troubleshooting windows.
+</Callout>
+
+## Troubleshooting
+
+| Symptom | Check |
+| :------ | :---- |
+| No Valkey metrics in Prometheus | Confirm `rulebricks.cache.redisExporter.enabled`, the ServiceMonitor, and Prometheus target discovery |
+| Cache hit ratio drops sharply | Look for recent deploys, Redis connectivity warnings, or application cache invalidation events |
+| Evictions increase | Raise `rulebricks.redis.resources.limits.memory` or resize your managed Redis plan |
+| Valkey Admin is unreachable | Check `exposure`, ingress class, hostname, BasicAuth configuration, and network allowlists |
+
+If the cache itself is unavailable, HPS health output and service logs are the fastest way to confirm impact. See [External Kafka & Redis verification](/private-deployment/external-services#verification-checklist) for the end-to-end checks.

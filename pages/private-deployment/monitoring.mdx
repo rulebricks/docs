@@ -58,6 +58,18 @@ Prometheus captures the main operational signals you need to run Rulebricks:
 
 For the complete list of metric names, labels, meanings, useful PromQL, and alert starting points, see [Metrics Reference](/private-deployment/metrics-reference).
 
+## ClickStack Noise Controls
+
+ClickStack stores traces and operational logs by default. To keep routine health checks and metrics scrapes from dominating the observability backend, the chart applies collector-side filters before data is stored:
+
+| Parameter | Default | Purpose |
+| :-------- | :------ | :------ |
+| `clickstack.collector.filters.traces.httpPathAllowRegex` | `^/api/v1(/|$)` | Keeps HTTP trace spans for the decision API by default |
+| `clickstack.collector.filters.traces.httpPathDenyRegex` | health and metrics paths | Drops routine probe and scrape spans |
+| `clickstack.collector.filters.logs.bodyDenyRegex` | health and metrics requests | Drops routine probe and scrape log lines |
+
+Non-HTTP spans, such as Kafka, worker, and database spans, continue to pass through so trace trees stay complete. Set a filter value to `""` to disable that rule, or replace it with a regex that matches your own operator policy.
+
 ## Exporters
 
 The chart enables the standard exporters needed for the dashboard where it can do so safely:

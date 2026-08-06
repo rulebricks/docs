@@ -55,7 +55,7 @@ aws cloudformation wait stack-create-complete \
 aws eks update-kubeconfig --name rulebricks-cluster --region us-east-1
 ```
 
-Azure has an equivalent Bicep template (AKS with Workload Identity, a blob container, and Azure Monitor wiring), and GCP has gcloud guidance for GKE; see each directory's README. The templates are deployment-independent: they use EKS Pod Identity (or Azure federated identity credentials), and the CLI creates the namespace-scoped associations at `rulebricks deploy` time, so one cluster can host multiple deployments. For hand-managed clusters, the chart also accepts IRSA role ARNs directly; see [Storage & Backups](/private-deployment/storage-and-backups).
+Azure has an equivalent Bicep template (AKS with Workload Identity, a blob container, and Azure Monitor wiring), and GCP has gcloud guidance for GKE; see each directory's README. The Azure template also exposes stable parameters for the storage account, Managed Grafana workspace, Key Vault, and container registry names so platform teams can fit existing naming policies. The templates are deployment-independent: they use EKS Pod Identity (or Azure federated identity credentials), and the CLI creates the namespace-scoped associations at `rulebricks deploy` time, so one cluster can host multiple deployments. For hand-managed clusters, the chart also accepts IRSA role ARNs directly; see [Storage & Backups](/private-deployment/storage-and-backups).
 
 After the cluster exists and kubeconfig works, run `rulebricks init` and select it. The wizard can also refresh kubeconfig for EKS, GKE, or AKS when provider details are available.
 

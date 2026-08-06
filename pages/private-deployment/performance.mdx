@@ -32,21 +32,31 @@ The CLI validates both rules before anything reaches your cluster.
 | `rulebricks.hps.replicas`                   | integer | `3`                                    | HPS gateway replicas                                  |
 | `rulebricks.hps.workers.replicas`           | integer | `8`                                    | Base worker replica count                             |
 | `rulebricks.hps.workers.solutionPartitions` | integer | `128`                                  | Partition count of the `solution` topic (the ceiling) |
-| `rulebricks.hps.workers.resources.*`        | object  | 250m request / 1 CPU limit, 1Gi memory | Per-worker resources; scale out for throughput        |
+| `rulebricks.hps.workers.resources.*`        | object  | 500m request / 1 CPU limit, 1Gi memory | Per-worker resources; scale out for throughput        |
 
 ## KEDA Autoscaling
 
 | Parameter                                     | Type    | Default | Description                    |
 | :-------------------------------------------- | :------ | :------ | :----------------------------- |
 | `rulebricks.hps.workers.keda.enabled`         | boolean | `true`  | Enable KEDA autoscaling        |
-| `rulebricks.hps.workers.keda.minReplicaCount` | integer | `8`     | Minimum workers                |
-| `rulebricks.hps.workers.keda.maxReplicaCount` | integer | `64`    | Maximum workers                |
+| `rulebricks.hps.workers.keda.minReplicaCount` | integer | `28`    | Minimum workers                |
+| `rulebricks.hps.workers.keda.maxReplicaCount` | integer | `128`   | Maximum workers                |
 | `rulebricks.hps.workers.keda.pollingInterval` | integer | `5`     | Seconds between metric checks  |
 | `rulebricks.hps.workers.keda.cooldownPeriod`  | integer | `300`   | Seconds before scale-down      |
-| `rulebricks.hps.workers.keda.lagThreshold`    | integer | `50`    | Kafka lag threshold (messages) |
+| `rulebricks.hps.workers.keda.lagThreshold`    | integer | `15`    | Kafka lag threshold (messages) |
 | `rulebricks.hps.workers.keda.cpuThreshold`    | integer | `25`    | CPU percentage backup trigger  |
 
-Lag is measured in messages. HPS splits bulk requests into bounded chunks, so each message represents roughly 50 to 150ms of work, and the default threshold of 50 biases toward early scale-out during bursts.
+Lag is measured in messages. HPS splits bulk requests into bounded chunks, so each message represents roughly 50 to 150ms of work, and the default threshold of 15 biases toward early scale-out during bursts.
+
+The HPS gateway is also KEDA-scaled by default on `solution-response` lag and CPU:
+
+| Parameter                                | Type    | Default | Description                    |
+| :---------------------------------------- | :------ | :------ | :----------------------------- |
+| `rulebricks.hps.keda.enabled`            | boolean | `true`  | Enable gateway autoscaling     |
+| `rulebricks.hps.keda.minReplicaCount`    | integer | `4`     | Minimum HPS gateway pods       |
+| `rulebricks.hps.keda.maxReplicaCount`    | integer | `16`    | Maximum HPS gateway pods       |
+| `rulebricks.hps.keda.lagThreshold`       | integer | `50`    | Response-topic lag threshold   |
+| `rulebricks.hps.keda.cpuThreshold`       | integer | `45`    | CPU percentage backup trigger  |
 
 ```mermaid
 flowchart LR
@@ -92,10 +102,25 @@ The chart is designed to keep stateful and ingress infrastructure stable while w
 | Parameter                                  | Default | Description                                                             |
 | :----------------------------------------- | :------ | :---------------------------------------------------------------------- |
 | `global.priorityClasses.enabled`           | `true`  | Creates release-scoped critical and burst PriorityClasses               |
+| `rulebricks.hps.warmup.enabled`            | `true`  | Allows planned workloads to hold the worker fleet at max replicas       |
+| `rulebricks.hps.warmup.ttlSeconds`         | `600`   | How long a warm-up request keeps the fleet scaled up                    |
+| `rulebricks.hps.warmup.prewarmOnInstall`   | `false` | Optional post-install node/image prewarm for environments that benefit  |
 | `rulebricks.hps.imagePrepull.enabled`      | `true`  | Runs a DaemonSet that pre-pulls HPS server and worker images onto nodes |
 | `rulebricks.hps.workers.priorityClassName` | unset   | Defaults to the release burst class when priority classes are enabled   |
 
 The CLI's cluster-setup templates use a burst node pool labeled and tainted `rulebricks.com/pool=burst`. Worker pods tolerate and prefer that pool, while critical services such as Kafka, ClickHouse, and the database can use the release critical class. If you run a fixed cluster with no autoscaler or dedicated burst pool, consider disabling `global.priorityClasses.enabled` or explicitly setting worker priority to match your platform policy.
+
+## Context and Batch-Ingest Runtime Guards
+
+Recent chart defaults include HPS environment variables that improve context-heavy workloads without changing the public API:
+
+| Environment variable | Default | Where set | Purpose |
+| :------------------- | :------ | :-------- | :------ |
+| `RB_FN_CONTEXT_REUSE` | `"1"` | HPS gateway and workers | Reuses isolated function execution contexts instead of creating a new context for every derived field or function cell |
+| `CONTEXT_CASCADE_MAX_INSTANCES` | `"2000"` | HPS gateway | Caps the number of dependent records re-evaluated per relationship cascade |
+| `CONTEXT_CASCADE_BUDGET_MS` | `"45000"` | HPS gateway | Caps wall-clock time spent in one synchronous cascade phase before remaining work is deferred |
+
+Most deployments should keep these defaults. Lower the cascade limits only when batch context ingestion competes with latency-sensitive solve traffic on the same worker capacity, and raise them only after load testing shows the database and worker fleet have enough headroom.
 
 ## Other Scaling Surfaces
 

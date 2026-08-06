@@ -156,14 +156,16 @@ Enable AI-powered rule generation (optional):
 
 | Parameter                | Type    | Default | Description        |
 | :----------------------- | :------ | :------ | :----------------- |
-| `global.ai.enabled`      | boolean | `false` | Enable AI features |
-| `global.ai.openaiApiKey` | string  | `""`    | OpenAI API key     |
+| `global.ai.enabled`       | boolean | `false` | Enable AI features                                      |
+| `global.ai.openaiApiKey`  | string  | `""`    | OpenAI API key                                          |
+| `global.ai.openaiBaseUrl` | string  | `""`    | Optional OpenAI-compatible API base URL, including `/v1` |
 
 ```yaml
 global:
   ai:
     enabled: true
     openaiApiKey: 'sk-...'
+    openaiBaseUrl: 'https://gateway.example.com/v1'
 ```
 
 ### SSO Configuration
@@ -335,9 +337,12 @@ HPS handles rule execution with horizontal scaling. For the sizing model behind 
 | `rulebricks.hps.workers.enabled`            | boolean | `true`                                                                        | Enable worker pods                                                              |
 | `rulebricks.hps.workers.replicas`           | integer | `8`                                                                           | Base worker replica count                                                       |
 | `rulebricks.hps.workers.solutionPartitions` | integer | `128`                                                                         | Partition count of the `solution` topic; the worker fleet's concurrency ceiling |
-| `rulebricks.hps.workers.resources.*`        | object  | 250m request / 1 CPU limit, 1Gi memory                                        | Per-worker resources; scale out for throughput                                  |
+| `rulebricks.hps.workers.resources.*`        | object  | 500m request / 1 CPU limit, 1Gi memory                                        | Per-worker resources; scale out for throughput                                  |
 | `rulebricks.hps.workers.keda.*`             | object  | see [Performance & Scaling](/private-deployment/performance#keda-autoscaling) | KEDA autoscaling configuration                                                  |
+| `rulebricks.hps.warmup.*`                   | object  | enabled, 600s TTL                                                             | Holds the worker fleet at its ceiling before large batch workloads              |
 | `rulebricks.hps.imagePrepull.enabled`       | boolean | `true`                                                                        | Pre-pulls HPS server and worker images on nodes before burst scale-out          |
+| `rulebricks.hps.extraEnv`                   | list    | context reuse and cascade guard defaults                                      | Advanced HPS runtime environment overrides                                      |
+| `rulebricks.hps.workers.extraEnv`           | list    | context reuse default                                                         | Advanced worker runtime environment overrides                                   |
 
 #### HPS Gateway Autoscaling
 
@@ -346,12 +351,12 @@ The HPS gateway (the API pods, distinct from the workers) is also KEDA-scaled by
 | Parameter                                | Type    | Default | Description                             |
 | :---------------------------------------- | :------ | :------ | :--------------------------------------- |
 | `rulebricks.hps.keda.enabled`            | boolean | `true`  | Enable gateway autoscaling              |
-| `rulebricks.hps.keda.minReplicaCount`    | integer | `3`     | Baseline gateway fleet                  |
-| `rulebricks.hps.keda.maxReplicaCount`    | integer | `8`     | Gateway scale-out ceiling               |
+| `rulebricks.hps.keda.minReplicaCount`    | integer | `4`     | Baseline gateway fleet                  |
+| `rulebricks.hps.keda.maxReplicaCount`    | integer | `16`    | Gateway scale-out ceiling               |
 | `rulebricks.hps.keda.pollingInterval`    | integer | `15`    | Metric poll interval (seconds)          |
 | `rulebricks.hps.keda.cooldownPeriod`     | integer | `600`   | Wait before scaling down (seconds)      |
-| `rulebricks.hps.keda.lagThreshold`       | integer | `300`   | `solution-response` lag per replica     |
-| `rulebricks.hps.keda.cpuThreshold`       | integer | `60`    | CPU utilization target (%)              |
+| `rulebricks.hps.keda.lagThreshold`       | integer | `50`    | `solution-response` lag threshold       |
+| `rulebricks.hps.keda.cpuThreshold`       | integer | `45`    | CPU utilization target (%)              |
 
 #### HPS Image
 
@@ -448,9 +453,9 @@ Kafka handles async rule execution and logging.
 | Parameter                  | Type    | Default    | Description                                                   |
 | :------------------------- | :------ | :--------- | :------------------------------------------------------------ |
 | `kafka.enabled`            | boolean | `true`     | Deploy the in-cluster Strimzi Kafka broker and Topic Operator |
-| `kafka.version`            | string  | `"4.2.0"`  | Kafka version supported by the bundled Strimzi operator       |
+| `kafka.version`            | string  | `"4.2.1"`  | Kafka version supported by the bundled Strimzi operator       |
 | `kafka.replicas`           | integer | `1`        | Broker replica count                                          |
-| `kafka.storage.size`       | string  | `"20Gi"`   | Broker persistent storage size                                |
+| `kafka.storage.size`       | string  | `"50Gi"`   | Broker persistent storage size                                |
 | `kafka.storage.class`      | string  | `"gp3"`    | Broker storage class                                          |
 | `kafka.priorityClassName`  | string  | `""`       | PriorityClass for the broker pod, usually filled by the CLI   |
 | `strimzi-kafka-operator.*` | object  | see values | Operator images and namespace watch settings                  |
@@ -504,7 +509,7 @@ When external Kafka uses a token-based SASL mechanism (AWS MSK IAM, GCP OAUTHBEA
 | `kafkaBridge.region`                 | string  | `""`    | Region (required for AWS MSK IAM signing)     |
 | `kafkaBridge.brokers`                | string  | `""`    | Upstream managed-Kafka broker list            |
 | `kafkaBridge.localPort`              | integer | `19092` | Local plaintext port Vector consumes from     |
-| `kafkaBridge.image`                  | string  | `"docker.io/rulebricks/kafka-proxy:0.4.3"` | kafka-proxy sidecar image (override for registry mirrors) |
+| `kafkaBridge.image`                  | string  | `"docker.io/rulebricks/kafka-proxy:0.4.3-r1"` | kafka-proxy sidecar image (override for registry mirrors) |
 | `kafkaBridge.awsRoleArn`             | string  | `""`    | IRSA role ARN (AWS)                           |
 | `kafkaBridge.gcpServiceAccountEmail` | string  | `""`    | Workload Identity service account email (GCP) |
 
@@ -529,7 +534,7 @@ Traefik handles all incoming traffic and TLS termination.
 | `traefik.ingressClass.name`       | string  | `"traefik"` | Ingress class name |
 | `traefik.autoscaling.enabled`     | boolean | `true`      | Enable HPA         |
 | `traefik.autoscaling.minReplicas` | integer | `1`         | Minimum replicas   |
-| `traefik.autoscaling.maxReplicas` | integer | `4`         | Maximum replicas   |
+| `traefik.autoscaling.maxReplicas` | integer | `8`         | Maximum replicas   |
 
 Traefik resources, ports, and persistence follow the upstream subchart's values under `traefik.*`; the chart's defaults expose 80/443 and need no changes for typical deployments.
 
@@ -569,6 +574,7 @@ Vector's Kafka connection (brokers, TLS, SASL, and the prefixed log topic) is te
 | `global.clickstack.enabled`   | Cross-chart switch for the built-in ClickStack observability backend, enabled by default |
 | `clickstack.hyperdx.*`        | HyperDX UI, ingress, and resources                                                       |
 | `clickstack.collector.*`      | OpenTelemetry gateway and node-agent resources                                           |
+| `clickstack.collector.filters.*` | Trace and log noise controls applied before ClickStack storage                         |
 | `clickstack.ferretdb.*`       | Metadata store used by HyperDX                                                           |
 | `global.tracing.*`            | Optional BYO tracing collector when ClickStack is disabled                               |
 | `vector-agent.*`              | Optional Kubernetes app/container log shipping to a customer-managed log backend         |

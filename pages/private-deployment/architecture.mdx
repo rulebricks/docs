@@ -122,9 +122,9 @@ sequenceDiagram
 
 | Component       | Purpose                                  | Scaling                               |
 | :-------------- | :--------------------------------------- | :------------------------------------ |
-| **Traefik**     | Ingress, TLS termination, routing        | HPA (1-4 replicas default)            |
+| **Traefik**     | Ingress, TLS termination, routing        | HPA (1-8 replicas default)            |
 | **App**         | Web UI, rule editor, management API      | Single replica                        |
-| **HPS Gateway** | API gateway for rule execution           | KEDA-scaled (3-8 replicas default)    |
+| **HPS Gateway** | API gateway for rule execution           | KEDA-scaled (4-16 replicas default)   |
 | **HPS Workers** | Rule execution engines                   | KEDA-scaled Deployment                |
 | **Valkey (Redis-compatible cache)** | Rule cache, session storage | Single replica with persistence  |
 | **Kafka**       | Message queue, event streaming           | KRaft mode, single node default       |
@@ -133,9 +133,6 @@ sequenceDiagram
 | **ClickHouse**  | Decision log queries and telemetry store | Single replica with persistence       |
 | **ClickStack**  | Traces, operational logs, and HyperDX UI | Single replica default                |
 | **Prometheus**  | Metrics collection                       | Single replica, optional remote write |
-
----
-
 ## Decision Log Pipeline
 
 Every rule execution emits a structured decision log. HPS API and worker pods produce entries to the Kafka `logs` topic (`com.rulebricks.logs` with the default topic prefix); Vector archives them to object storage as NDJSON; ClickHouse queries the archive on demand for the dashboard:
@@ -150,9 +147,6 @@ flowchart LR
 ```
 
 The full walkthrough, values, and custom sink examples live in [Decision Logs](/private-deployment/decision-logs). Database backups travel to the same bucket under a separate key prefix; see [Storage & Backups](/private-deployment/storage-and-backups).
-
----
-
 ## Database Migrations
 
 The chart includes two migration job variants that run automatically based on your configuration.
@@ -193,9 +187,6 @@ The job extracts SQL migrations from the Rulebricks app image, waits for Postgre
 The job authenticates with your access token via the Supabase CLI, links to your project, pushes configuration (domain, SMTP, auth settings, email templates), applies the schema with `supabase db push`, and enables SSL enforcement.
 
 If a migration job fails, see [Troubleshooting](/private-deployment/troubleshooting#migration-jobs) for diagnostics.
-
----
-
 ## DNS and TLS Setup
 
 ### DNS Record Requirements
@@ -204,9 +195,6 @@ If a migration job fails, see [Troubleshooting](/private-deployment/troubleshoot
 | :------------------- | :------------------------------ |
 | Self-hosted Supabase | `{domain}`, `supabase.{domain}` |
 | Managed Supabase     | `{domain}` only                 |
-
----
-
 ## Scaling Considerations
 
 | Component   | Scaling Method | Trigger                          |
