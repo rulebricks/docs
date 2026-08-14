@@ -4,6 +4,38 @@ metaDescription: Track the latest updates, improvements, and bug fixes to the Ru
 
 ![SDK Banner](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/changelog-banner-dark.png)
 
+## July 24 - August 14, 2026 🧪
+
+### Compare & Simulate
+
+- **Scenario Simulator**: Compare two versions of a rule or flow by running saved scenarios side by side, including impact runs that execute a parent flow while swapping the open asset’s version
+- **Richer Version Compare**: The Compare tool now lets you pick which versions to diff, and rapidly toggle between comparing the asset itself, its scenarios, or the vocabulary it uses
+- **Vocabulary Diffs**: See exactly which values changed between two versions of a rule or flow, so you can tell whether a result change came from logic or from its vocabulary subtly changing
+
+### Rule Editor
+
+- **Rule-Level Hit Policy**: Set a hit policy for an entire rule (First Match, Fill Values, Add Values, or Compute Values) from Rule Settings, not just inside groups
+
+### Vocabulary & Objects
+
+- **Improved Values API**: Create, update, read, and delete vocabulary values through `/api/v1/values`, with cursor pagination and chunked imports that stay fast at large catalog sizes
+- **Collection Sync**: New `/api/v1/values/sync` allows your vocabulary in Rulebricks to easily match an external source of truth
+- **Objects API**: Create, update, and delete objects programmatically; enum fields stay in sync as managed values, with a dry-run preview of what would change
+- **Large Catalog Performance**: The Vocabulary tab and rule editor now load values on demand instead of pulling the full catalog, so browsing and solving stay responsive as catalogs grow
+
+### Logs & Traces
+
+- **Filter Logs by Context**: Decision logs can now be filtered by context, alongside the existing rule, flow, and folder filters
+- **Search Execution Traces**: Search a flow execution path, including items inside For Each blocks 
+
+### Workspace
+
+- **Drag Folders**: Reorder and nest folders in the workspace by dragging them, the same way you already move rules and flows
+
+_These changes are now available in Rulebricks version 2.0.48_
+
+---
+
 ## June 13 - July 23, 2026 🪆
 
 ### Flow Builder
@@ -251,7 +283,7 @@ _Now available in `rulebricks/app:1.5.10, rulebricks/hps:1.5.9`_
 
 #### Rule Analysis Tools
 
-- **Reachability Analysis**: New tool to identify unreachable conditions in your rules—find dead code and logic that can never execute
+- **Reachability Analysis**: New tool to identify unreachable conditions in your rules, finding dead code and logic that can never execute
 - **Impact Analysis**: Analyze how changes to specific conditions affect rule outcomes, helping you understand the downstream effects before making modifications
 
 #### Flow Editor Improvements
@@ -842,4 +874,4 @@ _Now available in `rulebricks/app:0.0.11`_
 
 ---
 
-_Last updated: May 21, 2026_
+_Last updated: August 14, 2026_

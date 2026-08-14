@@ -23,7 +23,7 @@ import {
 
 While your configurable rules are undoubtedly the most valuable pieces Flows expose, we offer several built-in functions to help your team collect data from external sources and run logic conditionally.
 
-We call these "flow functions"– special operations you can use in your flows to perform various actions beyond rule execution. Below are all the available flow function node types– but do try our application or reach out to get information on our latest capabilities.
+We call these "flow functions": special operations you can use in your flows to perform various actions beyond rule execution. Below are all the available flow function node types, but do try our application or reach out to get information on our latest capabilities.
 
 ## Continue If
 
@@ -196,7 +196,7 @@ Iterate over a list of items and apply a rule to each one. Perfect for:
 
 ![AI Inference](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/integrating-rules/ai-inference.png)
 
-Extract structured data from text using OpenAI. Useful for:
+Extract structured data from text using the AI connection configured in your workspace settings (Settings → AI features, OpenAI or Anthropic). Useful for:
 
 - Parsing emails and reports
 - Extracting specific information from documents
@@ -206,7 +206,10 @@ To use:
 
 1. Connect a text input
 2. Define target labels to extract
-3. Click "Run Inference"
+3. Optionally pick a model from your provider (defaults to your workspace's fast model)
+4. Click "Run Inference"
+
+This node (and other AI features) only appears once an AI connection is configured for your workspace.
 
 ## Vault
 

@@ -48,7 +48,7 @@ For example, if you have a group with two conditions, and the first condition re
 
 3. #### Compute Values
 
-*Compute Values* is the most advanced hit policy in Rulebricks and allows you to define a custom accumulation pattern for each column. This policy is useful if you want to add up the results of multiple satisfied rows for some columns, but not for others. It's also useful if you'd like more control over how you combine responses from multiple satisfied rows, rather than just adding up everything– this policy also allows you to write your own accumulation function, should you need it.
+*Compute Values* is the most advanced hit policy in Rulebricks and allows you to define a custom accumulation pattern for each column. This policy is useful if you want to add up the results of multiple satisfied rows for some columns, but not for others. It's also useful if you'd like more control over how you combine responses from multiple satisfied rows, rather than just adding up everything. This policy also allows you to write your own accumulation function, should you need it.
 
 A good example of this policy in action can be found on [this use-case page](https://rulebricks.com/examples/rules/investment-portfolio-builder).
 
@@ -59,3 +59,18 @@ A good example of this policy in action can be found on [this use-case page](htt
 You can visually identify groups in your decision table by the group indicator, which is a small colored circle that appears to the left of the group's conditions. Different groups are assigned random unique colors.
 
 ![Group Indicator](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/advanced-features/group-dots.png)
+
+---
+
+## Rule-Level Hit Policy
+
+In addition to group-level hit policies, you can set a hit policy for your **entire rule**. Open Rule Settings by clicking the settings icon in the rule editor navbar, and find the **Hit Policy** option under the **Execution** tab.
+
+By default, rules use **First Match**. When multiple rows are satisfied by a request, only the first satisfied row (or the first satisfied group) determines the response, and any other matches are ignored. Selecting **Fill Values**, **Add Values**, or **Compute Values** instead combines the responses of *all* satisfied rows in your decision table using that strategy, exactly as the equivalent group hit policies do. Rows are always combined in the order they appear in your decision table.
+
+A few things to keep in mind:
+
+- **Groups keep their meaning.** If your rule contains groups, each group's satisfied rows are combined first using that group's own hit policy. The rule-level hit policy then combines those group results together with any other satisfied rows, in table order.
+- **Priorities still apply.** If satisfied rows or groups have different priorities, only the highest-priority matches are combined. Priority continues to select which rows are in play, and the hit policy decides how their responses combine.
+- **Priority isn't configurable at the rule level.** Priorities are only meaningful for subsets of rows competing within a rule, so the rule-level setting is purely a hit policy.
+- Like other execution settings, the rule-level hit policy takes effect as soon as it is saved.

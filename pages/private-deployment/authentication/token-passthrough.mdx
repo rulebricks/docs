@@ -6,7 +6,7 @@ import { Callout } from 'nextra/components'
 
 # External Authentication
 
-This page describes a **token passthrough** authentication mode for self-hosted Rulebricks deployments. Use this mode when Rulebricks lives inside an already-protected network — behind an identity-aware proxy, an internal API gateway, or a service mesh — and you want Rulebricks to trust the JWT that upstream system has already issued as the sole source of user identity, without running any OAuth / OIDC / password flow of its own.
+This page describes a **token passthrough** authentication mode for self-hosted Rulebricks deployments. Use this mode when Rulebricks lives inside an already-protected network (behind an identity-aware proxy, an internal API gateway, or a service mesh) and you want Rulebricks to trust the JWT that upstream system has already issued as the sole source of user identity, without running any OAuth / OIDC / password flow of its own.
 
 This mode completely disables Rulebricks' own authentication surface: the login UI is hidden, password and magic-link flows are shut off, and identity is derived entirely from the header your proxy attaches to each request.
 
@@ -14,7 +14,7 @@ This mode completely disables Rulebricks' own authentication surface: the login 
   **Never consider this mode** on a public-facing deployment, on a cloud-hosted
   tenant, or anywhere you cannot absolutely guarantee that every request
   reaching Rulebricks has been through your gatekeeper. Rulebricks does **not**
-  verify the token signature in this mode – the entire security guarantee rests
+  verify the token signature in this mode. The entire security guarantee rests
   on your upstream proxy.
 </Callout>
 
@@ -54,7 +54,7 @@ sequenceDiagram
 
 ## Enabling Passthrough via the Helm Chart
 
-Token passthrough is enabled through a dedicated block in your `values.yaml`. When `global.externalAuth.enabled` is `true`, the chart automatically wires the required flags into the Rulebricks app's ConfigMap and Secret — no manual `env` overrides needed.
+Token passthrough is enabled through a dedicated block in your `values.yaml`. When `global.externalAuth.enabled` is `true`, the chart automatically wires the required flags into the Rulebricks app's ConfigMap and Secret. No manual `env` overrides needed.
 
 A minimal configuration looks like this:
 
@@ -72,7 +72,7 @@ global:
 ```
 
 <Callout type="info">
-  `global.supabase.jwtSecret` and `global.email` are sensitive — prefer sourcing
+  `global.supabase.jwtSecret` and `global.email` are sensitive. Prefer sourcing
   them via `global.secrets.secretRef` (External Secrets Operator,
   sealed-secrets, or a manually created Kubernetes Secret) rather than pasting
   them directly into `values.yaml`.
@@ -97,27 +97,27 @@ These three chart values **must** be set when passthrough is enabled. The app re
 | Chart value                        | Default         | Purpose                                                                                                                                                                                                                                             |
 | :--------------------------------- | :-------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `global.externalAuth.header`       | `Authorization` | Header name to read the external JWT from. If `Authorization` (the default), the `Bearer ` prefix is stripped automatically. Use something like `X-Auth-Token` for deployments where the `Authorization` header is already used for something else. |
-| `global.externalAuth.claims.id`    | `sub`           | JWT claim path to read as the external stable user identifier. Stored in `user_metadata.external_sub` for reference. Not used for auth — Supabase UUIDs are the real identity.                                                                      |
+| `global.externalAuth.claims.id`    | `sub`           | JWT claim path to read as the external stable user identifier. Stored in `user_metadata.external_sub` for reference. Not used for auth; Supabase UUIDs are the real identity.                                                                      |
 | `global.externalAuth.claims.email` | `email`         | JWT claim path to read as the user's email. This is the only claim Rulebricks actually uses for user upsert, so it must exist and be unique per user.                                                                                               |
 | `global.externalAuth.claims.name`  | `name`          | JWT claim path to read as the user's display name. Copied into `user_metadata.full_name`, which a DB trigger writes to `public.users.name`.                                                                                                         |
 | `global.externalAuth.publicPaths`  | `[]`            | YAML list of URL-path prefixes that should NOT require the token. The chart joins them with commas for the app. Useful for public forms (e.g. `['/form/', '/api/form/']`). Requests matching any prefix pass through middleware untouched. `/api/health`, `/api/metrics`, `/auth/denied`, `/api/self-hosted-branding`, and requests carrying `x-api-key` are always auto-exempt by the app. |
 
 ## Token Shape
 
-Rulebricks accepts any valid 3-part JWT (`header.payload.signature`). It does not verify the signature — the upstream proxy is responsible for all verification. The algorithm field can be anything (HS256, RS256, ES256, `none`, etc.).
+Rulebricks accepts any valid 3-part JWT (`header.payload.signature`). It does not verify the signature; the upstream proxy is responsible for all verification. The algorithm field can be anything (HS256, RS256, ES256, `none`, etc.).
 
 ### Required Payload Claim
 
-- `email` (configurable via `global.externalAuth.claims.email`) — The user's email address. Used as the identity key. If the JWT is missing this claim, the middleware returns 401.
+- `email` (configurable via `global.externalAuth.claims.email`): The user's email address. Used as the identity key. If the JWT is missing this claim, the middleware returns 401.
 
 ### Recommended Payload Claims
 
-- `sub` (configurable via `global.externalAuth.claims.id`) — A stable external identifier such as the IdP's internal user ID. Stored in `user_metadata.external_sub` and `user_metadata.external_claims` on the Supabase auth user for future cross-reference.
-- `name` (configurable via `global.externalAuth.claims.name`) — A human-readable display name. Appears on the user's profile in Rulebricks.
+- `sub` (configurable via `global.externalAuth.claims.id`): A stable external identifier such as the IdP's internal user ID. Stored in `user_metadata.external_sub` and `user_metadata.external_claims` on the Supabase auth user for future cross-reference.
+- `name` (configurable via `global.externalAuth.claims.name`): A human-readable display name. Appears on the user's profile in Rulebricks.
 
 ### Optional Payload Claims
 
-Any additional claims (e.g. `department`, `role`, `groups`, `cost_center`, `tenant`) are preserved on the auth user (in `user_metadata.external_claims`) and surfaced in the Rulebricks admin SSO-mapping UI. The admin can configure claim-based access / role / tenant / profile mappings from that UI — see [Claim Mapping](/private-deployment/authentication/claim-mapping).
+Any additional claims (e.g. `department`, `role`, `groups`, `cost_center`, `tenant`) are preserved on the auth user (in `user_metadata.external_claims`) and surfaced in the Rulebricks admin SSO-mapping UI. The admin can configure claim-based access / role / tenant / profile mappings from that UI. See [Claim Mapping](/private-deployment/authentication/claim-mapping).
 
 ### Example Token Payload
 
@@ -140,7 +140,7 @@ Host: rulebricks.internal
 X-Auth-Token: eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJzdWIiOiJleHQtdXNlci1mM2EyIiwiZW1haWwiOiJhbGljZUBhY21lLmNvbSIsIm5hbWUiOiJBbGljZSBMaW0ifQ.
 ```
 
-Signature bytes can be empty or anything else — they are discarded.
+Signature bytes can be empty or anything else; they are discarded.
 
 ## User Lifecycle
 
@@ -169,7 +169,7 @@ There is no traditional sign-out in passthrough mode. If an end user triggers si
 - The browser's Supabase session cookie is cleared.
 - On the next request through the proxy, the middleware sees the token again and immediately restores the session (transparent re-login).
 
-This is the expected behavior — in passthrough mode, the proxy owns the session lifetime, not Rulebricks.
+This is the expected behavior. In passthrough mode, the proxy owns the session lifetime, not Rulebricks.
 
 ## Claim Mapping
 
@@ -180,7 +180,7 @@ See [Claim Mapping](/private-deployment/authentication/claim-mapping) for the fu
 Mappings are saved to `public.users.ssoRoleMapping` on the admin's row and re-applied on every subsequent user sign-in. Until mappings are configured, every non-admin user is provisioned with the default `developer` role.
 
 <Callout type="info">
-  The SSO tab is named "SSO" for historical reasons — the same UI works for
+  The SSO tab is named "SSO" for historical reasons. The same UI works for
   token passthrough because both use the same claim-based provisioning pipeline.
 </Callout>
 
@@ -199,7 +199,7 @@ When `global.externalAuth.enabled: true`:
 
 ## RLS and Tenant Isolation
 
-The Rulebricks database has row-level security policies on every user-facing table. These policies use `auth.uid()` — a Supabase function that returns the `sub` claim of the validated JWT.
+The Rulebricks database has row-level security policies on every user-facing table. These policies use `auth.uid()`, a Supabase function that returns the `sub` claim of the validated JWT.
 
 In passthrough mode:
 
@@ -209,9 +209,9 @@ In passthrough mode:
 
 The external token's `sub` is **never** used for authorization. It is stored as metadata for reference, but identity is always Rulebricks-generated Supabase UUIDs. This means:
 
-- A user's tokens can carry different `sub` values over time (e.g., if the upstream system rotates identifiers) with no impact — emails are the matching key.
+- A user's tokens can carry different `sub` values over time (e.g., if the upstream system rotates identifiers) with no impact, because emails are the matching key.
 - Rulebricks UUIDs remain stable across token rotations.
-- RLS policies — including the self-hosted "parent tenant" checks — behave identically to normal deployments.
+- RLS policies, including the self-hosted "parent tenant" checks, behave identically to normal deployments.
 
 ## Local Testing
 
@@ -247,7 +247,7 @@ The simplest way to try passthrough is with a local Rulebricks chart install poi
    ```
 
 5. Craft a token. Any of these work:
-   - **[jwt.io](https://jwt.io)** — Paste a payload, copy the encoded token, ignore the signature.
+   - **[jwt.io](https://jwt.io):** Paste a payload, copy the encoded token, ignore the signature.
    - **Node one-liner**:
      ```bash
      node -e '
@@ -285,7 +285,7 @@ Passthrough mode is **explicitly trust-based**. Rulebricks does not verify the t
 
 If any of those assumptions breaks, an attacker who can inject HTTP headers reaching Rulebricks can impersonate any user (including the admin) simply by crafting a JSON payload.
 
-This is the intended trust model for the internal-network deployment scenario this feature is designed for. Deployments that cannot meet these assumptions should use the standard OIDC SSO mode instead — see the [SSO Overview](/private-deployment/authentication) for configuration.
+This is the intended trust model for the internal-network deployment scenario this feature is designed for. Deployments that cannot meet these assumptions should use the standard OIDC SSO mode instead. See the [SSO Overview](/private-deployment/authentication) for configuration.
 
 ## Troubleshooting
 

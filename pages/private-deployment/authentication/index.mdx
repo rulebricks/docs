@@ -8,16 +8,16 @@ import { Callout, Steps } from 'nextra/components'
 
 This section explains how Rulebricks maps incoming SSO identities onto its internal authorization model, and how to configure that mapping from the **Team → SSO** tab. It is written for workspace administrators running a self-hosted or white-labeled Rulebricks deployment.
 
-If you cannot provision an SSO application for Rulebricks — for example because Rulebricks lives inside a private network behind an existing identity-aware proxy — see [Token Passthrough](/private-deployment/authentication/token-passthrough) for the alternative that delegates authentication to your upstream proxy.
+If you cannot provision an SSO application for Rulebricks, for example because Rulebricks lives inside a private network behind an existing identity-aware proxy, see [Token Passthrough](/private-deployment/authentication/token-passthrough) for the alternative that delegates authentication to your upstream proxy.
 
 ## What the SSO Team Tab Does
 
 The SSO Team tab connects incoming identity claims from your IdP to four dimensions of Rulebricks authorization:
 
-- **Access** — who is allowed to enter the application at all
-- **Tenants** — which tenancy boundaries a user can see
-- **Roles** — what permissions the user has once inside
-- **Profile** — how the user's name and avatar are populated
+- **Access:** who is allowed to enter the application at all
+- **Tenants:** which tenancy boundaries a user can see
+- **Roles:** what permissions the user has once inside
+- **Profile:** how the user's name and avatar are populated
 
 Each dimension is configured independently. The full reference for every field lives in [Claim Mapping](/private-deployment/authentication/claim-mapping).
 
@@ -65,7 +65,7 @@ There are two intentional exceptions:
 
 <Callout type="info">
   Tenant auto-creation is always on. Administrators do not need to pre-create
-  every tenant value — newly seen tenants are created automatically on first
+  every tenant value. Newly seen tenants are created automatically on first
   login.
 </Callout>
 
@@ -116,5 +116,5 @@ Optionally configure `Profile` so user display names and avatars are populated f
 
 ## Where to Next
 
-- [Claim Mapping](/private-deployment/authentication/claim-mapping) — the full reference for the `Access`, `Tenants`, `Roles`, and `Profile` sections of the Team tab.
-- [Token Passthrough](/private-deployment/authentication/token-passthrough) — for deployments that cannot provision an SSO application for Rulebricks and instead want to delegate authentication to an upstream proxy.
+- [Claim Mapping](/private-deployment/authentication/claim-mapping): the full reference for the `Access`, `Tenants`, `Roles`, and `Profile` sections of the Team tab.
+- [Token Passthrough](/private-deployment/authentication/token-passthrough): for deployments that cannot provision an SSO application for Rulebricks and instead want to delegate authentication to an upstream proxy.

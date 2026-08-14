@@ -66,7 +66,7 @@ A gold-tier customer with score 750 matches both, but gets Plan A.
 **Fix:** If unintentional, make conditions mutually exclusive. If intentional, document why and ignore the warning.
 
 <Callout>
-  Partial overlaps aren't always bugs—sometimes you want earlier rows to take
+  Partial overlaps aren't always bugs. Sometimes you want earlier rows to take
   precedence.
 </Callout>
 
@@ -114,7 +114,7 @@ Without a catch-all, unmatched inputs return an error.
 **Fix:** Add a final row with "any" for all conditions if you want a default result. Leave it out if you want unhandled cases to error.
 
 <Callout>
-  This is informational—intentionally omitting a catch-all is valid when you
+  This is informational. Intentionally omitting a catch-all is valid when you
   want unhandled cases flagged as errors.
 </Callout>
 
@@ -124,7 +124,7 @@ Without a catch-all, unmatched inputs return an error.
   It is important to note that warnings aren't always available. Warnings don't
   appear when your rule uses row groups with priorities, individual row
   priorities, or OR rows. These features change evaluation semantics in ways
-  static analysis can't predict—use [Reachability
+  static analysis can't predict. Use [Reachability
   Analysis](/analysis-tools/reachability-analysis) for runtime validation
   instead.
 </Callout>

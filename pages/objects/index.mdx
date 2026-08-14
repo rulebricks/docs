@@ -22,11 +22,28 @@ When building a rule, select an Object and its fields appear in the schema edito
 
 ![Map Fields from Object](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/objects/map-fields-from-object.png)
 
-### Automatic Dynamic Values
+### System-managed Dynamic Values
 
-If your Object uses JSON Schema with `enum` fields, Rulebricks extracts those values and creates dropdown options in your rule conditions.
+If your Object uses JSON Schema with `enum` fields, Rulebricks generates a **managed value collection** from each of them, which power dropdown options in your rule conditions.
 
 ![Enum Benefits](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/objects/mapping-fields-enums-benefits.png)
+
+Managed values are locked projections of the object's schema. The object is their source of truth:
+
+- They cannot be edited, deleted, moved, or renamed like ordinary values. The Vocabulary tab badges them as **Object-managed**.
+- Updating the object's schema updates them: new enums create values, changed enums update in place, and removed enums **archive** their values. Archived values disappear from pickers immediately, while published rules that still reference them keep resolving forever. Re-adding an enum revives the same value, so rule references never break.
+- Users with the **manage objects** entitlement can still edit a managed value directly from the Vocabulary tab. The edit writes back into the object's JSON Schema and re-syncs, so the object always stays authoritative.
+- Visibility set on an object (user groups) propagates to every value it generates.
+
+This turns one object into a single asset that administers many collections. Maintain the schema in the dashboard or by [pushing it programmatically](/objects/creating-objects#programmatic-object-management), and everything downstream follows.
+
+<Callout type="info">
+  Object management (creating, updating, and deleting objects, and editing
+  the managed values they generate) requires the **manage objects**
+  entitlement. Administrators and developers have it by default; editors do
+  not, so business users always work against the latest vocabulary without
+  being able to change it.
+</Callout>
 
 ### Consistency
 
@@ -56,7 +73,7 @@ Objects can be defined using both JSON Schemas, or just an example JSON object. 
 
 Even if you don't have a unified JSON schema anywhere, we make it really easy to make one using our "Smart Import" tool.
 
-**JSON Schema** — Full schema definitions with types, validation rules, and enums
+**JSON Schema:** Full schema definitions with types, validation rules, and enums
 
 ```json
 {
@@ -75,7 +92,7 @@ Even if you don't have a unified JSON schema anywhere, we make it really easy to
 }
 ```
 
-**JSON Object** — Plain example objects when you just want field suggestions without full validation
+**JSON Object:** Plain example objects when you just want field suggestions without full validation
 
 ```json
 {

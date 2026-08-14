@@ -85,7 +85,8 @@ graph TB
 
     Kafka --> Vector
     Vector --> ObjectStorage
-    ClickHouse --> ObjectStorage
+    Vector --> ClickHouse
+    ObjectStorage -.->|bounded fallback / PVC-less| ClickHouse
     App --> ClickHouse
     App --> ClickStack
     HPS --> ClickStack
@@ -129,8 +130,8 @@ sequenceDiagram
 | **Valkey (Redis-compatible cache)** | Rule cache, session storage | Single replica with persistence  |
 | **Kafka**       | Message queue, event streaming           | KRaft mode, single node default       |
 | **PostgreSQL**  | Persistent data storage                  | Single replica with PVC               |
-| **Vector**      | Decision log aggregation and forwarding  | Static replicas                       |
-| **ClickHouse**  | Decision log queries and telemetry store | Single replica with persistence       |
+| **Vector**      | Decision log dual-write and forwarding   | Static replicas                       |
+| **ClickHouse**  | Bounded decision log queries and telemetry | Single replica, PVC by default      |
 | **ClickStack**  | Traces, operational logs, and HyperDX UI | Single replica default                |
 | **Prometheus**  | Metrics collection                       | Single replica, optional remote write |
 
@@ -138,18 +139,19 @@ sequenceDiagram
 
 ## Decision Log Pipeline
 
-Every rule execution emits a structured decision log. HPS API and worker pods produce entries to the Kafka `logs` topic (`com.rulebricks.logs` with the default topic prefix); Vector archives them to object storage as NDJSON; ClickHouse queries the archive on demand for the dashboard:
+Every rule execution emits a structured decision log. HPS API and worker pods produce entries to the Kafka `logs` topic (`com.rulebricks.logs` with the default topic prefix). In persistent mode, Vector writes each normalized record both to the TTL-bounded ClickHouse MergeTree table used by the app and to the durable zstd NDJSON archive:
 
 ```mermaid
 flowchart LR
     HPS["HPS API / worker pods"] -->|produce| LogsTopic["Kafka logs topic"]
     LogsTopic -->|consume| Vector[Vector]
-    Vector -->|"NDJSON archive (hourly partitions)"| Bucket["Object Storage (global.storage)"]
-    Bucket -->|query on demand| ClickHouse[ClickHouse]
-    ClickHouse --> Dashboard[Rulebricks Dashboard]
+    Vector -->|"zstd NDJSON (hourly Hive partitions)"| Bucket["Object Storage (full history)"]
+    Vector -->|"same normalized records"| ClickHouse["ClickHouse decision_logs (MergeTree)"]
+    ClickHouse --> App["Dashboard / API / history tools"]
+    Bucket -.->|"trace fallback or PVC-less queries"| ClickHouse
 ```
 
-The full walkthrough, values, and custom sink examples live in [Decision Logs](/private-deployment/decision-logs). Database backups travel to the same bucket under a separate key prefix; see [Storage & Backups](/private-deployment/storage-and-backups).
+Normal in-app queries use only the table. The bucket is read for bounded execution-trace fallback and in PVC-less mode, and remains available to your warehouse for full-history analysis. The full walkthrough, values, and custom sink examples live in [Decision Logs](/private-deployment/decision-logs). Database backups travel to the same bucket under a separate key prefix; see [Storage & Backups](/private-deployment/storage-and-backups).
 
 ---
 

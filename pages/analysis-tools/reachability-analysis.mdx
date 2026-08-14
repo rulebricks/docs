@@ -8,7 +8,7 @@ Your rule has 47 rows. Which ones actually matter?
 
 import { Tabs, Callout } from 'nextra/components'
 
-Reachability Analysis shows you exactly which rows are being hit by real traffic—and which ones might be dead weight. It analyzes your execution logs to surface usage patterns you wouldn't otherwise see.
+Reachability Analysis shows you exactly which rows are being hit by real traffic, and which ones might be dead weight. It analyzes your execution logs to surface usage patterns you wouldn't otherwise see.
 
 ![Reachability Analysis](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/rule-analysis-tools/reachability-analysis.png)
 
@@ -26,7 +26,7 @@ Which rows are doing the heavy lifting:
 </Tabs.Tab>
 <Tabs.Tab>
 
-Which conditions are blocking matches. This helps you understand why certain rows aren't being reached—maybe a condition is too restrictive, or an earlier row is catching everything.
+Which conditions are blocking matches. This helps you understand why certain rows aren't being reached: maybe a condition is too restrictive, or an earlier row is catching everything.
 
 </Tabs.Tab>
 <Tabs.Tab>
@@ -49,11 +49,11 @@ The panel header shows summary stats: how many requests matched at least one row
 
 A row with 0% hits over 30 days is probably:
 
-- **Unreachable** — an earlier catch-all row blocks it
-- **Obsolete** — handles an edge case that never actually occurs
-- **Safe to remove** — cleaning up your rule table
+- **Unreachable:** an earlier catch-all row blocks it
+- **Obsolete:** handles an edge case that never actually occurs
+- **Safe to remove:** cleaning up your rule table
 
-Before deleting, make sure to thoroughly investigate _why_ it's not being hit. Some rows handle rare but critical cases— you don't want to remove your fraud detection row just because it only fires twice a month.
+Before deleting, make sure to thoroughly investigate _why_ it's not being hit. Some rows handle rare but critical cases. You don't want to remove your fraud detection row just because it only fires twice a month.
 
 ## Performance Optimization
 
@@ -63,6 +63,6 @@ Use [Impact Analysis](/analysis-tools/impact-analysis) afterward to verify that 
 
 ## Large Reports
 
-Computation is handled on our servers– but we encourage users to be prudent about the sample sizes they use as particularly large requests may take several minutes to complete and potentially timeout.
+Computation is handled on our servers, but we encourage users to be prudent about the sample sizes they use as particularly large requests may take several minutes to complete and potentially timeout.
 
 We perform cardinality analysis on your rule internally to optimize reachability reports for massive amounts of data/rows.

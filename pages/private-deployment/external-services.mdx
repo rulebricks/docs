@@ -23,13 +23,13 @@ For the overall component layout and request flow, see [Architecture](/private-d
 
 The idempotent Kafka producer guarantees exactly-once delivery at the broker level, and the correlation-ID mechanism ensures responses always route back to the correct HPS replica. This is why partition counts matter so much on an external cluster.
 
-Redis sits in front of Supabase as a shared cache layer. API key authentication payloads are cached with a short TTL (60 seconds), while rule/flow definitions and named-environment lookups are cached without expiry and invalidated over a Redis pub/sub channel when they change; every pod also keeps an in-process LRU in front of Redis. In practice, Supabase sees very few direct queries under normal operation.
+Redis sits in front of Supabase as a shared cache layer. API key authentication payloads are cached with a short TTL (60 seconds), while rule/flow definitions and named-environment release pins are cached without expiry and invalidated over a Redis pub/sub channel when they change; every pod also keeps an in-process LRU in front of Redis. Redis is strictly a cache: release pins and version content are authoritatively stored in Postgres, and solvers self-heal missing Redis entries from the database on demand. In practice, Supabase sees very few direct queries under normal operation.
 
 ## Externalizing Kafka
 
 ### How Rulebricks Uses Kafka
 
-Rulebricks uses three Kafka topics. Topic names carry the configured `rulebricks.app.logging.kafkaTopicPrefix` (default `com.rulebricks.`, so the actual topic is `com.rulebricks.solution` and so on). Consumer group IDs carry the same prefix (e.g. `com.rulebricks.generic-workers`): Kafka group membership and rebalancing are group-wide rather than per-topic, so two Rulebricks deployments sharing one cluster must join distinct groups — otherwise every deploy of one stalls the other's consumers. The prefix exists so neither topics nor groups collide on shared or managed clusters; set it to `""` to disable prefixing of both.
+Rulebricks uses three Kafka topics. Topic names carry the configured `rulebricks.app.logging.kafkaTopicPrefix` (default `com.rulebricks.`, so the actual topic is `com.rulebricks.solution` and so on). Consumer group IDs carry the same prefix (e.g. `com.rulebricks.generic-workers`): Kafka group membership and rebalancing are group-wide rather than per-topic, so two Rulebricks deployments sharing one cluster must join distinct groups. Otherwise every deploy of one stalls the other's consumers. The prefix exists so neither topics nor groups collide on shared or managed clusters; set it to `""` to disable prefixing of both.
 
 | Topic               | Purpose                                                 | Producers        | Consumers                                             |
 | :------------------ | :------------------------------------------------------ | :--------------- | :---------------------------------------------------- |
@@ -135,7 +135,13 @@ Ask your Kafka team to create (names take your configured topic prefix):
 | `solution-response` | Must equal `rulebricks.hps.workers.solutionPartitions`                  | Same as `solution`                      | Same as `solution`                                                 |
 | `logs`              | 8-24 depending on volume                                                | 2-3 in production (long-lived data)     | Size to your Vector outage tolerance, e.g. `retention.ms=86400000` |
 
-Set `max.message.bytes` to at least `2097152` (2 MB) on all three topics. HPS chunks are byte-bounded well below this, but the headroom prevents edge-case produce failures, and a response chunk can exceed its request chunk when rules expand payloads.
+Set `max.message.bytes` to `8388608` (8 MiB) on `solution` and `solution-response`, matching the chart's in-cluster defaults. Request chunks are planner-capped at 2 MiB of input, so the headroom exists for **responses**: a worker's result rides as a single Kafka message and may legitimately grow to several times its chunk's input when rules expand payloads. A result that exceeds the cap fails the request with an explicit HTTP 413 rather than a timeout. The `logs` topic only needs `2097152` (2 MB) - decision-log records are sliced far below it.
+
+Managed-service caveats for the 8 MiB profile:
+
+- **AWS MSK Serverless** allows exactly 8 MiB (`max.message.bytes` maxes out at `8388608`), but its per-topic *default* is ~1 MiB - set the cap explicitly when creating the topics.
+- **Azure Event Hubs** Standard and Premium cap events at 1 MB, which cannot carry the default large-payload profile; either lower the HPS payload envelope (`rulebricks.hps.limits` in the Helm values) to keep chunks and responses under 1 MB, or use a self-serve Dedicated cluster (20 MB events).
+- **Confluent Cloud / Aiven / Redpanda** support 8 MiB per-topic caps on standard tiers.
 
 Partition count on `solution` is the worker fleet's concurrency ceiling, not a worker quota; the 2x headroom recommendation and the full sizing model are explained in [Performance & Scaling](/private-deployment/performance#the-sizing-model).
 
@@ -143,7 +149,7 @@ For replication, 1 is acceptable on the RPC topics because the traffic is transi
 
 ### Partition Sizing for solution-response
 
-The `solution-response` topic is partition-sensitive. HPS replicas share a consumer group over this topic, so each replica is assigned a subset of partitions. When producing a response, the worker writes to the _exact_ partition the originating HPS replica is consuming. If the topic has fewer partitions than expected, responses land on partitions no replica is watching, causing 30-second timeouts.
+The `solution-response` topic is partition-sensitive. HPS replicas share a consumer group over this topic, so each replica is assigned a subset of partitions. When producing a response, the worker writes to the _exact_ partition the originating HPS replica is consuming. If the topic has fewer partitions than expected, responses land on partitions no replica is watching, and requests hang until the RPC deadline (`RPC_TIMEOUT_MS`, 300s chart default) before failing with a 504.
 
 The expected partition count is set in the Helm values:
 
@@ -159,7 +165,7 @@ The HPS deployment template passes `solutionPartitions` to HPS as the `MAX_WORKE
 <Callout type="warning">
   Keep `solutionPartitions` equal to the actual partition count of
   `solution-response` on your external cluster. A mismatch here is the most
-  common cause of 30-second timeouts on solve requests.
+  common cause of solve requests timing out at the full RPC deadline.
 </Callout>
 
 If you raise a topic's partition count later, HPS Kafka clients observe the change within about 30 seconds (`metadataMaxAge: 30000`), and consumers fully rebalance onto new partitions at their next group rebalance. Chart upgrades roll the workers, which forces one. HPS pods gate readiness on the response consumer owning partitions (`GET /ready` returns 503 until group join completes), so traffic never reaches an instance that can't receive its responses.
@@ -191,14 +197,15 @@ No tuning is needed on the external Kafka side beyond ensuring the three topics 
 
 ### Request Size Limits
 
-Admission is byte-first; item counts are not limited by default. Useful when setting client expectations:
+Admission is byte-first; item counts are not limited by default. The Helm chart ships a **large-batch profile** sized for 100MB-class bulk requests; every bound below is an env var on HPS (chart value in `rulebricks.hps.limits`), and the Kafka message caps, ingress timeouts, and HPS memory are sized in lockstep with them. Useful when setting client expectations:
 
-- **Total request body:** 6 MiB hard ceiling by default (HTTP 413 above it; configurable via `HTTP_BODY_LIMIT_BYTES` on HPS). We recommend clients stay around 1 MB or less for the best latency profile. Larger bodies execute fine but cost proportionally more parse time and fan out into more chunks.
-- **Single payload:** 1.5 MiB serialized hard ceiling (HTTP 413 naming the offending array index; configurable via `ITEM_MAX_BYTES`, which must stay below the topics' `max.message.bytes` minus envelope headroom).
+- **Total request body:** 128 MiB chart default (HTTP 413 above it; `HTTP_BODY_LIMIT_BYTES`). Without the chart env, the HPS binary defaults to 6 MiB. Clients get the best latency profile around 1 MB or less; larger bodies execute fine but cost proportionally more parse time and fan out into more chunks.
+- **Single payload:** 6 MiB serialized chart default (HTTP 413 naming the offending array index; `ITEM_MAX_BYTES`, which must stay below the topics' `max.message.bytes` minus envelope headroom).
 - **Item count:** unlimited by default. Operators can opt into a cap with `BULK_MAX_ITEMS` (HTTP 400 above it).
-- **Response amplification:** each chunk's response must fit the topic's `max.message.bytes` (2 MB default). Rules that expand outputs beyond roughly 16 KB average per payload will fail the request with an explicit error.
-- The whole request shares one 30-second execution deadline regardless of size.
-- **Context batch requests** (`POST /api/v1/contexts/batch/{slug}`, self-hosted bulk mode) share the same body ceiling and additionally cap records per request at 10,000 by default (HTTP 413 above it; configurable via `CONTEXT_BATCH_MAX_ITEMS` on HPS). Database writes are chunked at 500 records per statement (`CONTEXT_BATCH_DB_CHUNK`). See [Bulk Ingestion](/contexts/bulk-ingestion) for the endpoint contract.
+- **Execution deadline:** the whole request shares one 300-second deadline regardless of size (`RPC_TIMEOUT_MS`; 60s without the chart env). Anything in front of HPS - ingress read timeouts, L4 idle timeouts - must sit above it; the chart configures Traefik accordingly, and the CLI raises Azure's 4-minute load-balancer idle timeout.
+- **Concurrent large bodies:** each HPS replica admits at most 2 requests larger than 8 MiB at once (`LARGE_BODY_MAX_CONCURRENT` / `LARGE_BODY_THRESHOLD_BYTES`); excess requests are shed immediately with HTTP 429 + `Retry-After` instead of queueing in memory. Clients sending large batches should honor 429 with a short backoff.
+- **Response amplification:** each chunk's response rides as a single Kafka message and must fit the topic's `max.message.bytes` (8 MiB chart default). Request chunks carry at most 2 MiB of input, so rules can expand outputs roughly 4x before a result is undeliverable - at which point the request fails with an explicit HTTP 413 identifying the response as too large, rather than timing out.
+- **Context batch requests** (`POST /api/v1/contexts/batch/{slug}`, self-hosted bulk mode) accept 128 MiB bodies and cap records per request at 100,000 by chart default (HTTP 413 above it; `CONTEXT_BATCH_BODY_LIMIT_BYTES` / `CONTEXT_BATCH_MAX_ITEMS`). Database writes are chunked at 500 records per statement (`CONTEXT_BATCH_DB_CHUNK`). See [Bulk Ingestion](/contexts/bulk-ingestion) for the endpoint contract.
 
 ### KEDA Autoscaling with External Kafka
 
@@ -208,7 +215,7 @@ However, ensure KEDA can reach your external Kafka brokers from within the clust
 
 ### Vector and the logs topic
 
-The Rulebricks chart ships a Vector pod by default as the consumer of the `logs` topic. HPS API and worker pods produce structured decision-log entries to Kafka after each request completes (non-blocking, post-response); Vector reads them and forwards to whatever sink the chart is configured for, commonly the object storage archive that ClickHouse queries, S3, or an HTTP endpoint into a SIEM.
+The Rulebricks chart ships a Vector pod by default as the consumer of the `logs` topic. HPS API and worker pods produce structured decision-log entries to Kafka after each request completes (non-blocking, post-response). In the default persistent configuration, Vector writes every normalized record to both the app-facing ClickHouse MergeTree table and the durable object storage archive; custom S3, SIEM, or HTTP sinks can receive the same stream. PVC-less mode omits the local table write and serves date-bounded queries from the archive.
 
 A few things to know when externalizing Kafka:
 
@@ -245,14 +252,16 @@ Redis serves as a shared cache between all Rulebricks components: the main app, 
 
 What lives in Redis:
 
-| Data                                     | TTL                              | Written By         |
-| :--------------------------------------- | :------------------------------- | :----------------- |
-| API key auth payloads                    | 60s                              | HPS                |
-| Rule/flow definitions (compressed)       | No expiry (pub/sub invalidation) | Main app (not HPS) |
-| Named-environment release mappings       | No expiry                        | Main app (not HPS) |
-| Flow node results (API, SOAP, DB, vault) | 1–300s                           | Workers            |
+| Data                                     | TTL                              | Written By                     |
+| :--------------------------------------- | :------------------------------- | :----------------------------- |
+| API key auth payloads                    | 60s                              | HPS                            |
+| Rule/flow definitions (compressed)       | No expiry (pub/sub invalidation) | Main app (not HPS)             |
+| Named-environment release pins           | No expiry (self-healing)         | Main app; HPS heals on miss    |
+| Flow node results (API, SOAP, DB, vault) | 1–300s                           | Workers                        |
 
-Redis is accessed using basic commands (`GET`, `SET` with `EX`, `EXPIRE`, `DEL`) plus one pub/sub channel: the main app publishes to `rulebricks:cache:invalidate` after rule, flow, or API-key changes, and HPS and worker pods subscribe to clear their in-process caches immediately. No Lua scripts, no streams. A vanilla Redis instance is all that's needed, with no clustering, persistence configuration, or eviction policy requirements — but the endpoint must support `PUBLISH`/`SUBSCRIBE`. If pub/sub is unavailable, pods log a warning and cache freshness degrades to TTL-based expiry only.
+Redis is accessed using basic commands (`GET`, `SET` with `EX`, `EXPIRE`, `DEL`) plus one pub/sub channel: the main app publishes to `rulebricks:cache:invalidate` after rule, flow, API-key, or release changes, and HPS and worker pods subscribe to clear their in-process caches immediately. No Lua scripts, no streams. A vanilla Redis instance is all that's needed, with no clustering, persistence configuration, or eviction policy requirements, but the endpoint must support `PUBLISH`/`SUBSCRIBE`. If pub/sub is unavailable, pods log a warning and cache freshness degrades to TTL-based expiry only (release pins are additionally bounded by a short in-process TTL, so environment cutovers propagate within ~20 seconds even without pub/sub).
+
+Losing Redis data is safe for correctness: release pins are rebuilt from the database automatically the next time each environment URL is requested, and `POST /api/v1/admin/releases/reconcile` rebuilds every pin for a workspace in one call (useful after a Redis migration or flush).
 
 ### What You Provide
 
@@ -303,7 +312,7 @@ The Redis client is pre-configured with TCP keepalive, auto-pipelining, and expo
 If `redis.enabled` is `false` and no `external` host is provided, Redis operates in a no-op mode where cache writes are silently discarded and reads return empty. HPS will start and log a warning, but consequences are significant:
 
 - **Every authentication and entity lookup hits Supabase directly.** Expect a ~60x increase in database queries at steady state.
-- **Named-environment URLs stop working.** Requests like `/api/v1/solve/my-rule/prod` return 404 because the `releases_*` cache keys are only written by the main app into Redis. Numeric versions and `latest` still work.
+- **Named-environment URLs keep working but hit the database.** Release pins resolve from Postgres (with a short in-process cache) instead of Redis, adding a database round-trip on cache-miss requests.
 - **Flow-node caching is lost.** API, SOAP, and database nodes inside flows execute on every invocation.
 
 ## Supabase
@@ -322,7 +331,7 @@ These services stay chart-managed even with an external database. Beyond providi
 
 ### Supported PostgreSQL Versions
 
-For an external database, run **PostgreSQL 17** (recommended — it matches the bundled in-cluster database and the CLI's managed-RDS default) or **PostgreSQL 16**. PostgreSQL 15 and below are not supported: the bootstrap job's replication grants require PostgreSQL 16+ role-inheritance syntax on AWS RDS, and Supabase Realtime does not support older majors without superuser access, which managed providers do not offer. The server must also have logical replication enabled (`wal_level = logical`; on RDS set `rds.logical_replication = 1` in the parameter group) for Realtime.
+For an external database, run **PostgreSQL 17** (recommended, since it matches the bundled in-cluster database and the CLI's managed-RDS default) or **PostgreSQL 16**. PostgreSQL 15 and below are not supported: the bootstrap job's replication grants require PostgreSQL 16+ role-inheritance syntax on AWS RDS, and Supabase Realtime does not support older majors without superuser access, which managed providers do not offer. The server must also have logical replication enabled (`wal_level = logical`; on RDS set `rds.logical_replication = 1` in the parameter group) for Realtime.
 
 It is worth noting **the database is likely not a bottleneck.** Because Redis aggressively caches entity definitions, and every pod has an in-process LRU in front of Redis, actual database read/write volumes under normal operation are generally minimal.
 
@@ -385,6 +394,6 @@ A 200 response confirms Kafka, Redis, Supabase, and the worker pipeline are all 
 | :--------------------------------------------------------------------------- | :-------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------- |
 | All solve requests return 503                                                | Kafka disabled or unreachable                                               | Check `kafkaBrokers`, verify network connectivity to brokers                                                     |
 | Requests timeout after 30s                                                   | `solution-response` partition count ≠ `solutionPartitions`                  | Raise the topic's partition count, or update `solutionPartitions` to match                                       |
-| Named-environment URLs return 404                                            | Redis not connected, or main app and HPS point at different Redis instances | Verify `redis: true` on `/health`; ensure shared Redis                                                           |
+| Named-environment URLs return 404                                            | No live release exists for that environment (Redis loss no longer causes this; pins self-heal from Postgres) | Check the release's status in the Releases tab; run `POST /api/v1/admin/releases/reconcile` to rebuild pins      |
 | Persistent consumer lag on `solution`                                        | Not enough worker replicas                                                  | Scale up `hps.workers.replicas` or `hps.workers.keda.minReplicaCount`                                            |
 | Decision logs stop reaching ClickHouse / S3 / SIEM after externalizing Kafka | Vector can't reach or authenticate to the external broker                   | Check Vector pod logs and network reachability; for token-auth Kafka verify the `kafkaBridge` sidecar is enabled |

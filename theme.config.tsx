@@ -202,7 +202,7 @@ const config: DocsThemeConfig = {
     text: () => {
       return (
         <a
-          href="https://www.rulebricks.com/blog/ai-business-rules"
+          href="https://rulebricks.com/filament"
           target="_blank"
           className="flex flex-row justify-start -ml-4 sm:ml-0 sm:justify-center items-center text-center align-middle group duration-100 transition-all hover:text-lime-200"
         >
@@ -211,7 +211,7 @@ const config: DocsThemeConfig = {
             className="size-3 flex-shrink-0 group-hover:fill-lime-300/50 group-hover:rotate-[120deg] transition-all duration-150 sm:size-4 inline-block mr-2 "
           />
           <span className="text-xs sm:text-base align-middle self-center truncate">
-            Tired of reading documentation? Try our new AI suite. More →
+            Tired of reading documentation? Try Filament. More →
           </span>
         </a>
       )

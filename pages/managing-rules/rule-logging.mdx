@@ -23,6 +23,7 @@ Each entry shows:
 
 - Request and response payloads
 - Which conditions matched or failed
+- The materialized vocabulary values used by that rule version
 - HTTP status, IP address, timestamp, and duration
 
 Filter by rule, status code, or date range to narrow down what you're looking for.
@@ -97,6 +98,10 @@ timeout
 error
 ```
 
+A bare UUID is treated as an execution/correlation ID and returns every log
+from that execution tree (the flow-level record plus its subflow and rule
+records).
+
 </Tabs.Tab>
 </Tabs>
 
@@ -105,3 +110,25 @@ Field names are case-sensitive and must match your schema. Queries search both r
 ## Log Details
 
 Click any entry to see the full request/response JSON, detailed condition evaluation, and timing data.
+
+Rule entries also include **Referenced Values**. This is the execution-time
+snapshot of the materialized values used in conditions and function cells, not a
+fresh lookup, so an older decision remains understandable after a value changes.
+The panel flags values that differ from their current definition and links to
+their history. To keep log records bounded, very large individual payloads or
+exceptionally large reference sets can be marked as partial.
+
+Flow logs also show their correlation IDs (own, root, and invoking flow execution IDs) and a **View Execution** link that opens a read-only view of the flow as of the version that ran, with the recorded execution path overlaid on the graph. Bulk flow calls record a per-item execution ID for every item in the request array, so each individual run is traceable; the same IDs are returned in the `X-Rulebricks-Flow-Execution-Id` response header (the call-level ID, for bulk requests) and accepted by the log search.
+
+<Callout type="info">
+  On [private deployments](/private-deployment/decision-logs#deleted-rules-and-flows),
+  these visualizations keep working even after the underlying rule or flow is
+  deleted: deletion archives a snapshot, and log links open a read-only
+  archived view labeled with the deletion date.
+</Callout>
+
+On private deployments, deleted vocabulary values are archived too. A referenced
+value remains labeled as deleted in the log detail and its final stored payload
+remains available for traceback. The public decision-log API exposes the
+execution snapshot as `decision.referenced_values` and reports a bounded
+snapshot with `decision.referenced_values_truncated` when applicable.

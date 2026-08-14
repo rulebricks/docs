@@ -8,15 +8,15 @@ Once you’ve finished configuring and testing your rule, it's time to publish y
 
 You'll need to decide, given the technologies your business already uses, what the best way to connect it to your existing systems looks like.
 
-We offer many ways to use your rules across different levels of technical expertise– you do not need to learn or employ all of them, merely pick out the one that works best in your situation.
+We offer many ways to use your rules across different levels of technical expertise. You do not need to learn or employ all of them, merely pick out the one that works best in your situation.
 
 ## For Business Users
 
-A great place to start as a less technically-involved Rulebricks user is to think about when you want your rule to actually run/be triggered. This will give you a bunch of relevant information to what's best for you at once– what data will be available, who is actually providing that data/where it's coming from, etcetera.
+A great place to start as a less technically-involved Rulebricks user is to think about when you want your rule to actually run/be triggered. This will give you a bunch of relevant information to what's best for you at once: what data will be available, who is actually providing that data/where it's coming from, etcetera.
 
 ### Via Forms
 
-If you want to use your rule to calculate something every once in a while, or help your users do so, forms are perfect for you. You don't actually have to build a form once you have your rule created– we generate the form for you using the logic in your rule! These forms can be embedded on your site and present your company's branding.
+If you want to use your rule to calculate something every once in a while, or help your users do so, forms are perfect for you. You don't actually have to build a form once you have your rule created. We generate the form for you using the logic in your rule! These forms can be embedded on your site and present your company's branding.
 
 [Learn more about using forms →](/building-forms/creating-a-form)
 
@@ -32,7 +32,7 @@ The action will guide you fully through the process of connecting your Rulebrick
 
 ### Developer Handoff
 
-Given that you've created and published a rule– Rulebricks is incredibly quick for developers to integrate into existing applications, often taking less than half an hour to implement. What's more, they only need to set up each rule for you once– subsequent edits to the rule and changes to the decision table within will take effect seamlessly.
+Given that you've created and published a rule, Rulebricks is incredibly quick for developers to integrate into existing applications, often taking less than half an hour to implement. What's more, they only need to set up each rule for you once. Subsequent edits to the rule and changes to the decision table within will take effect seamlessly.
 
 ## For Developers
 
@@ -42,9 +42,9 @@ A few API endpoints are made available for developers to effectively integrate a
 
 The particular endpoints that execute decision making assets are below, and all require the `x-api-key` header (with the API key found on your dashboard).
 
-`/solve/[slug]` – **POST** your JSON request data to this endpoint to run your rule
+`/solve/[slug]`: **POST** your JSON request data to this endpoint to run your rule
 
-`/flows/[id]` – **POST** your JSON request data to a Rule Flow you've created using this rule to run it as part of a larger sequence
+`/flows/[id]`: **POST** your JSON request data to a Rule Flow you've created using this rule to run it as part of a larger sequence
 
 Read more about these endpoints in our [API Reference](/api-reference), and use the tab there in the top right to switch to our SDK documentation in the language of your choice.
 
@@ -52,7 +52,7 @@ Read more about these endpoints in our [API Reference](/api-reference), and use 
 
 Flows will still require use of our API/SDK noted above, but contain within them powerful abilities to chain rules, or connect them with databases or internal services.
 
-One particularly powerful component of Flows is that flows allow you to leverage powerful caching mechanisms on any data fetching you're doing within– meaning you can create high-performance, low-latency Flows that still perform otherwise time consuming tasks like fetching data from an API or querying an SQL database.
+One particularly powerful component of Flows is that flows allow you to leverage powerful caching mechanisms on any data fetching you're doing within, meaning you can create high-performance, low-latency Flows that still perform otherwise time consuming tasks like fetching data from an API or querying an SQL database.
 
 Flows also allow you to explode lists and run rules against each object within.
 

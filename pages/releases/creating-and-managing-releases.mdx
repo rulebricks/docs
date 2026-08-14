@@ -4,7 +4,7 @@ metaDescription: Learn how to create, approve, and promote releases in Rulebrick
 
 # Creating and Managing Releases
 
-With environments configured, you can begin the actual work of releasing your business logic. A release in Rulebricks represents a specific version of a rule or flow that has been tagged for deployment to a particular environment. Creating a release does not immediately deploy anything—instead, it opens a request that must be approved before the release becomes active. This two-step process separates the intent to deploy from the actual deployment, creating space for review and validation.
+With environments configured, you can begin the actual work of releasing your business logic. A release in Rulebricks represents a specific version of a rule or flow that has been tagged for deployment to a particular environment. Creating a release does not immediately deploy anything. Instead, it opens a request that must be approved before the release becomes active. This two-step process separates the intent to deploy from the actual deployment, creating space for review and validation.
 
 ## Starting a New Release
 
@@ -20,7 +20,7 @@ Click the "New Release" button in the Releases tab. The modal that appears guide
 
 ### Select your target environment
 
-The environment selection determines where this release will go and, consequently, who needs to approve it. Only environments that allow direct releases appear in this dropdown—if an environment is configured for "promotion only," you cannot create releases directly into it and must instead promote from a lower-level environment.
+The environment selection determines where this release will go and, consequently, who needs to approve it. Only environments that allow direct releases appear in this dropdown. If an environment is configured for "promotion only," you cannot create releases directly into it and must instead promote from a lower-level environment.
 
 ### Choose your asset and version
 
@@ -50,11 +50,13 @@ When you open a pending release, you enter the detailed view where the actual ap
 
 ![The release detail view shows approval status, the release asset, and a collaborative activity feed](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/releases/comment-markdown.png)
 
-The header area displays the current approval status—"Pending Approval" for releases still awaiting sign-off, or "Released" for approved deployments. Action buttons allow approvers to approve the release, update the version target if needed, or cancel the release entirely if circumstances have changed.
+The header area displays the current approval status: "Pending Approval" for releases still awaiting sign-off, or "Released" for approved deployments. Action buttons allow approvers to approve the release, update the version target if needed, or cancel the release entirely if circumstances have changed.
 
 The approval status panel shows who has approved the release and who is still pending. The scheme indicator reminds everyone whether a single approval is sufficient or if all designated approvers must sign off. As approvals come in, the panel updates in real time, providing clear visibility into how close the release is to going live.
 
-The release asset section shows exactly what is being released—the rule or flow card displays the same information you would see in the Rules or Flows tab, making it easy to review what this release contains without navigating away. You can click through to view the full rule details if needed.
+When the targeted version was published with tests in its test suite, a test results panel appears below the approval status: it shows the pass percentage and test counts captured at publish time, and calls out any critical tests that were failing by name. Versions published without tests simply omit the panel.
+
+The release asset section shows exactly what is being released. The rule or flow card displays the same information you would see in the Rules or Flows tab, making it easy to review what this release contains without navigating away. You can click through to view the full rule details if needed.
 
 The activity feed on the right captures the complete history of the release: when it was created, who commented, what notes were added, and when approvals were given. Comments support rich formatting and mentions, allowing you to tag specific team members for input or flag concerns that need addressing before approval.
 

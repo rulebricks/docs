@@ -17,7 +17,7 @@ If you would rather use your own backend, disable ClickStack and configure `glob
 - **`azure-monitor`** - **Azure Monitor / Application Insights**, using an Application Insights connection string.
 
 <Callout type="info">
-  Tracing complements, and does not replace, the existing signals: **decision logs** still archive to object storage / ClickHouse, and **Prometheus metrics** still power Grafana. See [Decision Logs](/private-deployment/decision-logs) and [Monitoring](/private-deployment/monitoring).
+  Tracing complements, and does not replace, the existing signals: **decision logs** still go to the bounded ClickHouse table and full-history object storage archive, and **Prometheus metrics** still power Grafana. See [Decision Logs](/private-deployment/decision-logs) and [Monitoring](/private-deployment/monitoring).
 </Callout>
 
 ## Topology
@@ -211,7 +211,13 @@ The generated Vector configs are validated by the CLI/chart verification suite, 
 For Azure Monitor Log Analytics and Amazon CloudWatch Logs, prefer the cloud-native collectors below instead of the generic HTTP sink.
 
 <Callout type="info">
-  **Decision logs stay in ClickHouse.** They are not double-written to Elasticsearch. The agent explicitly excludes the Vector pods (`app.kubernetes.io/name notin (vector,vector-agent)`), so the decision logs the aggregator prints to stdout are never shipped to Elastic. To correlate decision logs with traces, query the `trace_id` / `span_id` columns now present on decision-log records.
+  **Decision logs do not go to Elasticsearch through this agent.** In persistent
+  mode their app-facing copy stays in ClickHouse and their full history stays in
+  object storage. The agent explicitly excludes the Vector pods
+  (`app.kubernetes.io/name notin (vector,vector-agent)`), so the decision logs
+  the aggregator prints to stdout are never shipped to Elastic. To correlate
+  decision logs with traces, query the `trace_id` / `span_id` columns on
+  decision-log records.
 </Callout>
 
 ## Cloud-native log collection
@@ -231,7 +237,7 @@ How you view traces depends on the destination: **Kibana APM** for `elastic`, yo
 2. Paste that trace id into **Kibana APM**, **Grafana Tempo**, **Jaeger**, or your OTLP backend's trace search.
 3. Open the transaction (for example `POST /api/v1/solve/:slug`) to see the **waterfall**: Traefik → HPS API → Kafka produce → worker `solve` → rule evaluation.
 4. Use the logs view on that trace to see app/HPS/worker log lines that share the trace's `trace_id`.
-5. Decision logs (in ClickHouse) carry the same `trace_id` / `span_id`, so you can pivot from a trace to its decision record.
+5. Decision logs in the persistent ClickHouse table carry the same `trace_id` / `span_id`, so you can pivot from a trace to its decision record. Vector writes the same fields to the full-history archive.
 
 ## Verifying the collector
 

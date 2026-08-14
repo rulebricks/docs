@@ -4,7 +4,7 @@ metaDescription: Publishing a rule in Rulebricks makes it available for use in y
 
 # Publishing Rules
 
-Publishing makes your rule available via the API, in Forms, and in Rule Flows. Every publish creates a new version—you can target specific versions, compare changes, and roll back if needed.
+Publishing makes your rule available via the API, in Forms, and in Rule Flows. Every publish creates a new version. You can target specific versions, compare changes, and roll back if needed.
 
 ## Create a new version
 
@@ -41,9 +41,11 @@ Each publish creates a numbered version (v1, v2, etc.). Target specific versions
 This lets you build highly stable and customizable deployment workflows around your rules while developing future versions.
 
 <Callout>
-  The clock icon next to each version lets you **roll back**. This is
-  destructive—versions between your current state and the rollback target are
-  permanently lost as API targets.
+  The clock icon next to each version lets you **restore** it. Restoring
+  republishes that version's contents as a new version. Your version history
+  is preserved, every existing version number keeps working as an API
+  target, and release pins are unaffected. Restores work even when the asset
+  has pending or live releases.
 </Callout>
 
 ## Comparing Versions
@@ -61,6 +63,8 @@ The comparison view shows your working changes side-by-side with the selected ve
 Use this to review changes before publishing, or to understand what changed between versions when investigating unexpected behavior.
 
 <Callout type="info">
-  New versions take effect roughly 1 minute after publishing while caches
-  update.
+  Publishing is atomic: each publish stores an immutable snapshot of the
+  version's contents, so version-pinned API targets always serve exactly
+  what was published. New versions typically take effect within seconds;
+  allow up to a minute for all caches to update.
 </Callout>

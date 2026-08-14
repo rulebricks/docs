@@ -10,17 +10,17 @@ import { Callout } from 'nextra/components'
 
 ## Base Facts
 
-Base facts are the data points you collect—things like `credit_score`, `annual_income`, or `employment_verified`. They come from API calls, webhooks, user input, or anywhere else in your system.
+Base facts are the data points you collect: things like `credit_score`, `annual_income`, or `employment_verified`. They come from API integrations, user input, third-party systems, or anywhere else in your application.
 
 Each fact has a type (string, number, boolean, date, list, or object) and can be marked as:
 
-- **Required** — Must be present before rules can execute
-- **Output only** — Can only be written by rules, not submitted externally
-- **Track history** — Stores previous values for temporal queries
+- **Required:** Counts toward the context's overall `complete` status; each rule still runs as soon as its own inputs are present
+- **Output only:** Can only be written by rules, not submitted externally
+- **Track history:** Stores previous values for temporal queries
 
 ## The Identity Fact
 
-One fact must be the **identity fact**—the unique identifier for each context instance. For a loan application context, this might be `application_id`. For transaction processing, `transaction_id`.
+One fact must be the **identity fact**, the unique identifier for each context instance. For a loan application context, this might be `application_id`. For transaction processing, `transaction_id`.
 
 The identity appears in your API URLs:
 
@@ -49,17 +49,17 @@ ifelse(
   ifelse(credit_score >= 650, 'medium', 'high')
 )
 
-// Aggregate from related contexts
-sum($relations.transaction, 'total')
+// Aggregate from the configured "transactions" relationship
+sum($transactions, 'total')
 
 // Available functions are listed directly in app UI
 ```
 
-They update whenever their dependencies change—no manual recalculation needed.
+They update whenever their dependencies change. No manual recalculation needed.
 
 ## Relationships
 
-Contexts can relate to each other. A customer context can have many transaction contexts. An transaction context can belong to a customer. These relationships let you build decisions that span multiple entities.
+Contexts can relate to each other. A customer context can have many transaction contexts. A transaction context can belong to a customer. These relationships let you build decisions that span multiple entities.
 
 ### The Pattern
 
@@ -85,7 +85,7 @@ transactions: has_many(Transaction, 'customer_id')
 customer_id: string (foreign key)
 ```
 
-Now transactions link to their customer, and customers can reference their transactions.
+Now transactions link to their customer, and customers can reference their transactions. In expressions, use `$<relationship-name>`. For this example, `$transactions` on Customer and `$customer` on Transaction. An unnamed relationship uses the target context slug.
 
 ### Using Relationships
 
@@ -95,13 +95,13 @@ For example, on a Customer context, I might use:
 
 ```javascript
 // Total spend across all transactions
-total_spend: sum($relations.transaction, 'total')
+total_spend: sum($transactions, 'total')
 
 // Number of completed transactions
-transaction_count: count($relations.transaction, 'status == "complete"')
+transaction_count: count($transactions, 'status == "complete"')
 
 // Most recent transaction date
-last_transaction_date: max($relations.transaction, 'created_at')
+last_transaction_date: max($transactions, 'created_at')
 ```
 
 These recalculate automatically when any related transaction changes.
@@ -118,10 +118,10 @@ When an transaction is marked complete, it can trigger rules on the customer con
 This cascade happens automatically based on the relationships and rule bindings you've defined.
 
 <Callout>
-  Relationship queries (`$relations.transaction`) only include live, non-expired
-  context instances– expired transactions won't appear in aggregations. If this
+  Relationship queries (`$transactions` in this example) only include live, non-expired
+  context instances. Expired transactions won't appear in aggregations. If this
   is an issue, consider maintaining a running statistic in your systems and
-  sending it into the Context via a base fact– we still consider this a data
+  sending it into the Context via a base fact. We still consider this a data
   concern rather than a Rulebricks problem.
 </Callout>
 
@@ -131,10 +131,10 @@ From an transaction, access the parent customer:
 
 ```javascript
 // Get customer's tier for transaction-level pricing
-customer_tier: $relations.customer.loyalty_tier
+customer_tier: $customer.loyalty_tier
 ```
 
-This creates a dependency—the transaction context waits for the customer's `loyalty_tier` before derived facts using it can calculate.
+This creates a dependency: the transaction context waits for the customer's `loyalty_tier` before derived facts using it can calculate.
 
 ## Solvability
 
@@ -148,4 +148,31 @@ A context instance is "solvable" when all required facts are present. The API al
 }
 ```
 
-When `need` is empty, `status` becomes `complete` and bound rules can execute.
+When `need` is empty, `status` becomes `complete`. Rule and flow readiness is asset-specific: a bound asset can execute while the context is still `pending` if all inputs for that asset are already present.
+
+## Fact History
+
+Enable **Track history** on facts whose prior values matter. Contexts append a history entry only when a tracked value changes and retain up to the context's configured `history_limit` entries per fact.
+
+Read history with:
+
+```bash
+GET /api/v1/contexts/{context-slug}/{identity}/history
+GET /api/v1/contexts/{context-slug}/{identity}/history?field=credit_limit&limit=10
+```
+
+The response groups entries by fact, newest first:
+
+```json
+{
+  "context": "customer:c_001",
+  "history": {
+    "credit_limit": [
+      { "timestamp": "2026-07-28T15:00:00.000Z", "value": 500 },
+      { "timestamp": "2026-07-28T14:00:00.000Z", "value": 300 }
+    ]
+  }
+}
+```
+
+Derived expressions can access tracked values through `$history`, such as `last($history.credit_limit).value`.

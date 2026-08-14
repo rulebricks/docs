@@ -19,7 +19,7 @@ When you bind a rule to a context, Rulebricks knows what inputs that rule needs.
 3. Rules that are ready execute automatically
 4. Their outputs write back to the context as new facts
 
-This happens in a single API response—you submit `employment_verified: true`, and you get back the approval decision your rule computed.
+This happens in a single API response. You submit `employment_verified: true`, and you get back the approval decision your rule computed.
 
 ## Cascading Execution
 
@@ -43,28 +43,67 @@ The response tells you what ran:
 {
   "status": "complete",
   "cascaded": [
-    { "rule": "risk-assessment", "result": { "risk_tier": "low" } },
-    { "rule": "pricing", "result": { "rate": 4.5, "max_amount": 500000 } }
+    {
+      "context": "loan-application:APP-12345",
+      "rule": "risk-assessment",
+      "status": "solved",
+      "result": { "risk_tier": "low" },
+      "auto_executed": true,
+      "written_to_context": ["risk_tier"]
+    },
+    {
+      "context": "loan-application:APP-12345",
+      "rule": "pricing",
+      "status": "solved",
+      "result": { "rate": 4.5, "max_amount": 500000 },
+      "auto_executed": true,
+      "written_to_context": ["rate", "max_amount"]
+    }
   ]
 }
 ```
 
+Executions are deduplicated by input hash: re-submitting the same facts doesn't re-run rules whose inputs haven't changed since their last successful run.
+
 ## Execution Modes
 
-There are very specific situations where automatic decision evaluation on Contexts may be undesirable. While we make Automatic Execution a default, you can also turn it off, preferring to register pending rules/flows manually.
+There are very specific situations where automatic decision evaluation on Contexts may be undesirable. While we make Automatic Execution a default, you can also turn it off (`auto_execute_decisions: false`), preferring to trigger decisions explicitly.
 
-| Mode        | When it runs                              |
-| ----------- | ----------------------------------------- |
-| **Enabled** | Automatically when all inputs are present |
-| **Manual**  | Only when you explicitly call `/solve`    |
+| Mode        | When it runs                                                                        |
+| ----------- | ----------------------------------------------------------------------------------- |
+| **Enabled** | Automatically when all inputs are present                                            |
+| **Manual**  | Only when you explicitly call the instance's solve or flow endpoint (below)          |
+
+Manual execution targets a specific bound rule or flow on a specific instance:
+
+```
+POST /api/v1/contexts/{context-slug}/{identity}/solve/{rule-slug}
+POST /api/v1/contexts/{context-slug}/{identity}/flows/{flow-slug}
+```
+
+An optional JSON body is merged into (and persisted to) the instance's state before evaluation. If that rule or flow's inputs are still missing, the call returns **HTTP 202** with the outstanding `need` list and registers a pending evaluation. It fires automatically once those facts or related contexts arrive.
+
+Inspect registrations at:
+
+```
+GET /api/v1/contexts/{context-slug}/{identity}/pending
+```
+
+Each entry includes `waiting_on`, which identifies missing fact paths or relationships. Registrations remain until they run or expire. To explicitly retry the instance's registered pending work after external data changes, call:
+
+```
+POST /api/v1/contexts/{context-slug}/{identity}/cascade
+```
+
+This endpoint re-evaluates pending registrations; it does not run every bound asset.
 
 <Callout>
-  Manual mode is useful when you want to control timing precisely—for example,
+  Manual mode is useful when you want to control timing precisely, for example
   waiting for human approval before running a disbursement rule.
 </Callout>
 
 ## Deterministic Order
 
-When multiple rules can execute, they run in dependency order—a rule that writes `risk_tier` always runs before a rule that reads it. If rules have no dependencies, execution order is stable but arbitrary.
+When multiple rules can execute, they run in dependency order: a rule that writes `risk_tier` always runs before a rule that reads it. If rules have no dependencies, execution order is stable but arbitrary.
 
-If a rule fails, the cascade stops and the error is returned. Other facts already written in that request remain—partial progress is preserved.
+If a rule fails, the cascade stops and the error is returned. Other facts already written in that request remain, so partial progress is preserved.

@@ -16,7 +16,7 @@ Go to **Dashboard → Contexts** and click **Create Context**.
 
 ![Context Tab](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/contexts/context-tab.png)
 
-Name it "Customer" and set `customer_id` as the identity fact—this is what uniquely identifies each customer flowing through the system.
+Name it "Customer" and set `customer_id` as the identity fact. This is what uniquely identifies each customer flowing through the system.
 
 ### Define Your Facts
 
@@ -44,10 +44,10 @@ Derived facts calculate automatically from other facts or related entities. Add 
 ![Derived Facts](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/contexts/derived-facts.png)
 
 ```javascript
-sum($relations.Transaction, 'amount')
+sum($transactions, 'amount')
 ```
 
-This updates whenever a related Transaction is added or modified. You can also create derived facts like `transaction_count` to track how many transactions a customer has.
+This example assumes the relationship is named `transactions`; expressions reference relationships as `$<relationship-name>`. It updates whenever a related Transaction is added or modified. You can also create derived facts like `transaction_count` to track how many transactions a customer has.
 
 ### Link Your Rule
 
@@ -61,7 +61,7 @@ Use the **Console** tab to explore live customer instances:
 
 ![Context Console](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/contexts/context-console.png)
 
-Enter a customer ID like `c_001` to fetch the instance and see all base facts (name, tier, income, etc.) and derived facts (transaction_count, total_spent). When required facts are present, bound rules/flows execute automatically– if you've already set those up, you should be able to see their outputs write-back to your live context accordingly.
+Enter a customer ID like `c_001` to fetch the instance and see all base facts (name, tier, income, etc.) and derived facts (transaction_count, total_spent). When required facts are present, bound rules/flows execute automatically. If you've already set those up, you should be able to see their outputs write-back to your live context accordingly.
 
 </Steps>
 
@@ -75,25 +75,45 @@ curl -X POST "https://rulebricks.com/api/v1/contexts/customer/c_001" \
   -d '{ "tier": "gold", "income": 200000 }'
 ```
 
-The response shows current state:
+The response shows the instance's resolved state and readiness. While required facts are still missing, `status` is `pending` and `need` lists what's outstanding (the identity fact is taken from the URL automatically):
 
 ```json
 {
+  "context": "customer:c_001",
+  "state": { "customer_id": "c_001", "tier": "gold" },
   "status": "pending",
-  "have": ["customer_id", "tier", "income"],
-  "need": []
+  "have": ["customer_id", "tier"],
+  "need": ["income"],
+  "is_new": true,
+  "expires_at": "2024-01-16T10:30:00.000Z",
+  "cascaded": []
 }
 ```
 
-When all required facts are present and a bound rule exists, the response includes rule execution:
+When a submission completes a bound rule's inputs, the rule executes in the same request. Its results appear under `cascaded` and its outputs are written back into `state`:
 
 ```json
 {
+  "context": "customer:c_001",
+  "state": {
+    "customer_id": "c_001",
+    "tier": "gold",
+    "income": 200000,
+    "tier_benefits": ["free_shipping", "priority_support"]
+  },
   "status": "complete",
+  "have": ["customer_id", "tier", "income", "tier_benefits"],
+  "need": [],
+  "is_new": false,
+  "expires_at": "2024-01-16T10:31:00.000Z",
   "cascaded": [
     {
+      "context": "customer:c_001",
       "rule": "customer-decision",
-      "result": { "tier_benefits": ["free_shipping", "priority_support"] }
+      "status": "solved",
+      "result": { "tier_benefits": ["free_shipping", "priority_support"] },
+      "auto_executed": true,
+      "written_to_context": ["tier_benefits"]
     }
   ]
 }
@@ -101,6 +121,6 @@ When all required facts are present and a bound rule exists, the response includ
 
 ## Key Concepts
 
-- **[Facts and Schema](/contexts/key-concepts/facts-and-schema)** — Derived facts, history tracking, and schema design
-- **[Execution Mode](/contexts/key-concepts/progressive-execution)** — How auto-execution and cascades work
-- **[Binding Rules](/contexts/binding-rules)** — Connect rules to read from and write to contexts
+- **[Facts and Schema](/contexts/key-concepts/facts-and-schema):** Derived facts, history tracking, and schema design
+- **[Execution Mode](/contexts/key-concepts/progressive-execution):** How auto-execution and cascades work
+- **[Binding Rules](/contexts/binding-rules):** Connect rules to read from and write to contexts

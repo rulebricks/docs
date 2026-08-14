@@ -52,7 +52,7 @@ If you use the [Rulebricks CLI](/private-deployment/cli), the wizard collects th
 
 What lands in the bucket:
 
-- **Decision logs** under `paths.decisionLogs`: a compressed NDJSON archive written by Vector and queried by ClickHouse. See [Decision Logs](/private-deployment/decision-logs).
+- **Decision logs** under `paths.decisionLogs`: the durable, full-history zstd NDJSON archive written by Vector in hourly Hive partitions. ClickHouse reads it only for bounded execution-trace fallback or in PVC-less mode; normal persistent-mode app queries use the local MergeTree table. See [Decision Logs](/private-deployment/decision-logs).
 - **Database backups** under `paths.dbBackups`: logical dumps of the self-hosted Supabase database, covered below.
 
 ## Database Backups

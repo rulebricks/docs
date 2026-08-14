@@ -215,14 +215,14 @@ Rulebricks images are mirrored under the `rulebricks/*` image path. Set `global.
 
 Rulebricks can run nearly air-gapped with these exceptions:
 
-| Feature          | External Dependency       | Can Disable?                        |
-| :--------------- | :------------------------ | :---------------------------------- |
-| Managed Supabase | Supabase Cloud API        | Yes, use self-hosted                |
-| AI Features      | OpenAI API                | Yes, set `global.ai.enabled: false` |
-| Log Forwarding   | External sinks (S3, etc.) | Yes, use console sink only          |
-| TLS Certificates | Let's Encrypt             | Yes, bring your own certs           |
-| Fonts            | Google Fonts              | Requires customization              |
-| Analytics        | Sentry                    | Requires customization              |
+| Feature          | External Dependency       | Can Disable?                                             |
+| :--------------- | :------------------------ | :------------------------------------------------------- |
+| Managed Supabase | Supabase Cloud API        | Yes, use self-hosted                                      |
+| AI Features      | OpenAI / Anthropic API    | Yes, off by default; configured in-app under Settings → AI features |
+| Log Forwarding   | External sinks (S3, etc.) | Yes, use console sink only                                |
+| TLS Certificates | Let's Encrypt             | Yes, bring your own certs                                 |
+| Fonts            | Google Fonts              | Requires customization                                    |
+| Analytics        | Sentry                    | Requires customization                                    |
 
 ## Installing Updates
 

@@ -6,7 +6,7 @@ metaDescription: Store reusable values and write custom JavaScript functions to 
 
 import { Steps, Callout } from 'nextra/components'
 
-Your tax rate appears in twelve rules. When it changes from 8% to 8.5%, do you want to update twelve rules—or one value?
+Your tax rate appears in twelve rules. When it changes from 8% to 8.5%, do you want to update twelve rules, or one value?
 
 Dynamic Values solve this problem for you by storing numbers, strings, and other data types centrally. Reference them in any rule, and update them in one place.
 
@@ -36,11 +36,78 @@ Note that you'll only see your value if it's the right type of data for the oper
 
 </Steps>
 
+## Composing lists
+
+List values default to a **Simple** editor built for business users: type any entry and press Enter to add it as a chip. Entries are parsed intelligently: `42` becomes a number, `true` becomes a boolean, plain text like `ABC-123` becomes a string (no quotes required), and pasted JSON arrays split into individual chips. Complex entries (objects or nested arrays) become a single expandable chip.
+
+Prefer editing JSON directly? Switch the toggle above the editor to **Raw Value** at any time. Both modes edit the same underlying list.
+
+## Referential values
+
+Any value can reference other values, so your vocabulary can be composed instead of copied:
+
+- **Scalars (string, number, boolean, date).** Switch the mini tab under **Type** from **Raw Value** to **Reference** and pick one other value of the same type. The value then always resolves to whatever its target holds.
+- **Lists.** In the Simple editor, the same input that adds literal chips also searches your vocabulary. Referenced values appear as orange chips, exactly like they do in the rule editor. Lists can mix literals and references freely.
+
+When a list references another **list**, the referenced list's items are **spliced in place** at evaluation time (never nested as a list-of-lists). References can chain: a list can reference a list that references other values, and everything resolves automatically at solve time with the same caching guarantees as ordinary values.
+
+While editing, a **"Currently resolves to"** preview shows the fully resolved result, and the value's detail panel links every reference (and every value that references it) for easy navigation.
+
+<Callout type="info">
+Referential integrity is managed for you: a value's type is locked while other values reference it, reference cycles are rejected at save time, and deleting a referenced value cascades. Values that directly reference it are deleted too, while lists simply lose the referencing item. The delete confirmation always shows the full impact first.
+</Callout>
+
+Exports preserve these relationships. Exporting a value automatically includes
+every value it references, transitively, and rewrites their internal ids for the
+destination workspace. Referenced values do not need to be selected manually.
+
+## Value history
+
+Each value has a lightweight, append-only history. Open a value in the
+**Vocabulary** tab and select the subtle history icon in its details header to
+see, newest first:
+
+- who first created or imported it, and when;
+- every payload or type change, including the previous value; and
+- moves or collection renames that required consuming rule or flow references
+  to be remapped.
+
+Change events preserve both the previous and new definitions. For lists and
+referential values, each side also captures the fully resolved raw value at the
+time of the event, so later edits to a referenced value do not rewrite history.
+
+The panel loads history only when opened and paginates older entries, so even
+programmatically managed values with long histories do not make vocabulary
+lists, rule execution, or bulk imports slower. Idempotent bulk upserts do not
+create history entries for unchanged values.
+
+<Callout type="info">
+  Value history belongs to the destination workspace and is never included in
+  exports. Importing a value creates a new import event there.
+</Callout>
+
+## Values and published versions
+
+How a rule or flow is invoked decides which value data it sees:
+
+- **Latest (no version in the URL, a subflow node on "latest", a context binding targeting Latest).** Values resolve live at execution time. Edit a value and the very next execution uses the new data, with no republish needed. This is the vocabulary's core promise.
+- **A pinned version (`/solve/{slug}/3`, a subflow node pinned to a version, a context binding or release environment targeting one).** The execution uses the values **frozen when that version was published**, even if that version is currently the newest one. Same version number, same values, same result, forever.
+
+Publishing a version captures every value the asset references (transitively, through referential values and through the rules and subflows inside a flow) at that moment. Decision logs on pinned executions link to this frozen set, so you can audit exactly what data produced a result.
+
+<Callout type="info">
+  Versions published before value snapshots were introduced have no frozen
+  set and resolve values live even when pinned; the next publish of the asset
+  starts capturing. For **imported** assets, the latest imported version is
+  frozen against the values that arrived with the import (or that already
+  existed in your workspace). Older imported history resolves live.
+</Callout>
+
 ## Bulk importing
 
 You'll often want to bring in a large number of values at once to start using vocabulary from your business right away. Rulebricks offers you three ways to do this quickly.
 
-First, our values UI allows you to simply import large, potentially nested JSON dictionaries that simply contain key value pairs.
+First, our values UI allows you to simply import large, potentially nested JSON dictionaries that simply contain key value pairs. You can paste JSON directly, or upload a JSON file. Large files are uploaded in chunks with a progress bar.
 
 Use the "From JSON" tab to continue with this option.
 
@@ -50,6 +117,62 @@ Second, an API endpoint is also available to create and update dynamic values. S
 
 Finally, if you have JSON Schema on hand, or even a DDL or other similar schema artifact, you can upload your schema as an Object (or use smart import if you're bringing a DDL/non-standard format).
 Rulebricks will automatically scan your schema for enums/ranges, and create values based on them in your workspace.
+
+## Importing at scale
+
+Vocabularies with hundreds of thousands or millions of values are fully supported, and the platform adapts automatically as your catalog grows:
+
+- **Bulk import API.** `POST /api/v1/values` (and its alias `POST /api/v1/values/bulk`) performs true set-based upserts keyed by value name: existing values keep their ids (so rule references never break), and calls are idempotent, so retrying a failed chunk is always safe. Drive large imports as a sequence of chunked calls. Keys are preserved exactly as sent, and each value's payload must serialize under 5,000 characters. Bulk vocabulary is expected to be short codes, labels, and identifiers.
+
+- **Composition in payloads.** Write payloads can reference other values by name with `{ "$ref": "Medical Codes.A123" }` markers. A scalar payload can be a single reference, and lists can mix literals with references. References resolve against existing values first, then values created by the same request, and are stored by id so later renames never break them. Read the stored reference graph back with `GET /api/v1/values?resolve=false` (by default, reads return payloads materialized).
+
+- **CLI import.** Self-hosted deployments can import a JSON file directly:
+
+```bash
+rulebricks values import vocabulary.json --url https://rulebricks.example.com --api-key $RULEBRICKS_API_KEY
+```
+
+The CLI flattens nested dictionaries, uploads in chunks, shows progress, and reports created/updated counts.
+
+- **Paginated reads.** Above a catalog threshold, `GET /api/v1/values` requires pagination (`limit` and `cursor` parameters, with optional `prefix` and `type` filters) and returns `{ data, next_cursor }` ordered by name.
+
+- **The dashboard scales with you.** Large catalogs switch the Vocabulary tab to a server-backed mode: collections load lazily with counts, and values load page-by-page as you browse or search. The rule editor loads only the values your rule references plus the collections bound to its columns.
+
+- **Solving stays fast.** Rules never load your whole catalog at evaluation time. Each rule resolves only the values it actually references, and those resolutions are cached and invalidated automatically when values change. Importing millions of values does not slow down your solve, bulk solve, parallel solve, or flow endpoints.
+
+## Syncing collections from external systems
+
+Imports only ever add or update. When an upstream system (a data platform, an MDM tool, a nightly pipeline) is the source of truth for a collection, use the sync endpoint instead. It makes a collection **exactly equal** to the payload:
+
+```bash
+curl -X POST https://rulebricks.example.com/api/v1/values/sync \
+  -H "x-api-key: $RULEBRICKS_API_KEY" \
+  -H "content-type: application/json" \
+  -d '{
+    "collection": "Medical Codes",
+    "values": { "A123": "A123", "B456": "B456" }
+  }'
+```
+
+Values in the payload are upserted (keys are relative to the collection, ids are preserved, archived values revive), and values under the collection that are **absent** from the payload are archived: they disappear from pickers and the rule editor immediately, while published rules that still reference them keep resolving by id forever. Pass `permanently_delete: true` to hard-delete removals instead. Anything still referenced by a rule, flow, or another value is archived and reported in `blocked` rather than breaking.
+
+Because business users only ever see the live catalog, this gives upstream teams full control: run the sync whenever the contract changes, and the rule editor always reflects the latest vocabulary. No manual cleanup, no republishing.
+
+A few properties that matter for pipelines:
+
+- **Idempotent and interruption-safe.** Collections too large for one request are driven as a run: repeat the call with the same `sync_id` for each chunk, then set `complete: true` on the last one. Nothing is ever removed until a run completes, so a failed pipeline can simply re-run from the start.
+- **Retry-safe finalization.** Completed runs are recorded server-side: if the finalize call's response is lost and your pipeline retries it, the server replays the recorded result (`already_completed: true`) instead of running a second sweep, and finalizing a run with nothing staged returns `409`. Concurrent runs never archive each other's declared values.
+- **Previewable.** `dry_run: true` returns the full diff (created / updated / unchanged / archived / deleted / blocked) without writing anything, diffed against the exact rows a real run would see.
+- **Composable.** Sync payloads support the same `{ "$ref": ... }` reference markers as imports, so one collection of raw codes and a second collection of groups composed from them can be maintained by the same pipeline. Sync the codes first, then the groups.
+- **Respects object-managed values.** Values generated from [Objects](/objects) are never touched by sync; they are reported in `errors` and change only through their object.
+- **Entitlement-gated.** The API key's role needs the create + edit values entitlements; `permanently_delete` additionally requires delete values. `null` is not a valid member; omit a key to remove its value.
+
+The CLI wraps all of this, including automatic chunking:
+
+```bash
+rulebricks values sync medical-codes.json --collection "Medical Codes" \
+  --url https://rulebricks.example.com --api-key $RULEBRICKS_API_KEY
+```
 
 ## Functions
 
@@ -65,7 +188,7 @@ Functions can be authored here as arrow expressions. Some libraries are availabl
 
 ### Create a function
 
-Go to **Dashboard → Values** and click **Create New Value** – functions are just a kind of Dynamic Value.
+Go to **Dashboard → Values** and click **Create New Value**. Functions are just a kind of Dynamic Value.
 
 Select the function type, and write in a JavaScript arrow expression.
 

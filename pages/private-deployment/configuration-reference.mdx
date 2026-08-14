@@ -152,19 +152,7 @@ global:
 
 ### AI Features
 
-Enable AI-powered rule generation (optional):
-
-| Parameter                | Type    | Default | Description        |
-| :----------------------- | :------ | :------ | :----------------- |
-| `global.ai.enabled`      | boolean | `false` | Enable AI features |
-| `global.ai.openaiApiKey` | string  | `""`    | OpenAI API key     |
-
-```yaml
-global:
-  ai:
-    enabled: true
-    openaiApiKey: 'sk-...'
-```
+AI features are configured inside the application, not in the Helm chart. After deploying, open **Settings → AI features** in your instance, choose a provider (OpenAI or Anthropic), and enter your API key and optional gateway URL. AI-powered surfaces stay hidden until a connection is configured.
 
 ### SSO Configuration
 
@@ -216,7 +204,6 @@ global:
       smtpPass: 'SMTP_PASSWORD'
       supabaseServiceKey: 'SUPABASE_SERVICE'
       supabaseAccessToken: 'SUPABASE_TOKEN'
-      openaiApiKey: 'OPENAI_KEY'
       ssoClientId: 'SSO_CLIENT_ID'
       ssoClientSecret: 'SSO_CLIENT_SECRET'
 ```
@@ -368,9 +355,54 @@ HPS and worker image tags are derived from `global.version` (`<version>` and `wo
 | Parameter                                  | Type   | Default   |
 | :----------------------------------------- | :----- | :-------- |
 | `rulebricks.hps.resources.requests.cpu`    | string | `"1000m"` |
-| `rulebricks.hps.resources.requests.memory` | string | `"1Gi"`   |
+| `rulebricks.hps.resources.requests.memory` | string | `"2Gi"`   |
 | `rulebricks.hps.resources.limits.cpu`      | string | `"2000m"` |
-| `rulebricks.hps.resources.limits.memory`   | string | `"2Gi"`   |
+| `rulebricks.hps.resources.limits.memory`   | string | `"4Gi"`   |
+
+The memory limit is sized for the large-payload envelope below: a couple of concurrent 128 MiB request bodies live on the Node.js heap while being parsed, scattered, and gathered. If you shrink `rulebricks.hps.limits`, these can come back down.
+
+#### HPS Payload & Deadline Limits
+
+`rulebricks.hps.limits` defines the payload and deadline envelope for the execution API. The chart ships a **large-batch profile** (100MB-class bulk requests); each value feeds an environment variable on the HPS gateway or worker pods. These values are sized in lockstep with the Kafka message caps (`kafka.config` / `kafka.topics`), the Traefik timeouts, and the HPS memory limit and heap. If you change one, revisit the others.
+
+| Parameter                                              | Default     | Env var                          | Description                                                                                                                                  |
+| :----------------------------------------------------- | :---------- | :------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------- |
+| `rulebricks.hps.limits.bodyLimitBytes`                 | `134217728` | `HTTP_BODY_LIMIT_BYTES`          | Max HTTP request body on execution endpoints (128 MiB). HTTP 413 above it.                                                                    |
+| `rulebricks.hps.limits.rpcTimeoutMs`                   | `300000`    | `RPC_TIMEOUT_MS`                 | Whole-request execution deadline (produce + worker processing + gather). Traefik `graceTimeOut` and the pod termination grace sit above it.   |
+| `rulebricks.hps.limits.requestTimeoutMs`               | `300000`    | `HTTP_REQUEST_TIMEOUT_MS`        | Deadline for receiving one request's entire body (a 128 MiB upload on a ~4 Mbps link takes ~270s).                                            |
+| `rulebricks.hps.limits.itemMaxBytes`                   | `6291456`   | `ITEM_MAX_BYTES`                 | Serialized cap per single payload inside a bulk array (6 MiB). Must stay below the topics' `max.message.bytes` minus envelope headroom.       |
+| `rulebricks.hps.limits.contextBatchBodyLimitBytes`     | `134217728` | `CONTEXT_BATCH_BODY_LIMIT_BYTES` | NDJSON body cap for `contexts/batch` (128 MiB).                                                                                               |
+| `rulebricks.hps.limits.contextBatchMaxItems`           | `100000`    | `CONTEXT_BATCH_MAX_ITEMS`        | Records per context batch request.                                                                                                            |
+| `rulebricks.hps.limits.largeBodyThresholdBytes`        | `8388608`   | `LARGE_BODY_THRESHOLD_BYTES`     | Bodies above this (8 MiB) count against the large-request admission gate.                                                                     |
+| `rulebricks.hps.limits.largeBodyMaxConcurrent`         | `2`         | `LARGE_BODY_MAX_CONCURRENT`      | Concurrent large bodies admitted per HPS replica; excess is shed with HTTP 429 + `Retry-After` instead of queueing in memory.                 |
+| `rulebricks.hps.limits.chunkMaxChunks`                 | `128`       | `CHUNK_MAX_CHUNKS`               | Chunk-planner fan-out ceiling; match the `solution` topic's partition count so one large request can spread across the whole worker fleet.    |
+| `rulebricks.hps.limits.chunkHardMaxBytes`              | `2097152`   | `CHUNK_HARD_MAX_BYTES`           | Hard per-chunk input cap (2 MiB), leaving 4x response-amplification headroom under the 8 MiB Kafka message cap.                               |
+| `rulebricks.hps.limits.responseFetchMaxBytes`          | `16777216`  | `RESPONSE_MAX_BYTES_PER_PARTITION` | Gather-side consumer fetch ceiling per partition; keep at ~2x the Kafka message cap.                                                        |
+| `rulebricks.hps.limits.workerFetchMaxBytes`            | `16777216`  | `WORKER_MAX_BYTES_PER_PARTITION` | Worker request-consumer fetch ceiling per partition; same 2x rule.                                                                            |
+| `rulebricks.hps.limits.shutdownDrainMs`                | `315000`    | `KAFKA_SHUTDOWN_DRAIN_MS`        | On SIGTERM, keep the response consumer alive until in-flight RPCs resolve; must cover `rpcTimeoutMs`.                                         |
+| `rulebricks.hps.limits.terminationGracePeriodSeconds`  | `330`       | (pod spec)                       | Pod termination grace; sits just above `shutdownDrainMs`.                                                                                     |
+| `rulebricks.hps.limits.nodeHeapMb`                     | `3584`      | `NODE_OPTIONS`                   | Node.js old-space heap (MB) for the HPS server, ~85% of the memory limit. Unset to use the image default (1024).                              |
+
+<Callout type="info">
+  Anything in front of HPS must tolerate the 300-second deadline: the chart
+  sets Traefik's `readTimeout`/`graceTimeOut` to 330s on both entrypoints, the
+  nginx ingress annotations to match, and the CLI raises Azure's 4-minute
+  load-balancer TCP idle timeout. If you front the deployment with your own
+  proxy, raise its read/idle timeouts accordingly.
+</Callout>
+
+#### HPS Tuning Environment Variables
+
+Performance and safety knobs, set via `rulebricks.hps.extraEnv` (the API/gateway pods) and, where noted, `rulebricks.hps.workers.extraEnv` (the worker pods). The chart ships sensible defaults; override only when tuning.
+
+| Variable                         | Default | Set on          | Description                                                                                                                                                                                                 |
+| :------------------------------- | :------ | :-------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `RB_FN_CONTEXT_REUSE`            | `1`     | gateway+workers | Reuse one hardened V8 sandbox context per execution unit instead of creating a fresh one per derived field per record (and per function-column cell). Large speedup for context ingest with derived fields and for vocabulary-heavy rule/flow evaluation. Set `0` to disable. |
+| `CONTEXT_CASCADE_MAX_INSTANCES`  | `2000`  | gateway         | Max dependent (parent) instances re-evaluated per relationship when a context batch cascades into related contexts. Bounds worst-case ingest tail latency; excess is reported with `truncated: true`.       |
+| `CONTEXT_CASCADE_BUDGET_MS`      | `45000` | gateway         | Wall-clock budget for the whole cascade phase of one batch request. Once spent, remaining relationships are reported as deferred (`reason: cascade_budget_exceeded`) instead of running unbounded.           |
+| `BULK_MAX_ITEMS`                 | `0`     | gateway+workers | Optional hard cap on array length for `bulk-solve`, `flows`, and `parallel-solve`. `0` (default) disables the cap entirely on self-hosted; these endpoints accept arbitrarily large batches bounded only by the request body size.                       |
+
+Request body limits: `bulk-solve`, `flows`, and `contexts/batch` accept up to `HTTP_BODY_LIMIT_BYTES` (128 MiB chart default via `rulebricks.hps.limits.bodyLimitBytes`; the HPS binary defaults to 6 MiB without it). Rule and flow imports (`/api/v1/admin/rules/import`, `/api/v1/admin/flows/import`) and manifest import accept up to 10 MB. If you front the deployment with the nginx ingress controller, the chart raises its `proxy-body-size` to `128m` and its read/send timeouts to 330s so large batches are not rejected or cut off at the edge (the default Traefik ingress imposes no body cap, and the chart raises its timeouts directly).
 
 ## Database (Supabase)
 
@@ -450,7 +482,7 @@ Kafka handles async rule execution and logging.
 | `kafka.enabled`            | boolean | `true`     | Deploy the in-cluster Strimzi Kafka broker and Topic Operator |
 | `kafka.version`            | string  | `"4.2.0"`  | Kafka version supported by the bundled Strimzi operator       |
 | `kafka.replicas`           | integer | `1`        | Broker replica count                                          |
-| `kafka.storage.size`       | string  | `"20Gi"`   | Broker persistent storage size                                |
+| `kafka.storage.size`       | string  | `"75Gi"`   | Broker persistent storage size, sized against per-topic `retention.bytes` caps |
 | `kafka.storage.class`      | string  | `"gp3"`    | Broker storage class                                          |
 | `kafka.priorityClassName`  | string  | `""`       | PriorityClass for the broker pod, usually filled by the CLI   |
 | `strimzi-kafka-operator.*` | object  | see values | Operator images and namespace watch settings                  |
@@ -479,9 +511,12 @@ kafka:
       replicas: 1
       config:
         retention.ms: '300000'
-        max.message.bytes: '2097152'
+        retention.bytes: '134217728'
+        max.message.bytes: '8388608'
     # ... see the chart's values.yaml for the full default topic list
 ```
+
+The RPC topics (`solution`, `solution-response`) default to an 8 MiB `max.message.bytes`, matching the broker's `message.max.bytes`, so worker responses keep 4x amplification headroom over the 2 MiB request chunks. The `logs` topic stays at 2 MB. If you lower these, lower `rulebricks.hps.limits` (chunk sizes, item cap) to match.
 
 <Callout type="warning">
   Topic names must carry the configured `kafkaTopicPrefix`. If you change the
@@ -555,12 +590,26 @@ The chart creates a `ClusterIssuer` for Let's Encrypt production and `Certificat
 
 ## Decision Logging (Vector & ClickHouse)
 
-| Value prefix   | Purpose                                                                                                  |
-| :------------- | :------------------------------------------------------------------------------------------------------- |
-| `vector.*`     | Decision-log aggregator consuming the Kafka `logs` topic; sinks and replicas                            |
-| `clickhouse.*` | Query engine over the decision log archive, with local persistence for ClickStack telemetry when enabled |
+| Value prefix   | Purpose                                                                                     |
+| :------------- | :------------------------------------------------------------------------------------------ |
+| `vector.*`     | Consumes the Kafka `logs` topic and writes normalized records to built-in and custom sinks  |
+| `clickhouse.*` | Persistent app-facing decision-log table, or the raw-archive query engine in PVC-less mode  |
 
-Vector's Kafka connection (brokers, TLS, SASL, and the prefixed log topic) is templated automatically into a `vector-kafka-env` ConfigMap from `rulebricks.app.logging.*`; you don't set it by hand. How the pipeline fits together, the values tables, and custom sink examples live in [Decision Logs](/private-deployment/decision-logs).
+| Parameter                                 | Type    | Default      | Description                                                        |
+| :---------------------------------------- | :------ | :----------- | :----------------------------------------------------------------- |
+| `clickhouse.decisionLogs.retentionDays`   | integer | `30`         | TTL for the persistent `decision_logs` MergeTree table             |
+| `clickhouse.persistence.enabled`          | boolean | `true`       | Use a PVC and local app-facing table; `false` selects PVC-less mode |
+| `clickhouse.persistence.size`             | string  | `"100Gi"`    | ClickHouse PVC size                                                |
+| `clickhouse.persistence.storageClass`     | string  | unset        | StorageClass override; unset uses the cluster default              |
+| `clickhouse.queryLimits.maxMemoryUsage`   | integer | `4294967296` | Per-query memory limit in bytes                                    |
+| `clickhouse.queryLimits.maxThreads`       | integer | `4`          | Per-query thread limit                                             |
+| `clickhouse.queryLimits.maxExecutionTime` | integer | `120`        | Per-query execution limit in seconds                               |
+| `clickhouse.queryLimits.maxRowsToRead`    | integer | `50000000`   | Maximum rows read by one query                                     |
+| `clickhouse.queryLimits.readOverflowMode` | string  | `"break"`    | Return accumulated rows at the cap; `throw` fails instead          |
+
+With persistence enabled, Vector writes every log to both the TTL-bounded table and the durable, hourly Hive-partitioned zstd NDJSON archive. Normal app queries use only the table; disk-pressure safety eviction can shorten its effective retention without touching the bucket. With persistence disabled, ClickHouse is stateless and queries date-bounded archive paths directly.
+
+Vector's Kafka connection (brokers, TLS, SASL, and the prefixed log topic) is templated automatically into a `vector-kafka-env` ConfigMap from `rulebricks.app.logging.*`; you don't set it by hand. How the pipeline fits together, retention behavior, and custom sink examples live in [Decision Logs](/private-deployment/decision-logs).
 
 ## Built-in Observability (ClickStack, Tracing, and App Logs)
 

@@ -16,11 +16,11 @@ When you view a pending release, both URL patterns are displayed together, makin
 
 The **Preview URL** follows the pattern `/api/v1/solve/{rule-slug}/{version-number}`. This URL always returns results from the exact version you specify, regardless of what has been released. It provides a stable, predictable endpoint that never changes behavior unless you explicitly change the version number in the URL. Use this URL for testing specific versions or when you need guaranteed consistency.
 
-The **Release URL** follows the pattern `/api/v1/solve/{rule-slug}/{environment-slug}`. This URL resolves to whatever version is currently active in the specified environment. When you approve a new release, the Release URL automatically starts serving the newly released version without any changes to your application code. This dynamic resolution is what makes releases powerful—your production systems can point to the release URL, and deployments happen by approving releases rather than updating configurations.
+The **Release URL** follows the pattern `/api/v1/solve/{rule-slug}/{environment-slug}`. This URL resolves to whatever version is currently active in the specified environment. When you approve a new release, the Release URL automatically starts serving the newly released version without any changes to your application code. This dynamic resolution is what makes releases powerful. Your production systems can point to the release URL, and deployments happen by approving releases rather than updating configurations.
 
 ## Before and After Approval
 
-The relationship between these URLs and the approval workflow is where releases provide their real value. Before a release is approved, the Release URL still points to the previous released version—or returns an error if nothing has ever been released to that environment. The pending release exists in a preparatory state, visible in the Rulebricks interface but not yet affecting API traffic.
+The relationship between these URLs and the approval workflow is where releases provide their real value. Before a release is approved, the Release URL still points to the previous released version, or returns an error if nothing has ever been released to that environment. The pending release exists in a preparatory state, visible in the Rulebricks interface but not yet affecting API traffic.
 
 import { Callout } from 'nextra/components'
 
@@ -35,7 +35,9 @@ Once the release is approved, the situation changes. The Release URL now resolve
 
 ![After approval, the Release URL actively serves the released version](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/releases/released-url-zoom-in.png)
 
-The green confirmation message—"This endpoint is active and can be used in production"—signals that this version is now live. Any API call to the Release URL will execute this version of the rule. The transition from pending to released happens atomically when the final required approval is given, ensuring there is no ambiguous intermediate state.
+The green confirmation message, "This endpoint is active and can be used in production," signals that this version is now live. Any API call to the Release URL will execute this version of the rule. The transition from pending to released happens atomically in the database when the final required approval is given, ensuring there is no ambiguous intermediate state. Serving infrastructure is notified immediately; in the worst case (for example, if that notification is lost), each server re-checks its cached release target within about 20 seconds, which bounds how long an old version can continue to serve after a cutover.
+
+Release targets are durable: the environment-to-version mapping lives in the database, not just in caches, so Release URLs keep resolving correctly across cache flushes, restarts, and infrastructure migrations.
 
 ## Practical Integration Patterns
 

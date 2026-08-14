@@ -139,7 +139,7 @@ For example, if you have a group with two conditions, and the first condition re
 
 3. #### Compute Values
 
-*Compute Values* is the most advanced hit policy in Rulebricks and allows you to define a custom accumulation pattern for each column. This policy is useful if you want to add up the results of multiple satisfied rows for some columns, but not for others. It's also useful if you'd like more control over how you combine responses from multiple satisfied rows, rather than just adding up everything– this policy also allows you to write your own accumulation function, should you need it.
+*Compute Values* is the most advanced hit policy in Rulebricks and allows you to define a custom accumulation pattern for each column. This policy is useful if you want to add up the results of multiple satisfied rows for some columns, but not for others. It's also useful if you'd like more control over how you combine responses from multiple satisfied rows, rather than just adding up everything. This policy also allows you to write your own accumulation function, should you need it.
 
 A good example of this policy in action can be found on [this use-case page](https://rulebricks.com/examples/rules/investment-portfolio-builder).
 
@@ -150,6 +150,21 @@ A good example of this policy in action can be found on [this use-case page](htt
 You can visually identify groups in your decision table by the group indicator, which is a small colored circle that appears to the left of the group's conditions. Different groups are assigned random unique colors.
 
 ![Group Indicator](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/advanced-features/group-dots.png)
+
+---
+
+## Rule-Level Hit Policy
+
+In addition to group-level hit policies, you can set a hit policy for your **entire rule**. Open Rule Settings by clicking the settings icon in the rule editor navbar, and find the **Hit Policy** option under the **Execution** tab.
+
+By default, rules use **First Match**. When multiple rows are satisfied by a request, only the first satisfied row (or the first satisfied group) determines the response, and any other matches are ignored. Selecting **Fill Values**, **Add Values**, or **Compute Values** instead combines the responses of *all* satisfied rows in your decision table using that strategy, exactly as the equivalent group hit policies do. Rows are always combined in the order they appear in your decision table.
+
+A few things to keep in mind:
+
+- **Groups keep their meaning.** If your rule contains groups, each group's satisfied rows are combined first using that group's own hit policy. The rule-level hit policy then combines those group results together with any other satisfied rows, in table order.
+- **Priorities still apply.** If satisfied rows or groups have different priorities, only the highest-priority matches are combined. Priority continues to select which rows are in play, and the hit policy decides how their responses combine.
+- **Priority isn't configurable at the rule level.** Priorities are only meaningful for subsets of rows competing within a rule, so the rule-level setting is purely a hit policy.
+- Like other execution settings, the rule-level hit policy takes effect as soon as it is saved.
 
 ## Scheduled Conditions
 /advanced-features/scheduled-conditions
@@ -187,7 +202,7 @@ Store reusable values and write custom JavaScript functions to use across your r
 
 # Dynamic Values
 
-Your tax rate appears in twelve rules. When it changes from 8% to 8.5%, do you want to update twelve rules—or one value?
+Your tax rate appears in twelve rules. When it changes from 8% to 8.5%, do you want to update twelve rules, or one value?
 
 Dynamic Values solve this problem for you by storing numbers, strings, and other data types centrally. Reference them in any rule, and update them in one place.
 
@@ -217,11 +232,78 @@ Note that you'll only see your value if it's the right type of data for the oper
 
 </Steps>
 
+## Composing lists
+
+List values default to a **Simple** editor built for business users: type any entry and press Enter to add it as a chip. Entries are parsed intelligently: `42` becomes a number, `true` becomes a boolean, plain text like `ABC-123` becomes a string (no quotes required), and pasted JSON arrays split into individual chips. Complex entries (objects or nested arrays) become a single expandable chip.
+
+Prefer editing JSON directly? Switch the toggle above the editor to **Raw Value** at any time. Both modes edit the same underlying list.
+
+## Referential values
+
+Any value can reference other values, so your vocabulary can be composed instead of copied:
+
+- **Scalars (string, number, boolean, date).** Switch the mini tab under **Type** from **Raw Value** to **Reference** and pick one other value of the same type. The value then always resolves to whatever its target holds.
+- **Lists.** In the Simple editor, the same input that adds literal chips also searches your vocabulary. Referenced values appear as orange chips, exactly like they do in the rule editor. Lists can mix literals and references freely.
+
+When a list references another **list**, the referenced list's items are **spliced in place** at evaluation time (never nested as a list-of-lists). References can chain: a list can reference a list that references other values, and everything resolves automatically at solve time with the same caching guarantees as ordinary values.
+
+While editing, a **"Currently resolves to"** preview shows the fully resolved result, and the value's detail panel links every reference (and every value that references it) for easy navigation.
+
+<Callout type="info">
+Referential integrity is managed for you: a value's type is locked while other values reference it, reference cycles are rejected at save time, and deleting a referenced value cascades. Values that directly reference it are deleted too, while lists simply lose the referencing item. The delete confirmation always shows the full impact first.
+</Callout>
+
+Exports preserve these relationships. Exporting a value automatically includes
+every value it references, transitively, and rewrites their internal ids for the
+destination workspace. Referenced values do not need to be selected manually.
+
+## Value history
+
+Each value has a lightweight, append-only history. Open a value in the
+**Vocabulary** tab and select the subtle history icon in its details header to
+see, newest first:
+
+- who first created or imported it, and when;
+- every payload or type change, including the previous value; and
+- moves or collection renames that required consuming rule or flow references
+  to be remapped.
+
+Change events preserve both the previous and new definitions. For lists and
+referential values, each side also captures the fully resolved raw value at the
+time of the event, so later edits to a referenced value do not rewrite history.
+
+The panel loads history only when opened and paginates older entries, so even
+programmatically managed values with long histories do not make vocabulary
+lists, rule execution, or bulk imports slower. Idempotent bulk upserts do not
+create history entries for unchanged values.
+
+<Callout type="info">
+  Value history belongs to the destination workspace and is never included in
+  exports. Importing a value creates a new import event there.
+</Callout>
+
+## Values and published versions
+
+How a rule or flow is invoked decides which value data it sees:
+
+- **Latest (no version in the URL, a subflow node on "latest", a context binding targeting Latest).** Values resolve live at execution time. Edit a value and the very next execution uses the new data, with no republish needed. This is the vocabulary's core promise.
+- **A pinned version (`/solve/{slug}/3`, a subflow node pinned to a version, a context binding or release environment targeting one).** The execution uses the values **frozen when that version was published**, even if that version is currently the newest one. Same version number, same values, same result, forever.
+
+Publishing a version captures every value the asset references (transitively, through referential values and through the rules and subflows inside a flow) at that moment. Decision logs on pinned executions link to this frozen set, so you can audit exactly what data produced a result.
+
+<Callout type="info">
+  Versions published before value snapshots were introduced have no frozen
+  set and resolve values live even when pinned; the next publish of the asset
+  starts capturing. For **imported** assets, the latest imported version is
+  frozen against the values that arrived with the import (or that already
+  existed in your workspace). Older imported history resolves live.
+</Callout>
+
 ## Bulk importing
 
 You'll often want to bring in a large number of values at once to start using vocabulary from your business right away. Rulebricks offers you three ways to do this quickly.
 
-First, our values UI allows you to simply import large, potentially nested JSON dictionaries that simply contain key value pairs.
+First, our values UI allows you to simply import large, potentially nested JSON dictionaries that simply contain key value pairs. You can paste JSON directly, or upload a JSON file. Large files are uploaded in chunks with a progress bar.
 
 Use the "From JSON" tab to continue with this option.
 
@@ -231,6 +313,62 @@ Second, an API endpoint is also available to create and update dynamic values. S
 
 Finally, if you have JSON Schema on hand, or even a DDL or other similar schema artifact, you can upload your schema as an Object (or use smart import if you're bringing a DDL/non-standard format).
 Rulebricks will automatically scan your schema for enums/ranges, and create values based on them in your workspace.
+
+## Importing at scale
+
+Vocabularies with hundreds of thousands or millions of values are fully supported, and the platform adapts automatically as your catalog grows:
+
+- **Bulk import API.** `POST /api/v1/values` (and its alias `POST /api/v1/values/bulk`) performs true set-based upserts keyed by value name: existing values keep their ids (so rule references never break), and calls are idempotent, so retrying a failed chunk is always safe. Drive large imports as a sequence of chunked calls. Keys are preserved exactly as sent, and each value's payload must serialize under 5,000 characters. Bulk vocabulary is expected to be short codes, labels, and identifiers.
+
+- **Composition in payloads.** Write payloads can reference other values by name with `{ "$ref": "Medical Codes.A123" }` markers. A scalar payload can be a single reference, and lists can mix literals with references. References resolve against existing values first, then values created by the same request, and are stored by id so later renames never break them. Read the stored reference graph back with `GET /api/v1/values?resolve=false` (by default, reads return payloads materialized).
+
+- **CLI import.** Self-hosted deployments can import a JSON file directly:
+
+```bash
+rulebricks values import vocabulary.json --url https://rulebricks.example.com --api-key $RULEBRICKS_API_KEY
+```
+
+The CLI flattens nested dictionaries, uploads in chunks, shows progress, and reports created/updated counts.
+
+- **Paginated reads.** Above a catalog threshold, `GET /api/v1/values` requires pagination (`limit` and `cursor` parameters, with optional `prefix` and `type` filters) and returns `{ data, next_cursor }` ordered by name.
+
+- **The dashboard scales with you.** Large catalogs switch the Vocabulary tab to a server-backed mode: collections load lazily with counts, and values load page-by-page as you browse or search. The rule editor loads only the values your rule references plus the collections bound to its columns.
+
+- **Solving stays fast.** Rules never load your whole catalog at evaluation time. Each rule resolves only the values it actually references, and those resolutions are cached and invalidated automatically when values change. Importing millions of values does not slow down your solve, bulk solve, parallel solve, or flow endpoints.
+
+## Syncing collections from external systems
+
+Imports only ever add or update. When an upstream system (a data platform, an MDM tool, a nightly pipeline) is the source of truth for a collection, use the sync endpoint instead. It makes a collection **exactly equal** to the payload:
+
+```bash
+curl -X POST https://rulebricks.example.com/api/v1/values/sync \
+  -H "x-api-key: $RULEBRICKS_API_KEY" \
+  -H "content-type: application/json" \
+  -d '{
+    "collection": "Medical Codes",
+    "values": { "A123": "A123", "B456": "B456" }
+  }'
+```
+
+Values in the payload are upserted (keys are relative to the collection, ids are preserved, archived values revive), and values under the collection that are **absent** from the payload are archived: they disappear from pickers and the rule editor immediately, while published rules that still reference them keep resolving by id forever. Pass `permanently_delete: true` to hard-delete removals instead. Anything still referenced by a rule, flow, or another value is archived and reported in `blocked` rather than breaking.
+
+Because business users only ever see the live catalog, this gives upstream teams full control: run the sync whenever the contract changes, and the rule editor always reflects the latest vocabulary. No manual cleanup, no republishing.
+
+A few properties that matter for pipelines:
+
+- **Idempotent and interruption-safe.** Collections too large for one request are driven as a run: repeat the call with the same `sync_id` for each chunk, then set `complete: true` on the last one. Nothing is ever removed until a run completes, so a failed pipeline can simply re-run from the start.
+- **Retry-safe finalization.** Completed runs are recorded server-side: if the finalize call's response is lost and your pipeline retries it, the server replays the recorded result (`already_completed: true`) instead of running a second sweep, and finalizing a run with nothing staged returns `409`. Concurrent runs never archive each other's declared values.
+- **Previewable.** `dry_run: true` returns the full diff (created / updated / unchanged / archived / deleted / blocked) without writing anything, diffed against the exact rows a real run would see.
+- **Composable.** Sync payloads support the same `{ "$ref": ... }` reference markers as imports, so one collection of raw codes and a second collection of groups composed from them can be maintained by the same pipeline. Sync the codes first, then the groups.
+- **Respects object-managed values.** Values generated from [Objects](/objects) are never touched by sync; they are reported in `errors` and change only through their object.
+- **Entitlement-gated.** The API key's role needs the create + edit values entitlements; `permanently_delete` additionally requires delete values. `null` is not a valid member; omit a key to remove its value.
+
+The CLI wraps all of this, including automatic chunking:
+
+```bash
+rulebricks values sync medical-codes.json --collection "Medical Codes" \
+  --url https://rulebricks.example.com --api-key $RULEBRICKS_API_KEY
+```
 
 ## Functions
 
@@ -246,7 +384,7 @@ Functions can be authored here as arrow expressions. Some libraries are availabl
 
 ### Create a function
 
-Go to **Dashboard → Values** and click **Create New Value** – functions are just a kind of Dynamic Value.
+Go to **Dashboard → Values** and click **Create New Value**. Functions are just a kind of Dynamic Value.
 
 Select the function type, and write in a JavaScript arrow expression.
 
@@ -306,7 +444,7 @@ Both tools are available in the **footer bar** of the rule editor and are availa
   production traffic before the analysis becomes meaningful.
 </Callout>
 
-For static analysis of rule structure (without production data), see [Rule Warnings](/warnings)—which examines your rule for potential issues like unreachable rows and coverage gaps.
+For static analysis of rule structure (without production data), see [Rule Warnings](/warnings), which examines your rule for potential issues like unreachable rows and coverage gaps.
 
 ## Impact Analysis
 /analysis-tools/impact-analysis
@@ -321,7 +459,7 @@ Impact Analysis gives you crystal clear answers to these questions before you de
 
 ![Impact Analysis](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/rule-analysis-tools/impact-analysis.png)
 
-The tool replays a configurable sample of real production requests through your modified rule logic and shows you exactly what would change—approval rates, output distributions, everything.
+The tool replays a configurable sample of real production requests through your modified rule logic and shows you exactly what would change: approval rates, output distributions, everything.
 
 ## Analysis Methods
 
@@ -352,7 +490,7 @@ Compare the current (working) rule against a previously published version:
 2. Select a previous version from the dropdown
 3. Click **Run Analysis**
 
-This is useful when something seems off after a deploy— you can see precisely what changed between versions and how it affected your output distribution.
+This is useful when something seems off after a deploy. You can see precisely what changed between versions and how it affected your output distribution.
 
 <Callout type="warning">
   While it will still run, we do not recommend this approach if your schema
@@ -390,11 +528,11 @@ Timeline distributions for date outputs. Useful for rules that set deadlines or 
 </Tabs.Tab>
 </Tabs>
 
-Watch for **null shifts**—when values suddenly become null, it often means requests stopped matching any row. Impact Analysis will surface this in an alert if it detects it.
+Watch for **null shifts**. When values suddenly become null, it often means requests stopped matching any row. Impact Analysis will surface this in an alert if it detects it.
 
 <Callout>
   While computation is done on our servers and included with your Rulebricks
-  plan, we recommend being very deliberate about the sample size you use–
+  plan, we recommend being very deliberate about the sample size you use,
   particularly between the 100k - 1M range; these can be large reports.
 </Callout>
 
@@ -423,7 +561,7 @@ See which rows in your decision table are actually being matched by production t
 
 Your rule has 47 rows. Which ones actually matter?
 
-Reachability Analysis shows you exactly which rows are being hit by real traffic—and which ones might be dead weight. It analyzes your execution logs to surface usage patterns you wouldn't otherwise see.
+Reachability Analysis shows you exactly which rows are being hit by real traffic, and which ones might be dead weight. It analyzes your execution logs to surface usage patterns you wouldn't otherwise see.
 
 ![Reachability Analysis](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/rule-analysis-tools/reachability-analysis.png)
 
@@ -441,7 +579,7 @@ Which rows are doing the heavy lifting:
 </Tabs.Tab>
 <Tabs.Tab>
 
-Which conditions are blocking matches. This helps you understand why certain rows aren't being reached—maybe a condition is too restrictive, or an earlier row is catching everything.
+Which conditions are blocking matches. This helps you understand why certain rows aren't being reached: maybe a condition is too restrictive, or an earlier row is catching everything.
 
 </Tabs.Tab>
 <Tabs.Tab>
@@ -464,11 +602,11 @@ The panel header shows summary stats: how many requests matched at least one row
 
 A row with 0% hits over 30 days is probably:
 
-- **Unreachable** — an earlier catch-all row blocks it
-- **Obsolete** — handles an edge case that never actually occurs
-- **Safe to remove** — cleaning up your rule table
+- **Unreachable:** an earlier catch-all row blocks it
+- **Obsolete:** handles an edge case that never actually occurs
+- **Safe to remove:** cleaning up your rule table
 
-Before deleting, make sure to thoroughly investigate _why_ it's not being hit. Some rows handle rare but critical cases— you don't want to remove your fraud detection row just because it only fires twice a month.
+Before deleting, make sure to thoroughly investigate _why_ it's not being hit. Some rows handle rare but critical cases. You don't want to remove your fraud detection row just because it only fires twice a month.
 
 ## Performance Optimization
 
@@ -478,7 +616,7 @@ Use [Impact Analysis](/analysis-tools/impact-analysis) afterward to verify that 
 
 ## Large Reports
 
-Computation is handled on our servers– but we encourage users to be prudent about the sample sizes they use as particularly large requests may take several minutes to complete and potentially timeout.
+Computation is handled on our servers, but we encourage users to be prudent about the sample sizes they use as particularly large requests may take several minutes to complete and potentially timeout.
 
 We perform cardinality analysis on your rule internally to optimize reachability reports for massive amounts of data/rows.
 
@@ -781,9 +919,9 @@ Connect rules to Contexts so they read from context facts and write their output
 
 Once your Context(s) are ready, you're ready to create rules & flows that are "bound" to them, priming them to automatically run when your live contexts start receiving data.
 
-Once bound, the rule reads its inputs from context facts and writes its outputs back—no API calls required on your end. All flows that start from that rule are also considered bound and will fire automatically upon associated context updates.
+Once bound, the rule reads its inputs from context facts and writes its outputs back. No API calls required on your end. All flows that start from that rule are also considered bound and will fire automatically upon associated context updates.
 
-Flow write-back into contexts is accomplished slightly more explicitly via an "Context Operations" step you can find easily from the flow editor.
+Flow write-back into contexts is accomplished slightly more explicitly via a "Context Operations" step you can find easily from the flow editor.
 
 ## Create a Bound Rule
 
@@ -818,7 +956,7 @@ Click the **Create from Context** button at the bottom of your modal, customize 
 
 <Callout>
   You can bind multiple decision assets to the same context. They'll execute in
-  dependency order—a rule that reads `risk_tier` waits for the rule that writes
+  dependency order: a rule that reads `risk_tier` waits for the rule that writes
   it.
 </Callout>
 
@@ -834,41 +972,66 @@ Facts arrive: credit_score, annual_income
 [Pricing Rule] now has all inputs → executes → writes: rate, max_amount
 ```
 
-This happens within a single API response. The `cascaded` array shows what ran:
+This happens within a single API response. The `cascaded` array shows what ran, and each rule's outputs are also merged into the response's `state`:
 
 ```json
 {
   "cascaded": [
-    { "rule": "credit-check", "result": { "risk_tier": "low" } },
-    { "rule": "pricing", "result": { "rate": 4.5, "max_amount": 500000 } }
+    {
+      "context": "loan-application:APP-12345",
+      "rule": "credit-check",
+      "status": "solved",
+      "result": { "risk_tier": "low" },
+      "auto_executed": true,
+      "written_to_context": ["risk_tier"]
+    },
+    {
+      "context": "loan-application:APP-12345",
+      "rule": "pricing",
+      "status": "solved",
+      "result": { "rate": 4.5, "max_amount": 500000 },
+      "auto_executed": true,
+      "written_to_context": ["rate", "max_amount"]
+    }
   ]
 }
 ```
+
+Bound flows that auto-execute appear in the same array with a `flow` key instead of `rule`. Flow results are not written back to instance state automatically; use a Context Operations step inside the flow for write-back.
 
 ## Viewing Bound Rules
 
 From the Context dashboard, the **Assets** tab shows all currently bound rules & flows, their execution modes, and which facts they read/write.
 
+## Targeting a Version or Environment
+
+By default, a bound rule or flow executes its **latest** published version. New publishes take effect immediately, and any vocabulary values it references resolve live at execution time.
+
+The **Target** column in the Assets tab lets you change this per binding:
+
+- **Latest** follows the newest publish. Vocabulary values resolve live.
+- **A specific version** executes that exact published snapshot, including the vocabulary values frozen when that version was published. The binding keeps executing identically until you change the target, even as newer versions publish or values change.
+- **A release environment** resolves to whatever version is currently released in that environment, at execution time. Promoting a release moves every binding targeting that environment immediately, with no per-binding edits.
+
+Readiness checks follow the target: whether a bound rule's inputs are satisfied is evaluated against the targeted version's request schema, not the latest one.
+
+<Callout type="warning">
+  If a binding targets an environment with no live release for that asset, its
+  executions fail with a clear error (visible in the `cascaded` results) rather
+  than silently falling back to latest. Other bindings on the same context are
+  unaffected.
+</Callout>
+
 ## Bulk Ingestion
 /contexts/bulk-ingestion
 
-Submit large volumes of records to a context in synchronous batches on self-hosted deployments.
+Submit large volumes of records to a context in synchronous batches.
 
 # Bulk Ingestion
 
-<Callout type="info">
-  Bulk ingestion is available on both the cloud platform and private
-  (self-hosted) deployments. The API contract is identical; the platforms
-  differ in scale. On cloud, each batch is capped by your plan's remaining
-  monthly rule executions and a 4.5MB request body—sized for demos, testing,
-  and moderate loads. Private deployments run batches through the
-  high-performance server with no plan gating and are built for
-  million-record volumes.
-</Callout>
+Every context accepts bulk ingestion. Stream large datasets into a context by submitting them in chunks. Each chunk is one synchronous API call: the records merge into their context instances, any bound rules or flows whose inputs became satisfied execute, and the response returns the **resolved state of every touched instance** along with what executed.
 
-Bulk mode lets you stream large datasets into a context by submitting them in chunks. Each chunk is one synchronous API call: the records merge into their context instances, any bound rules or flows whose inputs became satisfied execute, and the response returns the **resolved state of every touched instance** along with what executed.
-
-There are no job IDs, no polling, and no separate result-retrieval step. Instances waiting on dependent data simply persist with `pending` status until a later chunk (or an interactive update) completes them—the same progressive semantics as single-record submissions, at volume.
+There are no job IDs, no polling, and no separate result-retrieval step. Instances waiting on dependent data simply persist with `pending` status until a later chunk (or an interactive update) completes them. The same progressive semantics as single-record submissions, at volume.
 
 ## Submitting Batches
 
@@ -886,12 +1049,12 @@ The body is a JSON array of records (private deployments also accept NDJSON with
 ]
 ```
 
-Send chunks sequentially or in parallel from your pipeline—each request is independent.
+Send chunks sequentially or in parallel from your pipeline. Each request is independent.
 
 **Chunk limits by platform:**
 
-- **Cloud:** a batch may not contain more records than your plan has monthly rule executions remaining (HTTP 402 above it—the batch size cap *is* your plan headroom), with a 4.5MB request body limit. Rules and flows executed by batches count toward plan usage; batches that only merge data cost nothing.
-- **Private deployments:** recommended **1,000–10,000 records per request** (default cap: 10,000 records and 5 MiB per request, configurable via `CONTEXT_BATCH_MAX_ITEMS` and `HTTP_BODY_LIMIT_BYTES`). No plan gating.
+- **Cloud:** a batch may not contain more records than your plan has monthly rule executions remaining (HTTP 402 above it; the batch size cap *is* your plan headroom), with a 4.5MB request body limit. Rules and flows executed by batches count toward plan usage; batches that only merge data cost nothing.
+- **Private deployments:** up to **100,000 records and 128 MiB per request** by default (configurable via `CONTEXT_BATCH_MAX_ITEMS` and `CONTEXT_BATCH_BODY_LIMIT_BYTES`; the Helm chart sets both under `rulebricks.hps.limits`). No plan gating. Chunks of 1,000–10,000 records still give the best per-request latency; go bigger when pipeline round-trips dominate. Each HPS replica admits at most 2 requests larger than 8 MiB at a time and sheds the rest with HTTP 429 + `Retry-After`, so honor 429 with a short backoff when sending large chunks in parallel.
 
 ## The Response
 
@@ -939,9 +1102,11 @@ Each response reports admission results, execution outcomes, and the full resolv
 }
 ```
 
-Per-record validation failures appear in `rejections` with their array position. Execution outcomes per bound asset are `success`, `evaluation_error`, `infrastructure_error`, or `skipped_already_run`, and each instance's `executions` metadata records the trace IDs that join into your decision logs.
+Per-record validation failures appear in `rejections` with their array position, following the context's `on_schema_mismatch` setting (a `reject` context fails individual records carrying unknown facts; `ignore` drops the unknown facts; `store` keeps them). Execution outcomes per bound asset are `success`, `evaluation_error`, `infrastructure_error`, or `skipped_already_run`, and each instance's `executions` metadata durably records every asset's last input hash, status, run count, and timestamp.
 
-**Record what each response tells you.** Since the response is the complete record of what happened to that chunk, your pipeline should capture rejections and execution errors as it goes—there is no server-side job ledger to consult later.
+When nothing executed for an instance, `triggered` is `false` and `reason` explains why: `not_ready` (required facts still missing), `no_bound_assets`, `auto_execute_disabled`, `execution_unavailable` (self-hosted execution backend unreachable), or `inputs_unchanged`. Note that assets skipped because their inputs match their last successful run appear as `skipped_already_run` entries in `executed` with `triggered` still `true`.
+
+**Record what each response tells you.** Since the response is the complete record of what happened to that chunk, your pipeline should capture rejections and execution errors as it goes. There is no server-side job ledger to consult later.
 
 ### Slimming the Response
 
@@ -955,7 +1120,7 @@ POST /api/v1/contexts/batch/loan-application?include=status,executed
 
 ## Retries Are Always Safe
 
-Retrying a chunk—after a timeout, a crash, or just to be sure—always converges:
+Retrying a chunk after a timeout, a crash, or just to be sure always converges:
 
 - **Merges are idempotent.** Re-sending the same facts changes nothing.
 - **Executions are deduplicated by input hash.** An asset re-runs only when its inputs differ from its last *successful* run. A retry after success skips execution (`skipped_already_run`); a retry after a crash or failure runs the work that never completed.
@@ -966,7 +1131,7 @@ This means a failed or interrupted load can simply be re-run from the start.
 
 Bound rules and flows follow the same triggering model as interactive submissions: an asset executes when all of its inputs are present and those inputs changed. Rules execute in dependency order (writers before readers) with outputs written back to the context between rounds; flows run afterward and write back through their own Context Operations steps. All execution flows through the platform's bulk-solve and flow machinery, so decision logging, tracing, and worker autoscaling behave exactly as direct API calls.
 
-Manual execution mode (`auto_execute_decisions: false`) is honored: batches merge data without executing anything.
+Manual execution mode (`auto_execute_decisions: false`) is honored: ordinary batches merge data without starting new work. If a manual solve previously returned `202 pending`, a later batch that supplies its missing facts can settle that registered rule or flow.
 
 ## Working with Relationships
 
@@ -974,7 +1139,7 @@ Computed facts that aggregate related contexts (`$relations`) are supported in b
 
 ### Dependent Contexts Re-Evaluate Automatically
 
-When a batch changes records that other **bulk-mode** contexts depend on through relationships, those dependents are re-evaluated in the same request—one level deep, coalesced to one evaluation per dependent instance regardless of how many related records changed, and only for instances that already exist. Dependents whose asset inputs didn't actually change are skipped via the same input-hash mechanism. The response summarizes each cascade:
+When a batch changes records that other contexts depend on through relationships, those dependents are re-evaluated in the same request: one level deep, coalesced to one evaluation per dependent instance regardless of how many related records changed, and only for instances that already exist. Dependents with `auto_execute_decisions: false` run only previously registered pending work; other assets remain manual. Dependents whose asset inputs didn't actually change settle as skipped via the same input-hash mechanism. The response summarizes each cascade:
 
 ```json
 {
@@ -992,7 +1157,7 @@ When a batch changes records that other **bulk-mode** contexts depend on through
 }
 ```
 
-Two cases still call for an explicit follow-up batch of identity-only payloads (`[{ "customer_id": "C-1" }, ...]`): dependents that are **interactive** contexts (never push-triggered at batch scale; their computed facts stay correct at read time regardless), and chains deeper than one level. Input-hash triggering makes that follow-up cheap—only instances whose aggregates actually changed re-execute.
+Dependency chains deeper than one level still call for an explicit follow-up batch of identity-only payloads (`[{ "customer_id": "C-1" }, ...]`) per additional level. Input-hash triggering makes that follow-up cheap: only instances whose aggregates actually changed re-execute.
 
 ## Getting Started with Contexts
 /contexts/getting-started
@@ -1011,7 +1176,7 @@ Go to **Dashboard → Contexts** and click **Create Context**.
 
 ![Context Tab](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/contexts/context-tab.png)
 
-Name it "Customer" and set `customer_id` as the identity fact—this is what uniquely identifies each customer flowing through the system.
+Name it "Customer" and set `customer_id` as the identity fact. This is what uniquely identifies each customer flowing through the system.
 
 ### Define Your Facts
 
@@ -1039,10 +1204,10 @@ Derived facts calculate automatically from other facts or related entities. Add 
 ![Derived Facts](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/contexts/derived-facts.png)
 
 ```javascript
-sum($relations.Transaction, 'amount')
+sum($transactions, 'amount')
 ```
 
-This updates whenever a related Transaction is added or modified. You can also create derived facts like `transaction_count` to track how many transactions a customer has.
+This example assumes the relationship is named `transactions`; expressions reference relationships as `$<relationship-name>`. It updates whenever a related Transaction is added or modified. You can also create derived facts like `transaction_count` to track how many transactions a customer has.
 
 ### Link Your Rule
 
@@ -1056,7 +1221,7 @@ Use the **Console** tab to explore live customer instances:
 
 ![Context Console](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/contexts/context-console.png)
 
-Enter a customer ID like `c_001` to fetch the instance and see all base facts (name, tier, income, etc.) and derived facts (transaction_count, total_spent). When required facts are present, bound rules/flows execute automatically– if you've already set those up, you should be able to see their outputs write-back to your live context accordingly.
+Enter a customer ID like `c_001` to fetch the instance and see all base facts (name, tier, income, etc.) and derived facts (transaction_count, total_spent). When required facts are present, bound rules/flows execute automatically. If you've already set those up, you should be able to see their outputs write-back to your live context accordingly.
 
 </Steps>
 
@@ -1070,25 +1235,45 @@ curl -X POST "https://rulebricks.com/api/v1/contexts/customer/c_001" \
   -d '{ "tier": "gold", "income": 200000 }'
 ```
 
-The response shows current state:
+The response shows the instance's resolved state and readiness. While required facts are still missing, `status` is `pending` and `need` lists what's outstanding (the identity fact is taken from the URL automatically):
 
 ```json
 {
+  "context": "customer:c_001",
+  "state": { "customer_id": "c_001", "tier": "gold" },
   "status": "pending",
-  "have": ["customer_id", "tier", "income"],
-  "need": []
+  "have": ["customer_id", "tier"],
+  "need": ["income"],
+  "is_new": true,
+  "expires_at": "2024-01-16T10:30:00.000Z",
+  "cascaded": []
 }
 ```
 
-When all required facts are present and a bound rule exists, the response includes rule execution:
+When a submission completes a bound rule's inputs, the rule executes in the same request. Its results appear under `cascaded` and its outputs are written back into `state`:
 
 ```json
 {
+  "context": "customer:c_001",
+  "state": {
+    "customer_id": "c_001",
+    "tier": "gold",
+    "income": 200000,
+    "tier_benefits": ["free_shipping", "priority_support"]
+  },
   "status": "complete",
+  "have": ["customer_id", "tier", "income", "tier_benefits"],
+  "need": [],
+  "is_new": false,
+  "expires_at": "2024-01-16T10:31:00.000Z",
   "cascaded": [
     {
+      "context": "customer:c_001",
       "rule": "customer-decision",
-      "result": { "tier_benefits": ["free_shipping", "priority_support"] }
+      "status": "solved",
+      "result": { "tier_benefits": ["free_shipping", "priority_support"] },
+      "auto_executed": true,
+      "written_to_context": ["tier_benefits"]
     }
   ]
 }
@@ -1096,9 +1281,9 @@ When all required facts are present and a bound rule exists, the response includ
 
 ## Key Concepts
 
-- **[Facts and Schema](/contexts/key-concepts/facts-and-schema)** — Derived facts, history tracking, and schema design
-- **[Execution Mode](/contexts/key-concepts/progressive-execution)** — How auto-execution and cascades work
-- **[Binding Rules](/contexts/binding-rules)** — Connect rules to read from and write to contexts
+- **[Facts and Schema](/contexts/key-concepts/facts-and-schema):** Derived facts, history tracking, and schema design
+- **[Execution Mode](/contexts/key-concepts/progressive-execution):** How auto-execution and cascades work
+- **[Binding Rules](/contexts/binding-rules):** Connect rules to read from and write to contexts
 
 ## Gradient
 /contexts/gradient
@@ -1109,7 +1294,7 @@ Gradient automatically discovers decision patterns from your Context data and ge
 
 _What if your rules could write themselves?_
 
-Gradient is a new feature coming to Rulebricks that watches the data flowing through your Contexts and automatically surfaces the decision patterns hiding in it. That credit approval workflow your team runs manually? Gradient sees that 94% of applicants with scores above 720 and debt ratios below 30% get approved—and generates the rule for you.
+Gradient is a new feature coming to Rulebricks that watches the data flowing through your Contexts and automatically surfaces the decision patterns hiding in it. That credit approval workflow your team runs manually? Gradient sees that 94% of applicants with scores above 720 and debt ratios below 30% get approved, and generates the rule for you.
 
 ### From Data to Decisions
 
@@ -1127,7 +1312,7 @@ These become draft rules you can review, refine, and publish. The implicit knowl
 
 Beyond rule generation, Gradient identifies where decisions get stuck. Which facts are most often missing when applications stall? Where would a new integration have the highest ROI?
 
-This turns operational friction into actionable insights—you see exactly which data gaps cost you the most.
+This turns operational friction into actionable insights. You see exactly which data gaps cost you the most.
 
 <Callout>
   **Early Access:** Gradient is in active development. If you're interested in
@@ -1146,17 +1331,17 @@ A Context's schema defines what data it collects. There are three kinds of facts
 
 ## Base Facts
 
-Base facts are the data points you collect—things like `credit_score`, `annual_income`, or `employment_verified`. They come from API calls, webhooks, user input, or anywhere else in your system.
+Base facts are the data points you collect: things like `credit_score`, `annual_income`, or `employment_verified`. They come from API integrations, user input, third-party systems, or anywhere else in your application.
 
 Each fact has a type (string, number, boolean, date, list, or object) and can be marked as:
 
-- **Required** — Must be present before rules can execute
-- **Output only** — Can only be written by rules, not submitted externally
-- **Track history** — Stores previous values for temporal queries
+- **Required:** Counts toward the context's overall `complete` status; each rule still runs as soon as its own inputs are present
+- **Output only:** Can only be written by rules, not submitted externally
+- **Track history:** Stores previous values for temporal queries
 
 ## The Identity Fact
 
-One fact must be the **identity fact**—the unique identifier for each context instance. For a loan application context, this might be `application_id`. For transaction processing, `transaction_id`.
+One fact must be the **identity fact**, the unique identifier for each context instance. For a loan application context, this might be `application_id`. For transaction processing, `transaction_id`.
 
 The identity appears in your API URLs:
 
@@ -1185,17 +1370,17 @@ ifelse(
   ifelse(credit_score >= 650, 'medium', 'high')
 )
 
-// Aggregate from related contexts
-sum($relations.transaction, 'total')
+// Aggregate from the configured "transactions" relationship
+sum($transactions, 'total')
 
 // Available functions are listed directly in app UI
 ```
 
-They update whenever their dependencies change—no manual recalculation needed.
+They update whenever their dependencies change. No manual recalculation needed.
 
 ## Relationships
 
-Contexts can relate to each other. A customer context can have many transaction contexts. An transaction context can belong to a customer. These relationships let you build decisions that span multiple entities.
+Contexts can relate to each other. A customer context can have many transaction contexts. A transaction context can belong to a customer. These relationships let you build decisions that span multiple entities.
 
 ### The Pattern
 
@@ -1221,7 +1406,7 @@ transactions: has_many(Transaction, 'customer_id')
 customer_id: string (foreign key)
 ```
 
-Now transactions link to their customer, and customers can reference their transactions.
+Now transactions link to their customer, and customers can reference their transactions. In expressions, use `$<relationship-name>`. For this example, `$transactions` on Customer and `$customer` on Transaction. An unnamed relationship uses the target context slug.
 
 ### Using Relationships
 
@@ -1231,13 +1416,13 @@ For example, on a Customer context, I might use:
 
 ```javascript
 // Total spend across all transactions
-total_spend: sum($relations.transaction, 'total')
+total_spend: sum($transactions, 'total')
 
 // Number of completed transactions
-transaction_count: count($relations.transaction, 'status == "complete"')
+transaction_count: count($transactions, 'status == "complete"')
 
 // Most recent transaction date
-last_transaction_date: max($relations.transaction, 'created_at')
+last_transaction_date: max($transactions, 'created_at')
 ```
 
 These recalculate automatically when any related transaction changes.
@@ -1254,10 +1439,10 @@ When an transaction is marked complete, it can trigger rules on the customer con
 This cascade happens automatically based on the relationships and rule bindings you've defined.
 
 <Callout>
-  Relationship queries (`$relations.transaction`) only include live, non-expired
-  context instances– expired transactions won't appear in aggregations. If this
+  Relationship queries (`$transactions` in this example) only include live, non-expired
+  context instances. Expired transactions won't appear in aggregations. If this
   is an issue, consider maintaining a running statistic in your systems and
-  sending it into the Context via a base fact– we still consider this a data
+  sending it into the Context via a base fact. We still consider this a data
   concern rather than a Rulebricks problem.
 </Callout>
 
@@ -1267,10 +1452,10 @@ From an transaction, access the parent customer:
 
 ```javascript
 // Get customer's tier for transaction-level pricing
-customer_tier: $relations.customer.loyalty_tier
+customer_tier: $customer.loyalty_tier
 ```
 
-This creates a dependency—the transaction context waits for the customer's `loyalty_tier` before derived facts using it can calculate.
+This creates a dependency: the transaction context waits for the customer's `loyalty_tier` before derived facts using it can calculate.
 
 ## Solvability
 
@@ -1284,7 +1469,34 @@ A context instance is "solvable" when all required facts are present. The API al
 }
 ```
 
-When `need` is empty, `status` becomes `complete` and bound rules can execute.
+When `need` is empty, `status` becomes `complete`. Rule and flow readiness is asset-specific: a bound asset can execute while the context is still `pending` if all inputs for that asset are already present.
+
+## Fact History
+
+Enable **Track history** on facts whose prior values matter. Contexts append a history entry only when a tracked value changes and retain up to the context's configured `history_limit` entries per fact.
+
+Read history with:
+
+```bash
+GET /api/v1/contexts/{context-slug}/{identity}/history
+GET /api/v1/contexts/{context-slug}/{identity}/history?field=credit_limit&limit=10
+```
+
+The response groups entries by fact, newest first:
+
+```json
+{
+  "context": "customer:c_001",
+  "history": {
+    "credit_limit": [
+      { "timestamp": "2026-07-28T15:00:00.000Z", "value": 500 },
+      { "timestamp": "2026-07-28T14:00:00.000Z", "value": 300 }
+    ]
+  }
+}
+```
+
+Derived expressions can access tracked values through `$history`, such as `last($history.credit_limit).value`.
 
 ## Live Contexts
 /contexts/key-concepts/live-contexts
@@ -1293,7 +1505,7 @@ Understanding context instances, their lifecycle, and the have/need pattern for 
 
 # Live Contexts
 
-When you submit data to a Context, you create a **live context**—an instance that accumulates facts over time until rules can execute.
+When you submit data to a Context, you create a **live context**: an instance that accumulates facts over time until rules can execute.
 
 - **Context** = the schema definition (what facts you need for loan approval)
 - **Live context** = a specific instance (loan application APP-12345's data)
@@ -1307,11 +1519,11 @@ POST /api/v1/contexts/loan-application/APP-12345
 { "annual_income": 85000 }
 ```
 
-It persists as you submit more facts over time. Each submission merges into the existing state—new fields are added, existing fields are updated, missing fields are left alone.
+It persists as you submit more facts over time. Each submission merges into the existing state: new fields are added, existing fields are updated, missing fields are left alone.
 
-When all required facts are present, the status changes from `pending` to `complete`, and bound rules can execute.
+When all schema-required facts are present, the status changes from `pending` to `complete`. This status describes the instance as a whole; an individual bound rule can execute earlier as soon as that rule's own inputs are present.
 
-Eventually, live contexts expire based on their TTL (time-to-live) setting. Expired contexts are no longer accessible—POST requests to that identity create a fresh instance.
+Eventually, live contexts expire based on their TTL (time-to-live) setting. Expired contexts are no longer accessible; POST requests to that identity create a fresh instance.
 
 ## The Have/Need Pattern
 
@@ -1326,20 +1538,15 @@ Every API response tells you exactly where you stand:
 }
 ```
 
-- `have` — facts with values
-- `need` — required facts still missing
-- `status` — `pending` until `need` is empty, then `complete`
+- `have`: facts with values
+- `need`: required facts still missing
+- `status`: `pending` until `need` is empty, then `complete`
 
 This makes it easy to show progress in your UI, decide what to fetch next, or debug why a rule isn't executing.
 
 ## TTL and Expiration
 
-Set TTL when creating your context (1 hour to 30 days). The clock starts when the instance is created, not when it's last updated.
-
-<Callout>
-  When a context expires, you can configure a webhook to fire—useful for
-  cleaning up related resources or notifying users that their process timed out.
-</Callout>
+Set TTL when creating your context (1 minute to 30 days). Each write to an instance extends its expiry by the full TTL, so actively-updated instances stay alive and idle ones age out.
 
 ## Fetching State
 
@@ -1349,7 +1556,9 @@ Get the current state of any live context:
 GET /api/v1/contexts/loan-application/APP-12345
 ```
 
-The response includes all facts (base and derived), the have/need arrays, timestamps, and expiration time.
+The response reports base facts under `state` and expression-computed facts under a separate `derived` object, alongside the have/need arrays, per-asset execution metadata, timestamps, and expiration time. (POST responses combine base and derived facts in `state`.) Add `?include_relations=*` (or a comma-separated list of relationship names) to embed related live instances in the response.
+
+Instances can also be deleted explicitly. `DELETE` to the same path removes the instance and cancels any pending evaluations registered for it.
 
 ## Progressive Execution
 /contexts/key-concepts/progressive-execution
@@ -1371,7 +1580,7 @@ When you bind a rule to a context, Rulebricks knows what inputs that rule needs.
 3. Rules that are ready execute automatically
 4. Their outputs write back to the context as new facts
 
-This happens in a single API response—you submit `employment_verified: true`, and you get back the approval decision your rule computed.
+This happens in a single API response. You submit `employment_verified: true`, and you get back the approval decision your rule computed.
 
 ## Cascading Execution
 
@@ -1395,92 +1604,70 @@ The response tells you what ran:
 {
   "status": "complete",
   "cascaded": [
-    { "rule": "risk-assessment", "result": { "risk_tier": "low" } },
-    { "rule": "pricing", "result": { "rate": 4.5, "max_amount": 500000 } }
+    {
+      "context": "loan-application:APP-12345",
+      "rule": "risk-assessment",
+      "status": "solved",
+      "result": { "risk_tier": "low" },
+      "auto_executed": true,
+      "written_to_context": ["risk_tier"]
+    },
+    {
+      "context": "loan-application:APP-12345",
+      "rule": "pricing",
+      "status": "solved",
+      "result": { "rate": 4.5, "max_amount": 500000 },
+      "auto_executed": true,
+      "written_to_context": ["rate", "max_amount"]
+    }
   ]
 }
 ```
 
+Executions are deduplicated by input hash: re-submitting the same facts doesn't re-run rules whose inputs haven't changed since their last successful run.
+
 ## Execution Modes
 
-There are very specific situations where automatic decision evaluation on Contexts may be undesirable. While we make Automatic Execution a default, you can also turn it off, preferring to register pending rules/flows manually.
+There are very specific situations where automatic decision evaluation on Contexts may be undesirable. While we make Automatic Execution a default, you can also turn it off (`auto_execute_decisions: false`), preferring to trigger decisions explicitly.
 
-| Mode        | When it runs                              |
-| ----------- | ----------------------------------------- |
-| **Enabled** | Automatically when all inputs are present |
-| **Manual**  | Only when you explicitly call `/solve`    |
+| Mode        | When it runs                                                                        |
+| ----------- | ----------------------------------------------------------------------------------- |
+| **Enabled** | Automatically when all inputs are present                                            |
+| **Manual**  | Only when you explicitly call the instance's solve or flow endpoint (below)          |
+
+Manual execution targets a specific bound rule or flow on a specific instance:
+
+```
+POST /api/v1/contexts/{context-slug}/{identity}/solve/{rule-slug}
+POST /api/v1/contexts/{context-slug}/{identity}/flows/{flow-slug}
+```
+
+An optional JSON body is merged into (and persisted to) the instance's state before evaluation. If that rule or flow's inputs are still missing, the call returns **HTTP 202** with the outstanding `need` list and registers a pending evaluation. It fires automatically once those facts or related contexts arrive.
+
+Inspect registrations at:
+
+```
+GET /api/v1/contexts/{context-slug}/{identity}/pending
+```
+
+Each entry includes `waiting_on`, which identifies missing fact paths or relationships. Registrations remain until they run or expire. To explicitly retry the instance's registered pending work after external data changes, call:
+
+```
+POST /api/v1/contexts/{context-slug}/{identity}/cascade
+```
+
+This endpoint re-evaluates pending registrations; it does not run every bound asset.
 
 <Callout>
-  Manual mode is useful when you want to control timing precisely—for example,
+  Manual mode is useful when you want to control timing precisely, for example
   waiting for human approval before running a disbursement rule.
 </Callout>
 
 ## Deterministic Order
 
-When multiple rules can execute, they run in dependency order—a rule that writes `risk_tier` always runs before a rule that reads it. If rules have no dependencies, execution order is stable but arbitrary.
+When multiple rules can execute, they run in dependency order: a rule that writes `risk_tier` always runs before a rule that reads it. If rules have no dependencies, execution order is stable but arbitrary.
 
-If a rule fails, the cascade stops and the error is returned. Other facts already written in that request remain—partial progress is preserved.
-
-## Webhooks
-/contexts/webhooks
-
-Get notified when contexts are solved or expire via webhook callbacks.
-
-# Webhooks
-
-Contexts can call your endpoints when something happens—a rule executes, a context expires, or an error occurs.
-
-## Events
-
-| Event             | When it fires                      |
-| ----------------- | ---------------------------------- |
-| `context.solved`  | A bound rule executed successfully |
-| `context.expired` | The context's TTL elapsed          |
-| `context.error`   | A rule execution failed            |
-
-## Configuration
-
-In the Context Editor, add a webhook URL and select which events to send.
-
-Rulebricks signs each request with your webhook secret (available in settings). Verify the `X-Rulebricks-Signature` header to ensure requests are authentic.
-
-## Payload Structure
-
-**context.solved:**
-
-```json
-{
-  "event": "context.solved",
-  "context": "loan-application",
-  "identity": "APP-12345",
-  "rule": "credit-check",
-  "result": {
-    "risk_tier": "low",
-    "approved": true
-  },
-  "timestamp": "2024-01-15T10:30:00Z"
-}
-```
-
-**context.expired:**
-
-```json
-{
-  "event": "context.expired",
-  "context": "loan-application",
-  "identity": "APP-12345",
-  "final_state": {
-    "have": ["application_id", "credit_score"],
-    "need": ["employment_verified"]
-  },
-  "timestamp": "2024-01-22T10:30:00Z"
-}
-```
-
-<Callout>
-  The `final_state` on expiration shows what was still missing—useful for
-  understanding why a decision couldn't be made.
-</Callout>
+If a rule fails, the cascade stops and the error is returned. Other facts already written in that request remain, so partial progress is preserved.
 
 ## Why Rulebricks Embedded?
 /embedding-rulebricks/about-embedded
@@ -1495,7 +1682,7 @@ Rulebricks Embedded is for engineering teams who need to deliver **enterprise-gr
 
 ---
 
-When your product needs advanced user-configurable logic—like dynamic pricing, eligibility criteria, or routing rules— many engineering teams face a difficult choice:
+When your product needs advanced user-configurable logic, like dynamic pricing, eligibility criteria, or routing rules, many engineering teams face a difficult choice:
 
 1.  **Build it yourself**: You spend a month building a decision table UI/backend. You soon discover that features like undo/redo stacks, copy/paste support, change tracking, caching, and performant execution against large datasets are massive engineering sinks.
 2.  **Use a traditional BRMS**: You get a powerful engine, but you compromise your client experience. Your users are redirected to a third-party dashboard that doesn't look or feel like your product, despite your white-labeling.
@@ -1806,15 +1993,15 @@ Once you’ve finished configuring and testing your rule, it's time to publish y
 
 You'll need to decide, given the technologies your business already uses, what the best way to connect it to your existing systems looks like.
 
-We offer many ways to use your rules across different levels of technical expertise– you do not need to learn or employ all of them, merely pick out the one that works best in your situation.
+We offer many ways to use your rules across different levels of technical expertise. You do not need to learn or employ all of them, merely pick out the one that works best in your situation.
 
 ## For Business Users
 
-A great place to start as a less technically-involved Rulebricks user is to think about when you want your rule to actually run/be triggered. This will give you a bunch of relevant information to what's best for you at once– what data will be available, who is actually providing that data/where it's coming from, etcetera.
+A great place to start as a less technically-involved Rulebricks user is to think about when you want your rule to actually run/be triggered. This will give you a bunch of relevant information to what's best for you at once: what data will be available, who is actually providing that data/where it's coming from, etcetera.
 
 ### Via Forms
 
-If you want to use your rule to calculate something every once in a while, or help your users do so, forms are perfect for you. You don't actually have to build a form once you have your rule created– we generate the form for you using the logic in your rule! These forms can be embedded on your site and present your company's branding.
+If you want to use your rule to calculate something every once in a while, or help your users do so, forms are perfect for you. You don't actually have to build a form once you have your rule created. We generate the form for you using the logic in your rule! These forms can be embedded on your site and present your company's branding.
 
 [Learn more about using forms →](/building-forms/creating-a-form)
 
@@ -1830,7 +2017,7 @@ The action will guide you fully through the process of connecting your Rulebrick
 
 ### Developer Handoff
 
-Given that you've created and published a rule– Rulebricks is incredibly quick for developers to integrate into existing applications, often taking less than half an hour to implement. What's more, they only need to set up each rule for you once– subsequent edits to the rule and changes to the decision table within will take effect seamlessly.
+Given that you've created and published a rule, Rulebricks is incredibly quick for developers to integrate into existing applications, often taking less than half an hour to implement. What's more, they only need to set up each rule for you once. Subsequent edits to the rule and changes to the decision table within will take effect seamlessly.
 
 ## For Developers
 
@@ -1840,9 +2027,9 @@ A few API endpoints are made available for developers to effectively integrate a
 
 The particular endpoints that execute decision making assets are below, and all require the `x-api-key` header (with the API key found on your dashboard).
 
-`/solve/[slug]` – **POST** your JSON request data to this endpoint to run your rule
+`/solve/[slug]`: **POST** your JSON request data to this endpoint to run your rule
 
-`/flows/[id]` – **POST** your JSON request data to a Rule Flow you've created using this rule to run it as part of a larger sequence
+`/flows/[id]`: **POST** your JSON request data to a Rule Flow you've created using this rule to run it as part of a larger sequence
 
 Read more about these endpoints in our [API Reference](/api-reference), and use the tab there in the top right to switch to our SDK documentation in the language of your choice.
 
@@ -1850,7 +2037,7 @@ Read more about these endpoints in our [API Reference](/api-reference), and use 
 
 Flows will still require use of our API/SDK noted above, but contain within them powerful abilities to chain rules, or connect them with databases or internal services.
 
-One particularly powerful component of Flows is that flows allow you to leverage powerful caching mechanisms on any data fetching you're doing within– meaning you can create high-performance, low-latency Flows that still perform otherwise time consuming tasks like fetching data from an API or querying an SQL database.
+One particularly powerful component of Flows is that flows allow you to leverage powerful caching mechanisms on any data fetching you're doing within, meaning you can create high-performance, low-latency Flows that still perform otherwise time consuming tasks like fetching data from an API or querying an SQL database.
 
 Flows also allow you to explode lists and run rules against each object within.
 
@@ -1945,7 +2132,7 @@ Click the **Create Rule** button in the top right. You'll be presented with a di
 
 ### Select "From Scratch"
 
-Choose **From Scratch** to build a rule from the ground up (just for this tutorial– we actually recommend using our wizard or a template if you'd like to skip to seeing what things look like in Rulebricks right away).
+Choose **From Scratch** to build a rule from the ground up (just for this tutorial; we actually recommend using our wizard or a template if you'd like to skip to seeing what things look like in Rulebricks right away).
 
 ![From Scratch](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/start-building/from-scratch.png)
 
@@ -2012,7 +2199,7 @@ Example operations: Is true, is false.
   className="bg-red-100 text-red-800 rounded-md border border-red-300 p-2"
 />
 
-A number is a numerical value—integer or floating-point.
+A number is a numerical value, integer or floating-point.
 
 ```jsx
 3.14
@@ -2354,7 +2541,7 @@ Flows are a powerful way to chain together multiple rules, alongside calls to ex
 
 While your configurable rules are undoubtedly the most valuable pieces Flows expose, we offer several built-in functions to help your team collect data from external sources and run logic conditionally.
 
-We call these "flow functions"– special operations you can use in your flows to perform various actions beyond rule execution. Below are all the available flow function node types– but do try our application or reach out to get information on our latest capabilities.
+We call these "flow functions": special operations you can use in your flows to perform various actions beyond rule execution. Below are all the available flow function node types, but do try our application or reach out to get information on our latest capabilities.
 
 ## Continue If
 
@@ -2527,7 +2714,7 @@ Iterate over a list of items and apply a rule to each one. Perfect for:
 
 ![AI Inference](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/integrating-rules/ai-inference.png)
 
-Extract structured data from text using OpenAI. Useful for:
+Extract structured data from text using the AI connection configured in your workspace settings (Settings → AI features, OpenAI or Anthropic). Useful for:
 
 - Parsing emails and reports
 - Extracting specific information from documents
@@ -2537,7 +2724,10 @@ To use:
 
 1. Connect a text input
 2. Define target labels to extract
-3. Click "Run Inference"
+3. Optionally pick a model from your provider (defaults to your workspace's fast model)
+4. Click "Run Inference"
+
+This node (and other AI features) only appears once an AI connection is configured for your workspace.
 
 ## Vault
 
@@ -2620,7 +2810,7 @@ These are particularly useful when you have a series of decisions that need to b
 
 ## Flow Reactivity
 
-Unique to Rulebricks, the Rulebricks Flow editor is **reactive**— as you make changes to rule input fields, the editor automatically visualizes your data flow in real-time. This makes it incredibly easy to see how your flow behaves _as you build it_ without repeated end-to-end build/test cycles.
+Unique to Rulebricks, the Rulebricks Flow editor is **reactive**. As you make changes to rule input fields, the editor automatically visualizes your data flow in real-time. This makes it incredibly easy to see how your flow behaves _as you build it_ without repeated end-to-end build/test cycles.
 
 <div className="rounded-lg my-8 shadow-lg">
   <video
@@ -2639,7 +2829,7 @@ Unique to Rulebricks, the Rulebricks Flow editor is **reactive**— as you make 
 
 Reactivity applies to all sequences of nodes until certain execution or query nodes are reached. These nodes pause execution until you manually click the run button, preventing accidental spam to external services.
 
-While this feature exists to help you model your flow while understanding what is happening to the actual data as it moves through, it is not a perfect guarantee of how your Flow will behave _end-to-end_– for that, simply use the "Try" or "Test" tabs, available in the sidebar.
+While this feature exists to help you model your flow while understanding what is happening to the actual data as it moves through, it is not a perfect guarantee of how your Flow will behave _end-to-end_. For that, simply use the "Try" or "Test" tabs, available in the sidebar.
 
 ## Creating a Rule Flow
 
@@ -2721,10 +2911,10 @@ When creating a new rule, click the **Templates** tab in the create dialog. Team
 
 - **Administrators** and **Developers** can create and delete templates
 - All team members can view and use templates
-- Templates can't be edited—create a new version with a clear name like `"Credit Check - v2"`
+- Templates can't be edited. Create a new version with a clear name like `"Credit Check - v2"`
 
 <Callout>
-  Templates can have tenancy– if a template is assigned to a particular user
+  Templates can have tenancy. If a template is assigned to a particular user
   group, only users belonging to that group will see it. Developers (usually
   unassigned to any user group) will only see templates that do not have any
   user group.
@@ -2795,7 +2985,7 @@ Publishing a rule in Rulebricks makes it available for use in your applications.
 
 # Publishing Rules
 
-Publishing makes your rule available via the API, in Forms, and in Rule Flows. Every publish creates a new version—you can target specific versions, compare changes, and roll back if needed.
+Publishing makes your rule available via the API, in Forms, and in Rule Flows. Every publish creates a new version. You can target specific versions, compare changes, and roll back if needed.
 
 ## Create a new version
 
@@ -2830,9 +3020,11 @@ Each publish creates a numbered version (v1, v2, etc.). Target specific versions
 This lets you build highly stable and customizable deployment workflows around your rules while developing future versions.
 
 <Callout>
-  The clock icon next to each version lets you **roll back**. This is
-  destructive—versions between your current state and the rollback target are
-  permanently lost as API targets.
+  The clock icon next to each version lets you **restore** it. Restoring
+  republishes that version's contents as a new version. Your version history
+  is preserved, every existing version number keeps working as an API
+  target, and release pins are unaffected. Restores work even when the asset
+  has pending or live releases.
 </Callout>
 
 ## Comparing Versions
@@ -2850,8 +3042,10 @@ The comparison view shows your working changes side-by-side with the selected ve
 Use this to review changes before publishing, or to understand what changed between versions when investigating unexpected behavior.
 
 <Callout type="info">
-  New versions take effect roughly 1 minute after publishing while caches
-  update.
+  Publishing is atomic: each publish stores an immutable snapshot of the
+  version's contents, so version-pinned API targets always serve exactly
+  what was published. New versions typically take effect within seconds;
+  allow up to a minute for all caches to update.
 </Callout>
 
 ## Decision Logs
@@ -2878,6 +3072,7 @@ Each entry shows:
 
 - Request and response payloads
 - Which conditions matched or failed
+- The materialized vocabulary values used by that rule version
 - HTTP status, IP address, timestamp, and duration
 
 Filter by rule, status code, or date range to narrow down what you're looking for.
@@ -2952,6 +3147,10 @@ timeout
 error
 ```
 
+A bare UUID is treated as an execution/correlation ID and returns every log
+from that execution tree (the flow-level record plus its subflow and rule
+records).
+
 </Tabs.Tab>
 </Tabs>
 
@@ -2960,6 +3159,28 @@ Field names are case-sensitive and must match your schema. Queries search both r
 ## Log Details
 
 Click any entry to see the full request/response JSON, detailed condition evaluation, and timing data.
+
+Rule entries also include **Referenced Values**. This is the execution-time
+snapshot of the materialized values used in conditions and function cells, not a
+fresh lookup, so an older decision remains understandable after a value changes.
+The panel flags values that differ from their current definition and links to
+their history. To keep log records bounded, very large individual payloads or
+exceptionally large reference sets can be marked as partial.
+
+Flow logs also show their correlation IDs (own, root, and invoking flow execution IDs) and a **View Execution** link that opens a read-only view of the flow as of the version that ran, with the recorded execution path overlaid on the graph. Bulk flow calls record a per-item execution ID for every item in the request array, so each individual run is traceable; the same IDs are returned in the `X-Rulebricks-Flow-Execution-Id` response header (the call-level ID, for bulk requests) and accepted by the log search.
+
+<Callout type="info">
+  On [private deployments](/private-deployment/decision-logs#deleted-rules-and-flows),
+  these visualizations keep working even after the underlying rule or flow is
+  deleted: deletion archives a snapshot, and log links open a read-only
+  archived view labeled with the deletion date.
+</Callout>
+
+On private deployments, deleted vocabulary values are archived too. A referenced
+value remains labeled as deleted in the log detail and its final stored payload
+remains available for traceback. The public decision-log API exposes the
+execution snapshot as `decision.referenced_values` and reports a bounded
+snapshot with `decision.referenced_values_truncated` when applicable.
 
 ## Testing Rules
 /managing-rules/testing-rules
@@ -2980,9 +3201,9 @@ Open the **Test** tab in the rule editor and select **Try**.
 
 Paste a request object and click the orange button. The decision table lights up:
 
-- **Green cells** — Conditions that matched
-- **Red cells** — Conditions that didn't match
-- **Blue/Yellow cells** — The results returned
+- **Green cells:** Conditions that matched
+- **Red cells:** Conditions that didn't match
+- **Blue/Yellow cells:** The results returned
 
 This visual feedback shows exactly which row matched and why.
 
@@ -3001,7 +3222,7 @@ Build your suite by saving tests from Try mode. When a test produces the expecte
 
 ### Rapid Test Generation
 
-We find writing tests boring, and we thought you might too– a powerful AI feature here allows you to create many tests very quickly given one or two examples. Just build and name one test case in the Suite, and click "Generate Tests" to instantly get coverage over your entire rule.
+We find writing tests boring, and we thought you might too. A powerful AI feature here allows you to create many tests very quickly given one or two examples. Just build and name one test case in the Suite, and click "Generate Tests" to instantly get coverage over your entire rule.
 
 <Callout type="info">
   For large test suites, we offer a simple API to bulk upload test cases
@@ -3012,7 +3233,7 @@ We find writing tests boring, and we thought you might too– a powerful AI feat
 
 Enable **Continuous Testing** in rule settings to run your test suite automatically before every publish.
 
-When enabled, you'll see a test score next to every published version—the percentage of tests that passed. Critical tests prevent publishing if they fail; non-critical tests report results but don't block.
+When enabled, you'll see a test score next to every published version: the percentage of tests that passed. Critical tests prevent publishing if they fail; non-critical tests report results but don't block.
 
 ## Objects in Rulebricks
 /objects
@@ -3037,11 +3258,28 @@ When building a rule, select an Object and its fields appear in the schema edito
 
 ![Map Fields from Object](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/objects/map-fields-from-object.png)
 
-### Automatic Dynamic Values
+### System-managed Dynamic Values
 
-If your Object uses JSON Schema with `enum` fields, Rulebricks extracts those values and creates dropdown options in your rule conditions.
+If your Object uses JSON Schema with `enum` fields, Rulebricks generates a **managed value collection** from each of them, which power dropdown options in your rule conditions.
 
 ![Enum Benefits](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/objects/mapping-fields-enums-benefits.png)
+
+Managed values are locked projections of the object's schema. The object is their source of truth:
+
+- They cannot be edited, deleted, moved, or renamed like ordinary values. The Vocabulary tab badges them as **Object-managed**.
+- Updating the object's schema updates them: new enums create values, changed enums update in place, and removed enums **archive** their values. Archived values disappear from pickers immediately, while published rules that still reference them keep resolving forever. Re-adding an enum revives the same value, so rule references never break.
+- Users with the **manage objects** entitlement can still edit a managed value directly from the Vocabulary tab. The edit writes back into the object's JSON Schema and re-syncs, so the object always stays authoritative.
+- Visibility set on an object (user groups) propagates to every value it generates.
+
+This turns one object into a single asset that administers many collections. Maintain the schema in the dashboard or by [pushing it programmatically](/objects/creating-objects#programmatic-object-management), and everything downstream follows.
+
+<Callout type="info">
+  Object management (creating, updating, and deleting objects, and editing
+  the managed values they generate) requires the **manage objects**
+  entitlement. Administrators and developers have it by default; editors do
+  not, so business users always work against the latest vocabulary without
+  being able to change it.
+</Callout>
 
 ### Consistency
 
@@ -3071,7 +3309,7 @@ Objects can be defined using both JSON Schemas, or just an example JSON object. 
 
 Even if you don't have a unified JSON schema anywhere, we make it really easy to make one using our "Smart Import" tool.
 
-**JSON Schema** — Full schema definitions with types, validation rules, and enums
+**JSON Schema:** Full schema definitions with types, validation rules, and enums
 
 ```json
 {
@@ -3090,7 +3328,7 @@ Even if you don't have a unified JSON schema anywhere, we make it really easy to
 }
 ```
 
-**JSON Object** — Plain example objects when you just want field suggestions without full validation
+**JSON Object:** Plain example objects when you just want field suggestions without full validation
 
 ```json
 {
@@ -3113,7 +3351,7 @@ The _Contexts_ feature, discussed later in this documentation, while able to cre
 ## Creating Objects
 /objects/creating-objects
 
-Three ways to create Objects in Rulebricks—manual creation, AI-powered Smart Import, or pre-built templates.
+Three ways to create Objects in Rulebricks: manual creation, AI-powered Smart Import, or pre-built templates.
 
 # Creating Objects
 
@@ -3136,8 +3374,8 @@ Let AI generate a schema from your existing documentation.
 Click **Smart Import** and provide:
 
 - **Name and description** of what you're modeling
-- **Attachments** — PDFs, spreadsheets, SQL DDL files, images, or URLs
-- **Notes** — Additional context or constraints
+- **Attachments:** PDFs, spreadsheets, SQL DDL files, images, or URLs
+- **Notes:** Additional context or constraints
 
 Click **Generate** and Rulebricks creates a complete JSON Schema.
 
@@ -3163,20 +3401,46 @@ When creating a rule, click **From Object** to pull fields from an existing Obje
 
 ![Create Rule Using Object](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/objects/create-rule-using-object.png)
 
-Select the fields you need and they're added to your rule's schema—correctly typed and named.
+Select the fields you need and they're added to your rule's schema, correctly typed and named.
 
 ## Automatic Dynamic Values
 
-When you save a JSON Schema with `enum` fields, Rulebricks extracts those values and creates Dynamic Values:
+When you save a JSON Schema with `enum` fields, Rulebricks generates a system-managed value collection from each of them:
 
 ![Objects Create Values](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/objects/objects-create-values.png)
 
 These appear as dropdown options in your rule conditions, so instead of typing `"gold"` you select it from a list. Fewer typos, faster rule building.
 
+The object stays the source of truth for those values: editing the schema's enums updates them, removing an enum archives its value (published rules keep resolving it), and re-adding one revives the same value. If a generated name would collide with a value the object does not own, the save is rejected so an object can never silently take over hand-created vocabulary.
+
 <Callout>
   Objects can be used to inform rules and contexts. Update the Object and you
   have a single source of truth for that data structure.
 </Callout>
+
+## Programmatic object management
+
+Everything above is also available with an API key, which makes objects the highest-leverage way for an upstream system to administer vocabulary: push one updated JSON Schema, and every collection generated from it follows.
+
+```bash
+curl -X PUT https://rulebricks.example.com/api/v1/objects \
+  -H "x-api-key: $RULEBRICKS_API_KEY" \
+  -H "content-type: application/json" \
+  -d '{
+    "name": "Claim",
+    "content": "{ \"type\": \"object\", \"properties\": { \"countryCode\": { \"type\": \"string\", \"title\": \"Country Code\", \"enum\": [\"US\", \"CA\", \"GB\"] } } }",
+    "user_groups": ["underwriting"]
+  }'
+```
+
+- `PUT /api/v1/objects` creates or updates an object by `id` or exact `name` (names are unique per workspace; an unknown `id` returns 404 rather than creating a duplicate), syncs its managed values, and returns a diff (`values.synced`, `values.archived`). Pass `dry_run: true` to preview the diff without writing, and `expected_updated_at` for optimistic concurrency in read-modify-write pipelines (enforced atomically in the update).
+- `GET /api/v1/objects` and `GET /api/v1/objects/{idOrName}` read objects back, scoped to the key holder's user groups. Group-restricted keys see (and can modify) only objects whose groups overlap theirs, the same visibility model as values, rules, and flows.
+- `DELETE /api/v1/objects/{idOrName}` removes an object. Its generated values lose their management lock and are archived by default; pass `?values=detach` to keep them active as ordinary values instead.
+- `user_groups` on an object propagate to every value it generates. Assign an object to a group and its whole vocabulary follows. Group-restricted keys can only assign groups from their own set, and objects they create default to their groups.
+
+API-key calls require the caller's role to include the **manage objects** entitlement (administrators and developers have it by default).
+
+For syncing plain, hand-shaped collections without a schema, see [syncing collections from external systems](/advanced-features/values-and-functions#syncing-collections-from-external-systems). The two approaches compose: objects for schema-shaped vocabulary, collection sync for everything else.
 
 ## Architecture & Operations Guide
 /private-deployment/architecture
@@ -3264,7 +3528,8 @@ graph TB
 
     Kafka --> Vector
     Vector --> ObjectStorage
-    ClickHouse --> ObjectStorage
+    Vector --> ClickHouse
+    ObjectStorage -.->|bounded fallback / PVC-less| ClickHouse
     App --> ClickHouse
     App --> ClickStack
     HPS --> ClickStack
@@ -3308,8 +3573,8 @@ sequenceDiagram
 | **Valkey (Redis-compatible cache)** | Rule cache, session storage | Single replica with persistence  |
 | **Kafka**       | Message queue, event streaming           | KRaft mode, single node default       |
 | **PostgreSQL**  | Persistent data storage                  | Single replica with PVC               |
-| **Vector**      | Decision log aggregation and forwarding  | Static replicas                       |
-| **ClickHouse**  | Decision log queries and telemetry store | Single replica with persistence       |
+| **Vector**      | Decision log dual-write and forwarding   | Static replicas                       |
+| **ClickHouse**  | Bounded decision log queries and telemetry | Single replica, PVC by default      |
 | **ClickStack**  | Traces, operational logs, and HyperDX UI | Single replica default                |
 | **Prometheus**  | Metrics collection                       | Single replica, optional remote write |
 
@@ -3317,18 +3582,19 @@ sequenceDiagram
 
 ## Decision Log Pipeline
 
-Every rule execution emits a structured decision log. HPS API and worker pods produce entries to the Kafka `logs` topic (`com.rulebricks.logs` with the default topic prefix); Vector archives them to object storage as NDJSON; ClickHouse queries the archive on demand for the dashboard:
+Every rule execution emits a structured decision log. HPS API and worker pods produce entries to the Kafka `logs` topic (`com.rulebricks.logs` with the default topic prefix). In persistent mode, Vector writes each normalized record both to the TTL-bounded ClickHouse MergeTree table used by the app and to the durable zstd NDJSON archive:
 
 ```mermaid
 flowchart LR
     HPS["HPS API / worker pods"] -->|produce| LogsTopic["Kafka logs topic"]
     LogsTopic -->|consume| Vector[Vector]
-    Vector -->|"NDJSON archive (hourly partitions)"| Bucket["Object Storage (global.storage)"]
-    Bucket -->|query on demand| ClickHouse[ClickHouse]
-    ClickHouse --> Dashboard[Rulebricks Dashboard]
+    Vector -->|"zstd NDJSON (hourly Hive partitions)"| Bucket["Object Storage (full history)"]
+    Vector -->|"same normalized records"| ClickHouse["ClickHouse decision_logs (MergeTree)"]
+    ClickHouse --> App["Dashboard / API / history tools"]
+    Bucket -.->|"trace fallback or PVC-less queries"| ClickHouse
 ```
 
-The full walkthrough, values, and custom sink examples live in [Decision Logs](/private-deployment/decision-logs). Database backups travel to the same bucket under a separate key prefix; see [Storage & Backups](/private-deployment/storage-and-backups).
+Normal in-app queries use only the table. The bucket is read for bounded execution-trace fallback and in PVC-less mode, and remains available to your warehouse for full-history analysis. The full walkthrough, values, and custom sink examples live in [Decision Logs](/private-deployment/decision-logs). Database backups travel to the same bucket under a separate key prefix; see [Storage & Backups](/private-deployment/storage-and-backups).
 
 ---
 
@@ -3408,16 +3674,16 @@ Understand controls to automatically configure Rulebricks app access, roles, and
 
 This section explains how Rulebricks maps incoming SSO identities onto its internal authorization model, and how to configure that mapping from the **Team → SSO** tab. It is written for workspace administrators running a self-hosted or white-labeled Rulebricks deployment.
 
-If you cannot provision an SSO application for Rulebricks — for example because Rulebricks lives inside a private network behind an existing identity-aware proxy — see [Token Passthrough](/private-deployment/authentication/token-passthrough) for the alternative that delegates authentication to your upstream proxy.
+If you cannot provision an SSO application for Rulebricks, for example because Rulebricks lives inside a private network behind an existing identity-aware proxy, see [Token Passthrough](/private-deployment/authentication/token-passthrough) for the alternative that delegates authentication to your upstream proxy.
 
 ## What the SSO Team Tab Does
 
 The SSO Team tab connects incoming identity claims from your IdP to four dimensions of Rulebricks authorization:
 
-- **Access** — who is allowed to enter the application at all
-- **Tenants** — which tenancy boundaries a user can see
-- **Roles** — what permissions the user has once inside
-- **Profile** — how the user's name and avatar are populated
+- **Access:** who is allowed to enter the application at all
+- **Tenants:** which tenancy boundaries a user can see
+- **Roles:** what permissions the user has once inside
+- **Profile:** how the user's name and avatar are populated
 
 Each dimension is configured independently. The full reference for every field lives in [Claim Mapping](/private-deployment/authentication/claim-mapping).
 
@@ -3465,7 +3731,7 @@ There are two intentional exceptions:
 
 <Callout type="info">
   Tenant auto-creation is always on. Administrators do not need to pre-create
-  every tenant value — newly seen tenants are created automatically on first
+  every tenant value. Newly seen tenants are created automatically on first
   login.
 </Callout>
 
@@ -3516,8 +3782,8 @@ Optionally configure `Profile` so user display names and avatars are populated f
 
 ## Where to Next
 
-- [Claim Mapping](/private-deployment/authentication/claim-mapping) — the full reference for the `Access`, `Tenants`, `Roles`, and `Profile` sections of the Team tab.
-- [Token Passthrough](/private-deployment/authentication/token-passthrough) — for deployments that cannot provision an SSO application for Rulebricks and instead want to delegate authentication to an upstream proxy.
+- [Claim Mapping](/private-deployment/authentication/claim-mapping): the full reference for the `Access`, `Tenants`, `Roles`, and `Profile` sections of the Team tab.
+- [Token Passthrough](/private-deployment/authentication/token-passthrough): for deployments that cannot provision an SSO application for Rulebricks and instead want to delegate authentication to an upstream proxy.
 
 ## Claim Mapping
 /private-deployment/authentication/claim-mapping
@@ -3526,14 +3792,14 @@ Reference for the Access, Tenants, Roles, and Profile configuration sections in 
 
 # Claim Mapping
 
-This is the reference page for the four configuration sections in the **Team → SSO** tab. Each section maps one kind of identity claim onto a dimension of the Rulebricks authorization model. For the conceptual background behind this model — including the one-administrator rule and the parent-child team structure — see the [SSO Overview](/private-deployment/authentication).
+This is the reference page for the four configuration sections in the **Team → SSO** tab. Each section maps one kind of identity claim onto a dimension of the Rulebricks authorization model. For the conceptual background behind this model, including the one-administrator rule and the parent-child team structure, see the [SSO Overview](/private-deployment/authentication).
 
 The tab is organized into four sections:
 
-- [Access](#access) — controls who is allowed into the application
-- [Tenants](#tenants) — maps users into tenancy boundaries
-- [Roles](#roles) — maps identity claim values to Rulebricks roles
-- [Profile](#profile) — populates a user's profile from identity claims
+- [Access](#access): controls who is allowed into the application
+- [Tenants](#tenants): maps users into tenancy boundaries
+- [Roles](#roles): maps identity claim values to Rulebricks roles
+- [Profile](#profile): populates a user's profile from identity claims
 
 Together, these sections determine how SSO users are admitted and what they are allowed to see and do after they sign in.
 
@@ -3672,7 +3938,7 @@ Delegate authentication to an upstream proxy when Rulebricks runs inside a priva
 
 # External Authentication
 
-This page describes a **token passthrough** authentication mode for self-hosted Rulebricks deployments. Use this mode when Rulebricks lives inside an already-protected network — behind an identity-aware proxy, an internal API gateway, or a service mesh — and you want Rulebricks to trust the JWT that upstream system has already issued as the sole source of user identity, without running any OAuth / OIDC / password flow of its own.
+This page describes a **token passthrough** authentication mode for self-hosted Rulebricks deployments. Use this mode when Rulebricks lives inside an already-protected network (behind an identity-aware proxy, an internal API gateway, or a service mesh) and you want Rulebricks to trust the JWT that upstream system has already issued as the sole source of user identity, without running any OAuth / OIDC / password flow of its own.
 
 This mode completely disables Rulebricks' own authentication surface: the login UI is hidden, password and magic-link flows are shut off, and identity is derived entirely from the header your proxy attaches to each request.
 
@@ -3680,7 +3946,7 @@ This mode completely disables Rulebricks' own authentication surface: the login 
   **Never consider this mode** on a public-facing deployment, on a cloud-hosted
   tenant, or anywhere you cannot absolutely guarantee that every request
   reaching Rulebricks has been through your gatekeeper. Rulebricks does **not**
-  verify the token signature in this mode – the entire security guarantee rests
+  verify the token signature in this mode. The entire security guarantee rests
   on your upstream proxy.
 </Callout>
 
@@ -3720,7 +3986,7 @@ sequenceDiagram
 
 ## Enabling Passthrough via the Helm Chart
 
-Token passthrough is enabled through a dedicated block in your `values.yaml`. When `global.externalAuth.enabled` is `true`, the chart automatically wires the required flags into the Rulebricks app's ConfigMap and Secret — no manual `env` overrides needed.
+Token passthrough is enabled through a dedicated block in your `values.yaml`. When `global.externalAuth.enabled` is `true`, the chart automatically wires the required flags into the Rulebricks app's ConfigMap and Secret. No manual `env` overrides needed.
 
 A minimal configuration looks like this:
 
@@ -3738,7 +4004,7 @@ global:
 ```
 
 <Callout type="info">
-  `global.supabase.jwtSecret` and `global.email` are sensitive — prefer sourcing
+  `global.supabase.jwtSecret` and `global.email` are sensitive. Prefer sourcing
   them via `global.secrets.secretRef` (External Secrets Operator,
   sealed-secrets, or a manually created Kubernetes Secret) rather than pasting
   them directly into `values.yaml`.
@@ -3763,27 +4029,27 @@ These three chart values **must** be set when passthrough is enabled. The app re
 | Chart value                        | Default         | Purpose                                                                                                                                                                                                                                             |
 | :--------------------------------- | :-------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `global.externalAuth.header`       | `Authorization` | Header name to read the external JWT from. If `Authorization` (the default), the `Bearer ` prefix is stripped automatically. Use something like `X-Auth-Token` for deployments where the `Authorization` header is already used for something else. |
-| `global.externalAuth.claims.id`    | `sub`           | JWT claim path to read as the external stable user identifier. Stored in `user_metadata.external_sub` for reference. Not used for auth — Supabase UUIDs are the real identity.                                                                      |
+| `global.externalAuth.claims.id`    | `sub`           | JWT claim path to read as the external stable user identifier. Stored in `user_metadata.external_sub` for reference. Not used for auth; Supabase UUIDs are the real identity.                                                                      |
 | `global.externalAuth.claims.email` | `email`         | JWT claim path to read as the user's email. This is the only claim Rulebricks actually uses for user upsert, so it must exist and be unique per user.                                                                                               |
 | `global.externalAuth.claims.name`  | `name`          | JWT claim path to read as the user's display name. Copied into `user_metadata.full_name`, which a DB trigger writes to `public.users.name`.                                                                                                         |
 | `global.externalAuth.publicPaths`  | `[]`            | YAML list of URL-path prefixes that should NOT require the token. The chart joins them with commas for the app. Useful for public forms (e.g. `['/form/', '/api/form/']`). Requests matching any prefix pass through middleware untouched. `/api/health`, `/api/metrics`, `/auth/denied`, `/api/self-hosted-branding`, and requests carrying `x-api-key` are always auto-exempt by the app. |
 
 ## Token Shape
 
-Rulebricks accepts any valid 3-part JWT (`header.payload.signature`). It does not verify the signature — the upstream proxy is responsible for all verification. The algorithm field can be anything (HS256, RS256, ES256, `none`, etc.).
+Rulebricks accepts any valid 3-part JWT (`header.payload.signature`). It does not verify the signature; the upstream proxy is responsible for all verification. The algorithm field can be anything (HS256, RS256, ES256, `none`, etc.).
 
 ### Required Payload Claim
 
-- `email` (configurable via `global.externalAuth.claims.email`) — The user's email address. Used as the identity key. If the JWT is missing this claim, the middleware returns 401.
+- `email` (configurable via `global.externalAuth.claims.email`): The user's email address. Used as the identity key. If the JWT is missing this claim, the middleware returns 401.
 
 ### Recommended Payload Claims
 
-- `sub` (configurable via `global.externalAuth.claims.id`) — A stable external identifier such as the IdP's internal user ID. Stored in `user_metadata.external_sub` and `user_metadata.external_claims` on the Supabase auth user for future cross-reference.
-- `name` (configurable via `global.externalAuth.claims.name`) — A human-readable display name. Appears on the user's profile in Rulebricks.
+- `sub` (configurable via `global.externalAuth.claims.id`): A stable external identifier such as the IdP's internal user ID. Stored in `user_metadata.external_sub` and `user_metadata.external_claims` on the Supabase auth user for future cross-reference.
+- `name` (configurable via `global.externalAuth.claims.name`): A human-readable display name. Appears on the user's profile in Rulebricks.
 
 ### Optional Payload Claims
 
-Any additional claims (e.g. `department`, `role`, `groups`, `cost_center`, `tenant`) are preserved on the auth user (in `user_metadata.external_claims`) and surfaced in the Rulebricks admin SSO-mapping UI. The admin can configure claim-based access / role / tenant / profile mappings from that UI — see [Claim Mapping](/private-deployment/authentication/claim-mapping).
+Any additional claims (e.g. `department`, `role`, `groups`, `cost_center`, `tenant`) are preserved on the auth user (in `user_metadata.external_claims`) and surfaced in the Rulebricks admin SSO-mapping UI. The admin can configure claim-based access / role / tenant / profile mappings from that UI. See [Claim Mapping](/private-deployment/authentication/claim-mapping).
 
 ### Example Token Payload
 
@@ -3806,7 +4072,7 @@ Host: rulebricks.internal
 X-Auth-Token: eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJzdWIiOiJleHQtdXNlci1mM2EyIiwiZW1haWwiOiJhbGljZUBhY21lLmNvbSIsIm5hbWUiOiJBbGljZSBMaW0ifQ.
 ```
 
-Signature bytes can be empty or anything else — they are discarded.
+Signature bytes can be empty or anything else; they are discarded.
 
 ## User Lifecycle
 
@@ -3835,7 +4101,7 @@ There is no traditional sign-out in passthrough mode. If an end user triggers si
 - The browser's Supabase session cookie is cleared.
 - On the next request through the proxy, the middleware sees the token again and immediately restores the session (transparent re-login).
 
-This is the expected behavior — in passthrough mode, the proxy owns the session lifetime, not Rulebricks.
+This is the expected behavior. In passthrough mode, the proxy owns the session lifetime, not Rulebricks.
 
 ## Claim Mapping
 
@@ -3846,7 +4112,7 @@ See [Claim Mapping](/private-deployment/authentication/claim-mapping) for the fu
 Mappings are saved to `public.users.ssoRoleMapping` on the admin's row and re-applied on every subsequent user sign-in. Until mappings are configured, every non-admin user is provisioned with the default `developer` role.
 
 <Callout type="info">
-  The SSO tab is named "SSO" for historical reasons — the same UI works for
+  The SSO tab is named "SSO" for historical reasons. The same UI works for
   token passthrough because both use the same claim-based provisioning pipeline.
 </Callout>
 
@@ -3865,7 +4131,7 @@ When `global.externalAuth.enabled: true`:
 
 ## RLS and Tenant Isolation
 
-The Rulebricks database has row-level security policies on every user-facing table. These policies use `auth.uid()` — a Supabase function that returns the `sub` claim of the validated JWT.
+The Rulebricks database has row-level security policies on every user-facing table. These policies use `auth.uid()`, a Supabase function that returns the `sub` claim of the validated JWT.
 
 In passthrough mode:
 
@@ -3875,9 +4141,9 @@ In passthrough mode:
 
 The external token's `sub` is **never** used for authorization. It is stored as metadata for reference, but identity is always Rulebricks-generated Supabase UUIDs. This means:
 
-- A user's tokens can carry different `sub` values over time (e.g., if the upstream system rotates identifiers) with no impact — emails are the matching key.
+- A user's tokens can carry different `sub` values over time (e.g., if the upstream system rotates identifiers) with no impact, because emails are the matching key.
 - Rulebricks UUIDs remain stable across token rotations.
-- RLS policies — including the self-hosted "parent tenant" checks — behave identically to normal deployments.
+- RLS policies, including the self-hosted "parent tenant" checks, behave identically to normal deployments.
 
 ## Local Testing
 
@@ -3913,7 +4179,7 @@ The simplest way to try passthrough is with a local Rulebricks chart install poi
    ```
 
 5. Craft a token. Any of these work:
-   - **[jwt.io](https://jwt.io)** — Paste a payload, copy the encoded token, ignore the signature.
+   - **[jwt.io](https://jwt.io):** Paste a payload, copy the encoded token, ignore the signature.
    - **Node one-liner**:
      ```bash
      node -e '
@@ -3951,7 +4217,7 @@ Passthrough mode is **explicitly trust-based**. Rulebricks does not verify the t
 
 If any of those assumptions breaks, an attacker who can inject HTTP headers reaching Rulebricks can impersonate any user (including the admin) simply by crafting a JSON payload.
 
-This is the intended trust model for the internal-network deployment scenario this feature is designed for. Deployments that cannot meet these assumptions should use the standard OIDC SSO mode instead — see the [SSO Overview](/private-deployment/authentication) for configuration.
+This is the intended trust model for the internal-network deployment scenario this feature is designed for. Deployments that cannot meet these assumptions should use the standard OIDC SSO mode instead. See the [SSO Overview](/private-deployment/authentication) for configuration.
 
 ## Troubleshooting
 
@@ -4250,19 +4516,7 @@ global:
 
 ### AI Features
 
-Enable AI-powered rule generation (optional):
-
-| Parameter                | Type    | Default | Description        |
-| :----------------------- | :------ | :------ | :----------------- |
-| `global.ai.enabled`      | boolean | `false` | Enable AI features |
-| `global.ai.openaiApiKey` | string  | `""`    | OpenAI API key     |
-
-```yaml
-global:
-  ai:
-    enabled: true
-    openaiApiKey: 'sk-...'
-```
+AI features are configured inside the application, not in the Helm chart. After deploying, open **Settings → AI features** in your instance, choose a provider (OpenAI or Anthropic), and enter your API key and optional gateway URL. AI-powered surfaces stay hidden until a connection is configured.
 
 ### SSO Configuration
 
@@ -4314,7 +4568,6 @@ global:
       smtpPass: 'SMTP_PASSWORD'
       supabaseServiceKey: 'SUPABASE_SERVICE'
       supabaseAccessToken: 'SUPABASE_TOKEN'
-      openaiApiKey: 'OPENAI_KEY'
       ssoClientId: 'SSO_CLIENT_ID'
       ssoClientSecret: 'SSO_CLIENT_SECRET'
 ```
@@ -4466,9 +4719,54 @@ HPS and worker image tags are derived from `global.version` (`<version>` and `wo
 | Parameter                                  | Type   | Default   |
 | :----------------------------------------- | :----- | :-------- |
 | `rulebricks.hps.resources.requests.cpu`    | string | `"1000m"` |
-| `rulebricks.hps.resources.requests.memory` | string | `"1Gi"`   |
+| `rulebricks.hps.resources.requests.memory` | string | `"2Gi"`   |
 | `rulebricks.hps.resources.limits.cpu`      | string | `"2000m"` |
-| `rulebricks.hps.resources.limits.memory`   | string | `"2Gi"`   |
+| `rulebricks.hps.resources.limits.memory`   | string | `"4Gi"`   |
+
+The memory limit is sized for the large-payload envelope below: a couple of concurrent 128 MiB request bodies live on the Node.js heap while being parsed, scattered, and gathered. If you shrink `rulebricks.hps.limits`, these can come back down.
+
+#### HPS Payload & Deadline Limits
+
+`rulebricks.hps.limits` defines the payload and deadline envelope for the execution API. The chart ships a **large-batch profile** (100MB-class bulk requests); each value feeds an environment variable on the HPS gateway or worker pods. These values are sized in lockstep with the Kafka message caps (`kafka.config` / `kafka.topics`), the Traefik timeouts, and the HPS memory limit and heap. If you change one, revisit the others.
+
+| Parameter                                              | Default     | Env var                          | Description                                                                                                                                  |
+| :----------------------------------------------------- | :---------- | :------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------- |
+| `rulebricks.hps.limits.bodyLimitBytes`                 | `134217728` | `HTTP_BODY_LIMIT_BYTES`          | Max HTTP request body on execution endpoints (128 MiB). HTTP 413 above it.                                                                    |
+| `rulebricks.hps.limits.rpcTimeoutMs`                   | `300000`    | `RPC_TIMEOUT_MS`                 | Whole-request execution deadline (produce + worker processing + gather). Traefik `graceTimeOut` and the pod termination grace sit above it.   |
+| `rulebricks.hps.limits.requestTimeoutMs`               | `300000`    | `HTTP_REQUEST_TIMEOUT_MS`        | Deadline for receiving one request's entire body (a 128 MiB upload on a ~4 Mbps link takes ~270s).                                            |
+| `rulebricks.hps.limits.itemMaxBytes`                   | `6291456`   | `ITEM_MAX_BYTES`                 | Serialized cap per single payload inside a bulk array (6 MiB). Must stay below the topics' `max.message.bytes` minus envelope headroom.       |
+| `rulebricks.hps.limits.contextBatchBodyLimitBytes`     | `134217728` | `CONTEXT_BATCH_BODY_LIMIT_BYTES` | NDJSON body cap for `contexts/batch` (128 MiB).                                                                                               |
+| `rulebricks.hps.limits.contextBatchMaxItems`           | `100000`    | `CONTEXT_BATCH_MAX_ITEMS`        | Records per context batch request.                                                                                                            |
+| `rulebricks.hps.limits.largeBodyThresholdBytes`        | `8388608`   | `LARGE_BODY_THRESHOLD_BYTES`     | Bodies above this (8 MiB) count against the large-request admission gate.                                                                     |
+| `rulebricks.hps.limits.largeBodyMaxConcurrent`         | `2`         | `LARGE_BODY_MAX_CONCURRENT`      | Concurrent large bodies admitted per HPS replica; excess is shed with HTTP 429 + `Retry-After` instead of queueing in memory.                 |
+| `rulebricks.hps.limits.chunkMaxChunks`                 | `128`       | `CHUNK_MAX_CHUNKS`               | Chunk-planner fan-out ceiling; match the `solution` topic's partition count so one large request can spread across the whole worker fleet.    |
+| `rulebricks.hps.limits.chunkHardMaxBytes`              | `2097152`   | `CHUNK_HARD_MAX_BYTES`           | Hard per-chunk input cap (2 MiB), leaving 4x response-amplification headroom under the 8 MiB Kafka message cap.                               |
+| `rulebricks.hps.limits.responseFetchMaxBytes`          | `16777216`  | `RESPONSE_MAX_BYTES_PER_PARTITION` | Gather-side consumer fetch ceiling per partition; keep at ~2x the Kafka message cap.                                                        |
+| `rulebricks.hps.limits.workerFetchMaxBytes`            | `16777216`  | `WORKER_MAX_BYTES_PER_PARTITION` | Worker request-consumer fetch ceiling per partition; same 2x rule.                                                                            |
+| `rulebricks.hps.limits.shutdownDrainMs`                | `315000`    | `KAFKA_SHUTDOWN_DRAIN_MS`        | On SIGTERM, keep the response consumer alive until in-flight RPCs resolve; must cover `rpcTimeoutMs`.                                         |
+| `rulebricks.hps.limits.terminationGracePeriodSeconds`  | `330`       | (pod spec)                       | Pod termination grace; sits just above `shutdownDrainMs`.                                                                                     |
+| `rulebricks.hps.limits.nodeHeapMb`                     | `3584`      | `NODE_OPTIONS`                   | Node.js old-space heap (MB) for the HPS server, ~85% of the memory limit. Unset to use the image default (1024).                              |
+
+<Callout type="info">
+  Anything in front of HPS must tolerate the 300-second deadline: the chart
+  sets Traefik's `readTimeout`/`graceTimeOut` to 330s on both entrypoints, the
+  nginx ingress annotations to match, and the CLI raises Azure's 4-minute
+  load-balancer TCP idle timeout. If you front the deployment with your own
+  proxy, raise its read/idle timeouts accordingly.
+</Callout>
+
+#### HPS Tuning Environment Variables
+
+Performance and safety knobs, set via `rulebricks.hps.extraEnv` (the API/gateway pods) and, where noted, `rulebricks.hps.workers.extraEnv` (the worker pods). The chart ships sensible defaults; override only when tuning.
+
+| Variable                         | Default | Set on          | Description                                                                                                                                                                                                 |
+| :------------------------------- | :------ | :-------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `RB_FN_CONTEXT_REUSE`            | `1`     | gateway+workers | Reuse one hardened V8 sandbox context per execution unit instead of creating a fresh one per derived field per record (and per function-column cell). Large speedup for context ingest with derived fields and for vocabulary-heavy rule/flow evaluation. Set `0` to disable. |
+| `CONTEXT_CASCADE_MAX_INSTANCES`  | `2000`  | gateway         | Max dependent (parent) instances re-evaluated per relationship when a context batch cascades into related contexts. Bounds worst-case ingest tail latency; excess is reported with `truncated: true`.       |
+| `CONTEXT_CASCADE_BUDGET_MS`      | `45000` | gateway         | Wall-clock budget for the whole cascade phase of one batch request. Once spent, remaining relationships are reported as deferred (`reason: cascade_budget_exceeded`) instead of running unbounded.           |
+| `BULK_MAX_ITEMS`                 | `0`     | gateway+workers | Optional hard cap on array length for `bulk-solve`, `flows`, and `parallel-solve`. `0` (default) disables the cap entirely on self-hosted; these endpoints accept arbitrarily large batches bounded only by the request body size.                       |
+
+Request body limits: `bulk-solve`, `flows`, and `contexts/batch` accept up to `HTTP_BODY_LIMIT_BYTES` (128 MiB chart default via `rulebricks.hps.limits.bodyLimitBytes`; the HPS binary defaults to 6 MiB without it). Rule and flow imports (`/api/v1/admin/rules/import`, `/api/v1/admin/flows/import`) and manifest import accept up to 10 MB. If you front the deployment with the nginx ingress controller, the chart raises its `proxy-body-size` to `128m` and its read/send timeouts to 330s so large batches are not rejected or cut off at the edge (the default Traefik ingress imposes no body cap, and the chart raises its timeouts directly).
 
 ## Database (Supabase)
 
@@ -4548,7 +4846,7 @@ Kafka handles async rule execution and logging.
 | `kafka.enabled`            | boolean | `true`     | Deploy the in-cluster Strimzi Kafka broker and Topic Operator |
 | `kafka.version`            | string  | `"4.2.0"`  | Kafka version supported by the bundled Strimzi operator       |
 | `kafka.replicas`           | integer | `1`        | Broker replica count                                          |
-| `kafka.storage.size`       | string  | `"20Gi"`   | Broker persistent storage size                                |
+| `kafka.storage.size`       | string  | `"75Gi"`   | Broker persistent storage size, sized against per-topic `retention.bytes` caps |
 | `kafka.storage.class`      | string  | `"gp3"`    | Broker storage class                                          |
 | `kafka.priorityClassName`  | string  | `""`       | PriorityClass for the broker pod, usually filled by the CLI   |
 | `strimzi-kafka-operator.*` | object  | see values | Operator images and namespace watch settings                  |
@@ -4577,9 +4875,12 @@ kafka:
       replicas: 1
       config:
         retention.ms: '300000'
-        max.message.bytes: '2097152'
+        retention.bytes: '134217728'
+        max.message.bytes: '8388608'
     # ... see the chart's values.yaml for the full default topic list
 ```
+
+The RPC topics (`solution`, `solution-response`) default to an 8 MiB `max.message.bytes`, matching the broker's `message.max.bytes`, so worker responses keep 4x amplification headroom over the 2 MiB request chunks. The `logs` topic stays at 2 MB. If you lower these, lower `rulebricks.hps.limits` (chunk sizes, item cap) to match.
 
 <Callout type="warning">
   Topic names must carry the configured `kafkaTopicPrefix`. If you change the
@@ -4653,12 +4954,26 @@ The chart creates a `ClusterIssuer` for Let's Encrypt production and `Certificat
 
 ## Decision Logging (Vector & ClickHouse)
 
-| Value prefix   | Purpose                                                                                                  |
-| :------------- | :------------------------------------------------------------------------------------------------------- |
-| `vector.*`     | Decision-log aggregator consuming the Kafka `logs` topic; sinks and replicas                            |
-| `clickhouse.*` | Query engine over the decision log archive, with local persistence for ClickStack telemetry when enabled |
+| Value prefix   | Purpose                                                                                     |
+| :------------- | :------------------------------------------------------------------------------------------ |
+| `vector.*`     | Consumes the Kafka `logs` topic and writes normalized records to built-in and custom sinks  |
+| `clickhouse.*` | Persistent app-facing decision-log table, or the raw-archive query engine in PVC-less mode  |
 
-Vector's Kafka connection (brokers, TLS, SASL, and the prefixed log topic) is templated automatically into a `vector-kafka-env` ConfigMap from `rulebricks.app.logging.*`; you don't set it by hand. How the pipeline fits together, the values tables, and custom sink examples live in [Decision Logs](/private-deployment/decision-logs).
+| Parameter                                 | Type    | Default      | Description                                                        |
+| :---------------------------------------- | :------ | :----------- | :----------------------------------------------------------------- |
+| `clickhouse.decisionLogs.retentionDays`   | integer | `30`         | TTL for the persistent `decision_logs` MergeTree table             |
+| `clickhouse.persistence.enabled`          | boolean | `true`       | Use a PVC and local app-facing table; `false` selects PVC-less mode |
+| `clickhouse.persistence.size`             | string  | `"100Gi"`    | ClickHouse PVC size                                                |
+| `clickhouse.persistence.storageClass`     | string  | unset        | StorageClass override; unset uses the cluster default              |
+| `clickhouse.queryLimits.maxMemoryUsage`   | integer | `4294967296` | Per-query memory limit in bytes                                    |
+| `clickhouse.queryLimits.maxThreads`       | integer | `4`          | Per-query thread limit                                             |
+| `clickhouse.queryLimits.maxExecutionTime` | integer | `120`        | Per-query execution limit in seconds                               |
+| `clickhouse.queryLimits.maxRowsToRead`    | integer | `50000000`   | Maximum rows read by one query                                     |
+| `clickhouse.queryLimits.readOverflowMode` | string  | `"break"`    | Return accumulated rows at the cap; `throw` fails instead          |
+
+With persistence enabled, Vector writes every log to both the TTL-bounded table and the durable, hourly Hive-partitioned zstd NDJSON archive. Normal app queries use only the table; disk-pressure safety eviction can shorten its effective retention without touching the bucket. With persistence disabled, ClickHouse is stateless and queries date-bounded archive paths directly.
+
+Vector's Kafka connection (brokers, TLS, SASL, and the prefixed log topic) is templated automatically into a `vector-kafka-env` ConfigMap from `rulebricks.app.logging.*`; you don't set it by hand. How the pipeline fits together, retention behavior, and custom sink examples live in [Decision Logs](/private-deployment/decision-logs).
 
 ## Built-in Observability (ClickStack, Tracing, and App Logs)
 
@@ -4767,11 +5082,11 @@ For non-AWS clusters, set `storageClass.create: false` and ensure a compatible S
 ## Decision Logs
 /private-deployment/decision-logs
 
-How decision logs flow through Kafka, Vector, object storage, and ClickHouse in a private Rulebricks deployment, and how to forward them elsewhere.
+How Vector writes decision logs to a bounded ClickHouse table and a durable zstd NDJSON archive in a private Rulebricks deployment.
 
 # Decision Logs
 
-Every rule execution emits a structured decision log. The pipeline that stores and serves these logs is built around your shared object storage bucket.
+Every rule execution emits a structured decision log. Persistent deployments keep one bounded ClickHouse table for fast application queries and a complete, durable copy in your shared object storage bucket.
 
 ## How the Pipeline Works
 
@@ -4779,15 +5094,18 @@ Every rule execution emits a structured decision log. The pipeline that stores a
 flowchart LR
     HPS["HPS API / worker pods"] -->|produce| LogsTopic["Kafka logs topic"]
     LogsTopic -->|consume| Vector[Vector]
-    Vector -->|"NDJSON archive (hourly partitions)"| Bucket["Object Storage (global.storage)"]
-    Bucket -->|query on demand| ClickHouse[ClickHouse]
-    ClickHouse --> Dashboard[Rulebricks Dashboard]
+    Vector -->|"zstd NDJSON (hourly Hive partitions)"| Bucket["Object Storage (full history)"]
+    Vector -->|"same normalized records"| ClickHouse["ClickHouse decision_logs (MergeTree)"]
+    ClickHouse --> App["Dashboard / API / history tools"]
+    Bucket -.->|"trace fallback or PVC-less queries"| ClickHouse
 ```
 
 1. HPS API and worker pods produce decision log entries to the Kafka `logs` topic after each request completes (non-blocking, post-response). All solve traffic executes on HPS, so it owns the decision-log producer; the main app does not produce to Kafka.
-2. Vector consumes the topic and writes the entries to your bucket under `global.storage.paths.decisionLogs` as compressed NDJSON, partitioned by year/month/day/hour.
-3. ClickHouse queries the archive directly for decision logs. When ClickStack is enabled, the same ClickHouse deployment also stores operational telemetry locally, so persistence stays enabled by default.
-4. The dashboard's native decision log search runs against ClickHouse. The archive remains plain NDJSON in your bucket, so you can also query it with your own tooling (Athena, DuckDB, and so on) or forward logs to additional sinks.
+2. Vector consumes and normalizes the topic. With ClickHouse persistence enabled (the default), it writes every normalized record to two destinations: the local `decision_logs` MergeTree table and the object storage archive.
+3. Vector writes the archive under `global.storage.paths.decisionLogs` as zstd-compressed NDJSON using `year=YYYY/month=MM/day=DD/hour=HH/` Hive partitions. This is the durable, full-history copy.
+4. The dashboard, decision-log API, and in-app history tools query only the MergeTree table during normal operation. They do not combine broad table queries with archive scans.
+
+Flow executions additionally record their execution path. Worker-emitted subflow and parallel records carry a `path_trace` field directly, and top-level flow runs emit companion records with `operation: "flow-trace"` to the same topic. Both store the trace as a compressed JSON string ([compress-json](https://www.npmjs.com/package/compress-json)); the dashboard decompresses it for the read-only execution view and hides `flow-trace` records from log lists. Warehouse queries should expect these companion records and the extra `path_trace` column.
 
 Bucket configuration and identity are covered in [Storage & Backups](/private-deployment/storage-and-backups).
 
@@ -4804,29 +5122,141 @@ The topic prefix exists so Rulebricks topics don't collide on shared or managed 
 
 If you run your own Kafka cluster, see [External Kafka & Redis](/private-deployment/external-services#vector-and-the-logs-topic) for how Vector connects to it and which ACLs it needs.
 
-## Querying with ClickHouse
+## Persistent Mode
 
-Rulebricks deploys ClickHouse to power native decision log querying in the dashboard. Decision log data lives in your bucket; ClickHouse queries that archive through a generated named collection. Local ClickHouse persistence is used for operational telemetry when ClickStack is enabled.
+Persistent mode is the default and recommended production configuration. ClickHouse stores app-facing logs in one MergeTree table with a configurable time-to-live (TTL), while Vector independently preserves every record in the bucket.
 
-| Parameter                        | Type    | Default        | Description                                                     |
-| :------------------------------- | :------ | :------------- | :-------------------------------------------------------------- |
-| `clickhouse.enabled`             | boolean | `true`         | Deploy ClickHouse                                               |
-| `clickhouse.auth.username`       | string  | `"rulebricks"` | Query user                                                      |
-| `clickhouse.persistence.enabled` | boolean | `true`         | Keep local telemetry tables and query metadata across restarts  |
-| `clickhouse.persistence.size`    | string  | `"100Gi"`      | Persistent volume size                                          |
-| `clickhouse.queryLimits.*`       | object  | see values     | Memory, thread, row-read, and execution time caps               |
-| `clickhouse.otelQueryLimits.*`   | object  | see values     | Separate limits for ClickStack telemetry queries                |
+- `clickhouse.decisionLogs.retentionDays` controls the table TTL and defaults to 30 days.
+- The dashboard, API, and history tools query only this table, so their normal searchable range is the data still present there.
+- A disk-pressure safety job may evict the oldest daily table partitions before their TTL when the volume needs merge headroom. It never deletes bucket objects.
+- Retention and safety eviction bound local disk use; the bucket remains the complete history for your warehouse and targeted execution-trace recovery.
 
-ClickHouse reads the archive through a named collection generated from `global.storage.*`, so no separate storage configuration is needed.
+<Callout type="info">
+  Increasing table retention requires enough space under
+  `clickhouse.persistence.size`. Object storage retention is managed by your
+  bucket lifecycle policy, independently of the ClickHouse TTL.
+</Callout>
+
+### Execution Trace Permalinks
+
+An execution trace URL must carry both the execution ID and a `t` timestamp hint:
+
+```text
+https://rules.example.com/dashboard/flows/<flow-id>/executions/<flow-execution-id>?t=<unix-epoch-milliseconds>
+```
+
+The table serves the link when the record is still retained. If the table lookup misses, the app uses `t` to perform a bounded archive fallback: it reads only the UTC day partitions intersecting the timestamp's ±48-hour window and searches for that execution. This fallback is only for a specific execution permalink; decision-log lists, searches, and history queries do not union the archive into their results.
+
+Keep `t` when copying or storing a permalink. Without a timestamp hint, a link cannot safely locate an execution that has aged out of the table.
+
+Warehouse users can build the same link from each record's `flow_execution_id` and `timestamp`; `flow_id` supplies the route context. Convert `timestamp` to Unix epoch milliseconds for `t`. The flow route corrects itself if the execution belongs to a nested flow.
+
+## PVC-less Mode
+
+Set `clickhouse.persistence.enabled: false` when local persistent storage is unavailable. ClickHouse then runs statelessly and the app queries the raw zstd NDJSON archive through date-scoped object storage reads instead of a local MergeTree table.
+
+Archive queries are deliberately date-bounded: missing ranges receive a bounded default window, and oversized ranges are clamped before ClickHouse reads object storage. This mode avoids a PVC but is expected to be slower, especially for payload search and aggregation. Adding a PVC and enabling `clickhouse.persistence.enabled` is the performance upgrade path.
+
+## Deleted Rules and Flows
+
+Decision logs reference the rule or flow that executed, and private deployments guarantee that reference stays resolvable even after the asset is deleted. Deleting a rule or flow archives a full snapshot of it (every published version plus its final state) instead of purging it.
+
+The log views resolve the live asset first and fall back to the archive only when it is gone:
+
+- **Rule logs** - the matched-rows link opens the decision table as of the version that ran, with the recorded condition highlights, even for deleted rules.
+- **Flow executions** - execution permalinks still render the versioned graph with the recorded path overlaid, and the rule inspect modals inside a trace resolve rules that were deleted after the run.
+
+Archived views are read-only and clearly labeled with the asset's deletion date. Archived snapshots live in the application database (not the log archive), are never listed in the dashboard, and are not executable - `/solve` and `/flows` calls against deleted assets fail exactly as before. Assets deleted before upgrading to a version with this feature were purged and cannot be recovered.
+
+<Callout type="info">
+  This guarantee is specific to private deployments. On cloud, deleting a rule
+  or flow still removes its version history, and log deep links to it stop
+  resolving.
+</Callout>
+
+## Referenced Vocabulary Values
+
+Every rule decision record carries the materialized vocabulary values used by
+the exact rule version that executed. They live inside the existing `decision`
+JSON object, so no additional ClickHouse column or Vector transform is
+required. The dashboard shows the snapshot under **Referenced Values**, flags
+definitions that changed after the run, and links current values to their
+history.
+
+The snapshot is bounded to protect Kafka and log-storage throughput:
+
+- payloads up to approximately 1 KiB are stored inline per value;
+- the combined structure is capped at approximately 16 KiB; and
+- omitted payloads or entries set `referencedValuesTruncated` (normalized to
+  `referenced_values_truncated` by the decision-log query API).
+
+Private deployments archive vocabulary rows when they are deleted. The live
+catalog row is removed so it cannot be selected or executed, while its final
+row and append-only history remain in the application database. Log traceback
+first uses the execution-time payload embedded in the log; when that payload
+was size-capped, the UI can fall back to the archived final raw value. Access
+group checks are enforced on archived lookups exactly as they are for live
+values.
+
+As with archived rules and flows, values deleted before installing the
+value-history migration cannot be recovered.
+
+## ClickHouse Values
+
+| Parameter                                 | Type    | Default        | Description                                                            |
+| :---------------------------------------- | :------ | :------------- | :--------------------------------------------------------------------- |
+| `clickhouse.enabled`                      | boolean | `true`         | Deploy the decision-log query service                                  |
+| `clickhouse.auth.username`                | string  | `"rulebricks"` | Query user                                                             |
+| `clickhouse.decisionLogs.retentionDays`   | integer | `30`           | TTL, in days, for the persistent `decision_logs` MergeTree table       |
+| `clickhouse.persistence.enabled`          | boolean | `true`         | Use a PVC and the app-facing MergeTree table                            |
+| `clickhouse.persistence.size`             | string  | `"100Gi"`      | Persistent volume size                                                 |
+| `clickhouse.persistence.storageClass`     | string  | unset          | StorageClass override; unset uses the cluster default                  |
+| `clickhouse.queryLimits.maxMemoryUsage`   | integer | `4294967296`   | Per-query memory cap in bytes                                          |
+| `clickhouse.queryLimits.maxThreads`       | integer | `4`            | Per-query thread cap                                                   |
+| `clickhouse.queryLimits.maxExecutionTime` | integer | `120`          | Per-query execution cap in seconds                                     |
+| `clickhouse.queryLimits.maxRowsToRead`    | integer | `50000000`     | Maximum rows read by one query                                         |
+| `clickhouse.queryLimits.readOverflowMode` | string  | `"break"`      | Return rows collected at the read cap; use `throw` to fail instead     |
+
+The archive reader and application table use storage and credentials generated from `global.storage.*`; there is no second storage credential block.
 
 ## The Archive Sink
 
-When `clickhouse.enabled` is on and `global.storage` is configured, the chart adds a `decision_logs` Vector sink that writes the NDJSON archive to your bucket. The key prefix uses an hourly partition layout (`year=YYYY/month=MM/day=DD/hour=HH/`) that must match what ClickHouse expects to query.
+When `clickhouse.enabled` is on and `global.storage` is configured, the chart adds the archive sink. Objects are raw NDJSON compressed with zstd and laid out as:
+
+```text
+<global.storage.paths.decisionLogs>/year=YYYY/month=MM/day=DD/hour=HH/*.zst
+```
 
 <Callout type="warning">
   The CLI generates this sink automatically; hand-installs should leave the
-  generated partition layout intact, or ClickHouse queries will come back empty.
+  generated partition layout and `.zst` suffix intact. PVC-less queries and
+  execution-trace fallback prune scans using those date partitions.
 </Callout>
+
+## Bring Your Own Warehouse
+
+The bucket is an open NDJSON dataset, so warehouse access does not depend on the app's retention window. For example, DuckDB can read one day from S3 using the ambient AWS credential chain:
+
+```sql
+INSTALL httpfs;
+LOAD httpfs;
+CREATE SECRET (TYPE s3, PROVIDER credential_chain);
+
+SELECT
+  timestamp,
+  flow_execution_id,
+  'https://rules.example.com/dashboard/flows/' || flow_id ||
+    '/executions/' || flow_execution_id ||
+    '?t=' || CAST(epoch_ms(CAST(timestamp AS TIMESTAMPTZ)) AS VARCHAR)
+      AS execution_url
+FROM read_ndjson_auto(
+  's3://my-rulebricks-data/decision-logs/year=2026/month=07/day=29/hour=*/*.zst',
+  hive_partitioning = true
+)
+WHERE flow_execution_id IS NOT NULL;
+```
+
+Replace the bucket and prefix with `global.storage.bucket` and `global.storage.paths.decisionLogs`. Keep day/hour paths in warehouse queries so the object store can prune the scan.
 
 ## Forwarding to Other Destinations
 
@@ -4874,13 +5304,13 @@ For the overall component layout and request flow, see [Architecture](/private-d
 
 The idempotent Kafka producer guarantees exactly-once delivery at the broker level, and the correlation-ID mechanism ensures responses always route back to the correct HPS replica. This is why partition counts matter so much on an external cluster.
 
-Redis sits in front of Supabase as a shared cache layer. API key authentication payloads are cached with a short TTL (60 seconds), while rule/flow definitions and named-environment lookups are cached without expiry and invalidated over a Redis pub/sub channel when they change; every pod also keeps an in-process LRU in front of Redis. In practice, Supabase sees very few direct queries under normal operation.
+Redis sits in front of Supabase as a shared cache layer. API key authentication payloads are cached with a short TTL (60 seconds), while rule/flow definitions and named-environment release pins are cached without expiry and invalidated over a Redis pub/sub channel when they change; every pod also keeps an in-process LRU in front of Redis. Redis is strictly a cache: release pins and version content are authoritatively stored in Postgres, and solvers self-heal missing Redis entries from the database on demand. In practice, Supabase sees very few direct queries under normal operation.
 
 ## Externalizing Kafka
 
 ### How Rulebricks Uses Kafka
 
-Rulebricks uses three Kafka topics. Topic names carry the configured `rulebricks.app.logging.kafkaTopicPrefix` (default `com.rulebricks.`, so the actual topic is `com.rulebricks.solution` and so on). Consumer group IDs carry the same prefix (e.g. `com.rulebricks.generic-workers`): Kafka group membership and rebalancing are group-wide rather than per-topic, so two Rulebricks deployments sharing one cluster must join distinct groups — otherwise every deploy of one stalls the other's consumers. The prefix exists so neither topics nor groups collide on shared or managed clusters; set it to `""` to disable prefixing of both.
+Rulebricks uses three Kafka topics. Topic names carry the configured `rulebricks.app.logging.kafkaTopicPrefix` (default `com.rulebricks.`, so the actual topic is `com.rulebricks.solution` and so on). Consumer group IDs carry the same prefix (e.g. `com.rulebricks.generic-workers`): Kafka group membership and rebalancing are group-wide rather than per-topic, so two Rulebricks deployments sharing one cluster must join distinct groups. Otherwise every deploy of one stalls the other's consumers. The prefix exists so neither topics nor groups collide on shared or managed clusters; set it to `""` to disable prefixing of both.
 
 | Topic               | Purpose                                                 | Producers        | Consumers                                             |
 | :------------------ | :------------------------------------------------------ | :--------------- | :---------------------------------------------------- |
@@ -4986,7 +5416,13 @@ Ask your Kafka team to create (names take your configured topic prefix):
 | `solution-response` | Must equal `rulebricks.hps.workers.solutionPartitions`                  | Same as `solution`                      | Same as `solution`                                                 |
 | `logs`              | 8-24 depending on volume                                                | 2-3 in production (long-lived data)     | Size to your Vector outage tolerance, e.g. `retention.ms=86400000` |
 
-Set `max.message.bytes` to at least `2097152` (2 MB) on all three topics. HPS chunks are byte-bounded well below this, but the headroom prevents edge-case produce failures, and a response chunk can exceed its request chunk when rules expand payloads.
+Set `max.message.bytes` to `8388608` (8 MiB) on `solution` and `solution-response`, matching the chart's in-cluster defaults. Request chunks are planner-capped at 2 MiB of input, so the headroom exists for **responses**: a worker's result rides as a single Kafka message and may legitimately grow to several times its chunk's input when rules expand payloads. A result that exceeds the cap fails the request with an explicit HTTP 413 rather than a timeout. The `logs` topic only needs `2097152` (2 MB) - decision-log records are sliced far below it.
+
+Managed-service caveats for the 8 MiB profile:
+
+- **AWS MSK Serverless** allows exactly 8 MiB (`max.message.bytes` maxes out at `8388608`), but its per-topic *default* is ~1 MiB - set the cap explicitly when creating the topics.
+- **Azure Event Hubs** Standard and Premium cap events at 1 MB, which cannot carry the default large-payload profile; either lower the HPS payload envelope (`rulebricks.hps.limits` in the Helm values) to keep chunks and responses under 1 MB, or use a self-serve Dedicated cluster (20 MB events).
+- **Confluent Cloud / Aiven / Redpanda** support 8 MiB per-topic caps on standard tiers.
 
 Partition count on `solution` is the worker fleet's concurrency ceiling, not a worker quota; the 2x headroom recommendation and the full sizing model are explained in [Performance & Scaling](/private-deployment/performance#the-sizing-model).
 
@@ -4994,7 +5430,7 @@ For replication, 1 is acceptable on the RPC topics because the traffic is transi
 
 ### Partition Sizing for solution-response
 
-The `solution-response` topic is partition-sensitive. HPS replicas share a consumer group over this topic, so each replica is assigned a subset of partitions. When producing a response, the worker writes to the _exact_ partition the originating HPS replica is consuming. If the topic has fewer partitions than expected, responses land on partitions no replica is watching, causing 30-second timeouts.
+The `solution-response` topic is partition-sensitive. HPS replicas share a consumer group over this topic, so each replica is assigned a subset of partitions. When producing a response, the worker writes to the _exact_ partition the originating HPS replica is consuming. If the topic has fewer partitions than expected, responses land on partitions no replica is watching, and requests hang until the RPC deadline (`RPC_TIMEOUT_MS`, 300s chart default) before failing with a 504.
 
 The expected partition count is set in the Helm values:
 
@@ -5010,7 +5446,7 @@ The HPS deployment template passes `solutionPartitions` to HPS as the `MAX_WORKE
 <Callout type="warning">
   Keep `solutionPartitions` equal to the actual partition count of
   `solution-response` on your external cluster. A mismatch here is the most
-  common cause of 30-second timeouts on solve requests.
+  common cause of solve requests timing out at the full RPC deadline.
 </Callout>
 
 If you raise a topic's partition count later, HPS Kafka clients observe the change within about 30 seconds (`metadataMaxAge: 30000`), and consumers fully rebalance onto new partitions at their next group rebalance. Chart upgrades roll the workers, which forces one. HPS pods gate readiness on the response consumer owning partitions (`GET /ready` returns 503 until group join completes), so traffic never reaches an instance that can't receive its responses.
@@ -5042,14 +5478,15 @@ No tuning is needed on the external Kafka side beyond ensuring the three topics 
 
 ### Request Size Limits
 
-Admission is byte-first; item counts are not limited by default. Useful when setting client expectations:
+Admission is byte-first; item counts are not limited by default. The Helm chart ships a **large-batch profile** sized for 100MB-class bulk requests; every bound below is an env var on HPS (chart value in `rulebricks.hps.limits`), and the Kafka message caps, ingress timeouts, and HPS memory are sized in lockstep with them. Useful when setting client expectations:
 
-- **Total request body:** 6 MiB hard ceiling by default (HTTP 413 above it; configurable via `HTTP_BODY_LIMIT_BYTES` on HPS). We recommend clients stay around 1 MB or less for the best latency profile. Larger bodies execute fine but cost proportionally more parse time and fan out into more chunks.
-- **Single payload:** 1.5 MiB serialized hard ceiling (HTTP 413 naming the offending array index; configurable via `ITEM_MAX_BYTES`, which must stay below the topics' `max.message.bytes` minus envelope headroom).
+- **Total request body:** 128 MiB chart default (HTTP 413 above it; `HTTP_BODY_LIMIT_BYTES`). Without the chart env, the HPS binary defaults to 6 MiB. Clients get the best latency profile around 1 MB or less; larger bodies execute fine but cost proportionally more parse time and fan out into more chunks.
+- **Single payload:** 6 MiB serialized chart default (HTTP 413 naming the offending array index; `ITEM_MAX_BYTES`, which must stay below the topics' `max.message.bytes` minus envelope headroom).
 - **Item count:** unlimited by default. Operators can opt into a cap with `BULK_MAX_ITEMS` (HTTP 400 above it).
-- **Response amplification:** each chunk's response must fit the topic's `max.message.bytes` (2 MB default). Rules that expand outputs beyond roughly 16 KB average per payload will fail the request with an explicit error.
-- The whole request shares one 30-second execution deadline regardless of size.
-- **Context batch requests** (`POST /api/v1/contexts/batch/{slug}`, self-hosted bulk mode) share the same body ceiling and additionally cap records per request at 10,000 by default (HTTP 413 above it; configurable via `CONTEXT_BATCH_MAX_ITEMS` on HPS). Database writes are chunked at 500 records per statement (`CONTEXT_BATCH_DB_CHUNK`). See [Bulk Ingestion](/contexts/bulk-ingestion) for the endpoint contract.
+- **Execution deadline:** the whole request shares one 300-second deadline regardless of size (`RPC_TIMEOUT_MS`; 60s without the chart env). Anything in front of HPS - ingress read timeouts, L4 idle timeouts - must sit above it; the chart configures Traefik accordingly, and the CLI raises Azure's 4-minute load-balancer idle timeout.
+- **Concurrent large bodies:** each HPS replica admits at most 2 requests larger than 8 MiB at once (`LARGE_BODY_MAX_CONCURRENT` / `LARGE_BODY_THRESHOLD_BYTES`); excess requests are shed immediately with HTTP 429 + `Retry-After` instead of queueing in memory. Clients sending large batches should honor 429 with a short backoff.
+- **Response amplification:** each chunk's response rides as a single Kafka message and must fit the topic's `max.message.bytes` (8 MiB chart default). Request chunks carry at most 2 MiB of input, so rules can expand outputs roughly 4x before a result is undeliverable - at which point the request fails with an explicit HTTP 413 identifying the response as too large, rather than timing out.
+- **Context batch requests** (`POST /api/v1/contexts/batch/{slug}`, self-hosted bulk mode) accept 128 MiB bodies and cap records per request at 100,000 by chart default (HTTP 413 above it; `CONTEXT_BATCH_BODY_LIMIT_BYTES` / `CONTEXT_BATCH_MAX_ITEMS`). Database writes are chunked at 500 records per statement (`CONTEXT_BATCH_DB_CHUNK`). See [Bulk Ingestion](/contexts/bulk-ingestion) for the endpoint contract.
 
 ### KEDA Autoscaling with External Kafka
 
@@ -5059,7 +5496,7 @@ However, ensure KEDA can reach your external Kafka brokers from within the clust
 
 ### Vector and the logs topic
 
-The Rulebricks chart ships a Vector pod by default as the consumer of the `logs` topic. HPS API and worker pods produce structured decision-log entries to Kafka after each request completes (non-blocking, post-response); Vector reads them and forwards to whatever sink the chart is configured for, commonly the object storage archive that ClickHouse queries, S3, or an HTTP endpoint into a SIEM.
+The Rulebricks chart ships a Vector pod by default as the consumer of the `logs` topic. HPS API and worker pods produce structured decision-log entries to Kafka after each request completes (non-blocking, post-response). In the default persistent configuration, Vector writes every normalized record to both the app-facing ClickHouse MergeTree table and the durable object storage archive; custom S3, SIEM, or HTTP sinks can receive the same stream. PVC-less mode omits the local table write and serves date-bounded queries from the archive.
 
 A few things to know when externalizing Kafka:
 
@@ -5096,14 +5533,16 @@ Redis serves as a shared cache between all Rulebricks components: the main app, 
 
 What lives in Redis:
 
-| Data                                     | TTL                              | Written By         |
-| :--------------------------------------- | :------------------------------- | :----------------- |
-| API key auth payloads                    | 60s                              | HPS                |
-| Rule/flow definitions (compressed)       | No expiry (pub/sub invalidation) | Main app (not HPS) |
-| Named-environment release mappings       | No expiry                        | Main app (not HPS) |
-| Flow node results (API, SOAP, DB, vault) | 1–300s                           | Workers            |
+| Data                                     | TTL                              | Written By                     |
+| :--------------------------------------- | :------------------------------- | :----------------------------- |
+| API key auth payloads                    | 60s                              | HPS                            |
+| Rule/flow definitions (compressed)       | No expiry (pub/sub invalidation) | Main app (not HPS)             |
+| Named-environment release pins           | No expiry (self-healing)         | Main app; HPS heals on miss    |
+| Flow node results (API, SOAP, DB, vault) | 1–300s                           | Workers                        |
 
-Redis is accessed using basic commands (`GET`, `SET` with `EX`, `EXPIRE`, `DEL`) plus one pub/sub channel: the main app publishes to `rulebricks:cache:invalidate` after rule, flow, or API-key changes, and HPS and worker pods subscribe to clear their in-process caches immediately. No Lua scripts, no streams. A vanilla Redis instance is all that's needed, with no clustering, persistence configuration, or eviction policy requirements — but the endpoint must support `PUBLISH`/`SUBSCRIBE`. If pub/sub is unavailable, pods log a warning and cache freshness degrades to TTL-based expiry only.
+Redis is accessed using basic commands (`GET`, `SET` with `EX`, `EXPIRE`, `DEL`) plus one pub/sub channel: the main app publishes to `rulebricks:cache:invalidate` after rule, flow, API-key, or release changes, and HPS and worker pods subscribe to clear their in-process caches immediately. No Lua scripts, no streams. A vanilla Redis instance is all that's needed, with no clustering, persistence configuration, or eviction policy requirements, but the endpoint must support `PUBLISH`/`SUBSCRIBE`. If pub/sub is unavailable, pods log a warning and cache freshness degrades to TTL-based expiry only (release pins are additionally bounded by a short in-process TTL, so environment cutovers propagate within ~20 seconds even without pub/sub).
+
+Losing Redis data is safe for correctness: release pins are rebuilt from the database automatically the next time each environment URL is requested, and `POST /api/v1/admin/releases/reconcile` rebuilds every pin for a workspace in one call (useful after a Redis migration or flush).
 
 ### What You Provide
 
@@ -5154,7 +5593,7 @@ The Redis client is pre-configured with TCP keepalive, auto-pipelining, and expo
 If `redis.enabled` is `false` and no `external` host is provided, Redis operates in a no-op mode where cache writes are silently discarded and reads return empty. HPS will start and log a warning, but consequences are significant:
 
 - **Every authentication and entity lookup hits Supabase directly.** Expect a ~60x increase in database queries at steady state.
-- **Named-environment URLs stop working.** Requests like `/api/v1/solve/my-rule/prod` return 404 because the `releases_*` cache keys are only written by the main app into Redis. Numeric versions and `latest` still work.
+- **Named-environment URLs keep working but hit the database.** Release pins resolve from Postgres (with a short in-process cache) instead of Redis, adding a database round-trip on cache-miss requests.
 - **Flow-node caching is lost.** API, SOAP, and database nodes inside flows execute on every invocation.
 
 ## Supabase
@@ -5173,7 +5612,7 @@ These services stay chart-managed even with an external database. Beyond providi
 
 ### Supported PostgreSQL Versions
 
-For an external database, run **PostgreSQL 17** (recommended — it matches the bundled in-cluster database and the CLI's managed-RDS default) or **PostgreSQL 16**. PostgreSQL 15 and below are not supported: the bootstrap job's replication grants require PostgreSQL 16+ role-inheritance syntax on AWS RDS, and Supabase Realtime does not support older majors without superuser access, which managed providers do not offer. The server must also have logical replication enabled (`wal_level = logical`; on RDS set `rds.logical_replication = 1` in the parameter group) for Realtime.
+For an external database, run **PostgreSQL 17** (recommended, since it matches the bundled in-cluster database and the CLI's managed-RDS default) or **PostgreSQL 16**. PostgreSQL 15 and below are not supported: the bootstrap job's replication grants require PostgreSQL 16+ role-inheritance syntax on AWS RDS, and Supabase Realtime does not support older majors without superuser access, which managed providers do not offer. The server must also have logical replication enabled (`wal_level = logical`; on RDS set `rds.logical_replication = 1` in the parameter group) for Realtime.
 
 It is worth noting **the database is likely not a bottleneck.** Because Redis aggressively caches entity definitions, and every pod has an in-process LRU in front of Redis, actual database read/write volumes under normal operation are generally minimal.
 
@@ -5236,7 +5675,7 @@ A 200 response confirms Kafka, Redis, Supabase, and the worker pipeline are all 
 | :--------------------------------------------------------------------------- | :-------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------- |
 | All solve requests return 503                                                | Kafka disabled or unreachable                                               | Check `kafkaBrokers`, verify network connectivity to brokers                                                     |
 | Requests timeout after 30s                                                   | `solution-response` partition count ≠ `solutionPartitions`                  | Raise the topic's partition count, or update `solutionPartitions` to match                                       |
-| Named-environment URLs return 404                                            | Redis not connected, or main app and HPS point at different Redis instances | Verify `redis: true` on `/health`; ensure shared Redis                                                           |
+| Named-environment URLs return 404                                            | No live release exists for that environment (Redis loss no longer causes this; pins self-heal from Postgres) | Check the release's status in the Releases tab; run `POST /api/v1/admin/releases/reconcile` to rebuild pins      |
 | Persistent consumer lag on `solution`                                        | Not enough worker replicas                                                  | Scale up `hps.workers.replicas` or `hps.workers.keda.minReplicaCount`                                            |
 | Decision logs stop reaching ClickHouse / S3 / SIEM after externalizing Kafka | Vector can't reach or authenticate to the external broker                   | Check Vector pod logs and network reachability; for token-auth Kafka verify the `kafkaBridge` sidecar is enabled |
 
@@ -5956,14 +6395,14 @@ Rulebricks images are mirrored under the `rulebricks/*` image path. Set `global.
 
 Rulebricks can run nearly air-gapped with these exceptions:
 
-| Feature          | External Dependency       | Can Disable?                        |
-| :--------------- | :------------------------ | :---------------------------------- |
-| Managed Supabase | Supabase Cloud API        | Yes, use self-hosted                |
-| AI Features      | OpenAI API                | Yes, set `global.ai.enabled: false` |
-| Log Forwarding   | External sinks (S3, etc.) | Yes, use console sink only          |
-| TLS Certificates | Let's Encrypt             | Yes, bring your own certs           |
-| Fonts            | Google Fonts              | Requires customization              |
-| Analytics        | Sentry                    | Requires customization              |
+| Feature          | External Dependency       | Can Disable?                                             |
+| :--------------- | :------------------------ | :------------------------------------------------------- |
+| Managed Supabase | Supabase Cloud API        | Yes, use self-hosted                                      |
+| AI Features      | OpenAI / Anthropic API    | Yes, off by default; configured in-app under Settings → AI features |
+| Log Forwarding   | External sinks (S3, etc.) | Yes, use console sink only                                |
+| TLS Certificates | Let's Encrypt             | Yes, bring your own certs                                 |
+| Fonts            | Google Fonts              | Requires customization                                    |
+| Analytics        | Sentry                    | Requires customization                                    |
 
 ## Installing Updates
 
@@ -6051,7 +6490,7 @@ If you use the [Rulebricks CLI](/private-deployment/cli), the wizard collects th
 
 What lands in the bucket:
 
-- **Decision logs** under `paths.decisionLogs`: a compressed NDJSON archive written by Vector and queried by ClickHouse. See [Decision Logs](/private-deployment/decision-logs).
+- **Decision logs** under `paths.decisionLogs`: the durable, full-history zstd NDJSON archive written by Vector in hourly Hive partitions. ClickHouse reads it only for bounded execution-trace fallback or in PVC-less mode; normal persistent-mode app queries use the local MergeTree table. See [Decision Logs](/private-deployment/decision-logs).
 - **Database backups** under `paths.dbBackups`: logical dumps of the self-hosted Supabase database, covered below.
 
 ## Database Backups
@@ -6122,7 +6561,7 @@ If you would rather use your own backend, disable ClickStack and configure `glob
 - **`azure-monitor`** - **Azure Monitor / Application Insights**, using an Application Insights connection string.
 
 <Callout type="info">
-  Tracing complements, and does not replace, the existing signals: **decision logs** still archive to object storage / ClickHouse, and **Prometheus metrics** still power Grafana. See [Decision Logs](/private-deployment/decision-logs) and [Monitoring](/private-deployment/monitoring).
+  Tracing complements, and does not replace, the existing signals: **decision logs** still go to the bounded ClickHouse table and full-history object storage archive, and **Prometheus metrics** still power Grafana. See [Decision Logs](/private-deployment/decision-logs) and [Monitoring](/private-deployment/monitoring).
 </Callout>
 
 ## Topology
@@ -6316,7 +6755,13 @@ The generated Vector configs are validated by the CLI/chart verification suite, 
 For Azure Monitor Log Analytics and Amazon CloudWatch Logs, prefer the cloud-native collectors below instead of the generic HTTP sink.
 
 <Callout type="info">
-  **Decision logs stay in ClickHouse.** They are not double-written to Elasticsearch. The agent explicitly excludes the Vector pods (`app.kubernetes.io/name notin (vector,vector-agent)`), so the decision logs the aggregator prints to stdout are never shipped to Elastic. To correlate decision logs with traces, query the `trace_id` / `span_id` columns now present on decision-log records.
+  **Decision logs do not go to Elasticsearch through this agent.** In persistent
+  mode their app-facing copy stays in ClickHouse and their full history stays in
+  object storage. The agent explicitly excludes the Vector pods
+  (`app.kubernetes.io/name notin (vector,vector-agent)`), so the decision logs
+  the aggregator prints to stdout are never shipped to Elastic. To correlate
+  decision logs with traces, query the `trace_id` / `span_id` columns on
+  decision-log records.
 </Callout>
 
 ## Cloud-native log collection
@@ -6336,7 +6781,7 @@ How you view traces depends on the destination: **Kibana APM** for `elastic`, yo
 2. Paste that trace id into **Kibana APM**, **Grafana Tempo**, **Jaeger**, or your OTLP backend's trace search.
 3. Open the transaction (for example `POST /api/v1/solve/:slug`) to see the **waterfall**: Traefik → HPS API → Kafka produce → worker `solve` → rule evaluation.
 4. Use the logs view on that trace to see app/HPS/worker log lines that share the trace's `trace_id`.
-5. Decision logs (in ClickHouse) carry the same `trace_id` / `span_id`, so you can pivot from a trace to its decision record.
+5. Decision logs in the persistent ClickHouse table carry the same `trace_id` / `span_id`, so you can pivot from a trace to its decision record. Vector writes the same fields to the full-history archive.
 
 ## Verifying the collector
 
@@ -6478,7 +6923,7 @@ Structured version-controlled deployments for your Rulebricks rules and flows. L
 
 # Releases in Rulebricks
 
-Building business logic is only half the story. The rules and flows you create in Rulebricks represent critical decision-making processes—pricing calculations, eligibility checks, fraud detection, compliance validation—that drive real outcomes in your applications. But between the moment you finish building a rule and the moment it starts serving production traffic, there exists a gap that many teams overlook until it becomes a problem.
+Building business logic is only half the story. The rules and flows you create in Rulebricks represent critical decision-making processes (pricing calculations, eligibility checks, fraud detection, compliance validation) that drive real outcomes in your applications. But between the moment you finish building a rule and the moment it starts serving production traffic, there exists a gap that many teams overlook until it becomes a problem.
 
 Releases in Rulebricks enable structured, version-controlled deployments for your rules and flows.
 
@@ -6486,13 +6931,13 @@ Rather than having changes take effect the moment you click "publish," Releases 
 
 ## The Releases Tab
 
-When you navigate to the Releases tab in your Rulebricks workspace, you encounter a unified view of your deployment landscape. The interface organizes your assets—both rules and flows—into two distinct categories that reflect their current deployment status.
+When you navigate to the Releases tab in your Rulebricks workspace, you encounter a unified view of your deployment landscape. The interface organizes your assets, both rules and flows, into two distinct categories that reflect their current deployment status.
 
 ![The Releases tab provides a central view of pending and active releases across your environments](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/releases/releases-tab-entry.png)
 
 At the top of the screen, you can toggle between viewing rules and flows, and filter by environment using the dropdown selector. This environment-centric view is intentional: rather than asking "what state is this rule in?" you ask "what is deployed to staging?" or "what is live in production?" This subtle shift in perspective mirrors how operations teams actually think about deployments.
 
-The interface divides releases into two sections. The Pending section shows releases that have been requested but not yet approved—these represent changes that are in flight, awaiting review before they go live. Below that, the Releases section displays assets that have successfully been released to the selected environment, showing you exactly what version is currently active and when it was deployed.
+The interface divides releases into two sections. The Pending section shows releases that have been requested but not yet approved. These represent changes that are in flight, awaiting review before they go live. Below that, the Releases section displays assets that have successfully been released to the selected environment, showing you exactly what version is currently active and when it was deployed.
 
 ## Creating and Managing Releases
 /releases/creating-and-managing-releases
@@ -6501,7 +6946,7 @@ Learn how to create, approve, and promote releases in Rulebricks. Manage the com
 
 # Creating and Managing Releases
 
-With environments configured, you can begin the actual work of releasing your business logic. A release in Rulebricks represents a specific version of a rule or flow that has been tagged for deployment to a particular environment. Creating a release does not immediately deploy anything—instead, it opens a request that must be approved before the release becomes active. This two-step process separates the intent to deploy from the actual deployment, creating space for review and validation.
+With environments configured, you can begin the actual work of releasing your business logic. A release in Rulebricks represents a specific version of a rule or flow that has been tagged for deployment to a particular environment. Creating a release does not immediately deploy anything. Instead, it opens a request that must be approved before the release becomes active. This two-step process separates the intent to deploy from the actual deployment, creating space for review and validation.
 
 ## Starting a New Release
 
@@ -6515,7 +6960,7 @@ Click the "New Release" button in the Releases tab. The modal that appears guide
 
 ### Select your target environment
 
-The environment selection determines where this release will go and, consequently, who needs to approve it. Only environments that allow direct releases appear in this dropdown—if an environment is configured for "promotion only," you cannot create releases directly into it and must instead promote from a lower-level environment.
+The environment selection determines where this release will go and, consequently, who needs to approve it. Only environments that allow direct releases appear in this dropdown. If an environment is configured for "promotion only," you cannot create releases directly into it and must instead promote from a lower-level environment.
 
 ### Choose your asset and version
 
@@ -6545,11 +6990,13 @@ When you open a pending release, you enter the detailed view where the actual ap
 
 ![The release detail view shows approval status, the release asset, and a collaborative activity feed](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/releases/comment-markdown.png)
 
-The header area displays the current approval status—"Pending Approval" for releases still awaiting sign-off, or "Released" for approved deployments. Action buttons allow approvers to approve the release, update the version target if needed, or cancel the release entirely if circumstances have changed.
+The header area displays the current approval status: "Pending Approval" for releases still awaiting sign-off, or "Released" for approved deployments. Action buttons allow approvers to approve the release, update the version target if needed, or cancel the release entirely if circumstances have changed.
 
 The approval status panel shows who has approved the release and who is still pending. The scheme indicator reminds everyone whether a single approval is sufficient or if all designated approvers must sign off. As approvals come in, the panel updates in real time, providing clear visibility into how close the release is to going live.
 
-The release asset section shows exactly what is being released—the rule or flow card displays the same information you would see in the Rules or Flows tab, making it easy to review what this release contains without navigating away. You can click through to view the full rule details if needed.
+When the targeted version was published with tests in its test suite, a test results panel appears below the approval status: it shows the pass percentage and test counts captured at publish time, and calls out any critical tests that were failing by name. Versions published without tests simply omit the panel.
+
+The release asset section shows exactly what is being released. The rule or flow card displays the same information you would see in the Rules or Flows tab, making it easy to review what this release contains without navigating away. You can click through to view the full rule details if needed.
 
 The activity feed on the right captures the complete history of the release: when it was created, who commented, what notes were added, and when approvals were given. Comments support rich formatting and mentions, allowing you to tag specific team members for input or flag concerns that need addressing before approval.
 
@@ -6597,7 +7044,7 @@ The available events cover the complete release lifecycle:
 | **Release Updated**        | Triggers when someone changes the version target of an existing release                                                       |
 | **Release Cancelled**      | Notifies when a release is cancelled                                                                                          |
 | **Release Approved**       | Notifies when an approver gives their approval                                                                                |
-| **Release Fully Approved** | Fires when a release meets all approval requirements and goes live—the moment when API traffic begins serving the new version |
+| **Release Fully Approved** | Fires when a release meets all approval requirements and goes live, the moment when API traffic begins serving the new version |
 
 <Callout type="info">
   The "Release Fully Approved" event is distinct from individual approvals. In
@@ -6646,11 +7093,11 @@ When you view a pending release, both URL patterns are displayed together, makin
 
 The **Preview URL** follows the pattern `/api/v1/solve/{rule-slug}/{version-number}`. This URL always returns results from the exact version you specify, regardless of what has been released. It provides a stable, predictable endpoint that never changes behavior unless you explicitly change the version number in the URL. Use this URL for testing specific versions or when you need guaranteed consistency.
 
-The **Release URL** follows the pattern `/api/v1/solve/{rule-slug}/{environment-slug}`. This URL resolves to whatever version is currently active in the specified environment. When you approve a new release, the Release URL automatically starts serving the newly released version without any changes to your application code. This dynamic resolution is what makes releases powerful—your production systems can point to the release URL, and deployments happen by approving releases rather than updating configurations.
+The **Release URL** follows the pattern `/api/v1/solve/{rule-slug}/{environment-slug}`. This URL resolves to whatever version is currently active in the specified environment. When you approve a new release, the Release URL automatically starts serving the newly released version without any changes to your application code. This dynamic resolution is what makes releases powerful. Your production systems can point to the release URL, and deployments happen by approving releases rather than updating configurations.
 
 ## Before and After Approval
 
-The relationship between these URLs and the approval workflow is where releases provide their real value. Before a release is approved, the Release URL still points to the previous released version—or returns an error if nothing has ever been released to that environment. The pending release exists in a preparatory state, visible in the Rulebricks interface but not yet affecting API traffic.
+The relationship between these URLs and the approval workflow is where releases provide their real value. Before a release is approved, the Release URL still points to the previous released version, or returns an error if nothing has ever been released to that environment. The pending release exists in a preparatory state, visible in the Rulebricks interface but not yet affecting API traffic.
 
 <Callout type="warning">
   Notice the amber warning message beneath the Release URL in a pending release:
@@ -6663,7 +7110,9 @@ Once the release is approved, the situation changes. The Release URL now resolve
 
 ![After approval, the Release URL actively serves the released version](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/releases/released-url-zoom-in.png)
 
-The green confirmation message—"This endpoint is active and can be used in production"—signals that this version is now live. Any API call to the Release URL will execute this version of the rule. The transition from pending to released happens atomically when the final required approval is given, ensuring there is no ambiguous intermediate state.
+The green confirmation message, "This endpoint is active and can be used in production," signals that this version is now live. Any API call to the Release URL will execute this version of the rule. The transition from pending to released happens atomically in the database when the final required approval is given, ensuring there is no ambiguous intermediate state. Serving infrastructure is notified immediately; in the worst case (for example, if that notification is lost), each server re-checks its cached release target within about 20 seconds, which bounds how long an old version can continue to serve after a cutover.
+
+Release targets are durable: the environment-to-version mapping lives in the database, not just in caches, so Release URLs keep resolving correctly across cache flushes, restarts, and infrastructure migrations.
 
 ## Practical Integration Patterns
 
@@ -6691,7 +7140,7 @@ Configure release environments in Rulebricks to define deployment targets, appro
 
 # Setting Up Environments
 
-Before you can begin releasing rules and flows, you need to define the environments through which your changes will travel. An environment in Rulebricks represents a deployment target—a conceptual space like "staging" or "production" where a particular version of your business logic will run. The configuration of these environments determines not just where releases can go, but how they get there and who has the authority to approve them.
+Before you can begin releasing rules and flows, you need to define the environments through which your changes will travel. An environment in Rulebricks represents a deployment target: a conceptual space like "staging" or "production" where a particular version of your business logic will run. The configuration of these environments determines not just where releases can go, but how they get there and who has the authority to approve them.
 
 The design of your environment structure should reflect your organization's actual deployment practices. A small team might operate with a simple two-environment setup: a staging environment for testing and a production environment for live traffic. Larger organizations often require more nuanced hierarchies, perhaps with multiple staging environments for different testing purposes, or regional production environments that receive releases at different times.
 
@@ -6701,7 +7150,7 @@ To configure environments, click the "Release Environments" button in the Releas
 
 ![The environments modal displays all configured environments with their levels, approvers, and approval schemes](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/releases/new-environment-modal.png)
 
-When creating or editing an environment, you define several critical properties. The environment name serves as its identifier throughout the system—choose something meaningful like "Staging" or "Production EU" rather than cryptic abbreviations. The description field allows you to document the environment's purpose and its place in your release workflow, which proves invaluable when onboarding new team members or auditing your processes months later.
+When creating or editing an environment, you define several critical properties. The environment name serves as its identifier throughout the system, so choose something meaningful like "Staging" or "Production EU" rather than cryptic abbreviations. The description field allows you to document the environment's purpose and its place in your release workflow, which proves invaluable when onboarding new team members or auditing your processes months later.
 
 ## Understanding Environment Levels
 
@@ -6709,13 +7158,13 @@ The level setting deserves particular attention because it governs the promotion
 
 ![Environment configuration showing level settings and approver selection](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/releases/environment-levels-important.png)
 
-Consider a typical three-environment setup. Your staging environment might be level 1, a pre-production environment level 2, and production level 3. A release created in staging cannot jump directly to production—it must first be promoted to pre-production, approved there, and only then can it advance to production. This sequential progression creates natural checkpoints where your team can validate changes before they move closer to live traffic.
+Consider a typical three-environment setup. Your staging environment might be level 1, a pre-production environment level 2, and production level 3. A release created in staging cannot jump directly to production. It must first be promoted to pre-production, approved there, and only then can it advance to production. This sequential progression creates natural checkpoints where your team can validate changes before they move closer to live traffic.
 
 You can also have multiple environments at the same level. This is useful when you have parallel deployment targets, such as regional production environments or multiple staging environments for different feature teams. Releases from a lower-level environment can be promoted to any environment at the next level, giving you flexibility while maintaining the overall progression structure.
 
 ## Configuring Approvers and Approval Schemes
 
-Each environment requires at least one approver—a team member authorized to approve releases into that environment. The approvers you designate should align with who has responsibility for changes reaching that stage of deployment. Your staging environment might allow any developer to approve releases, while production might require sign-off from a senior engineer or technical lead.
+Each environment requires at least one approver, a team member authorized to approve releases into that environment. The approvers you designate should align with who has responsibility for changes reaching that stage of deployment. Your staging environment might allow any developer to approve releases, while production might require sign-off from a senior engineer or technical lead.
 
 The approval scheme determines how many approvers must give their consent before a release goes live. With the "Any approver" scheme, a single approval from any designated approver is sufficient. The "All approvers" scheme requires every designated approver to provide explicit approval. Choose based on the risk profile of each environment: staging might use "any approver" for agility, while production might require consensus from all approvers for safety.
 
@@ -6872,7 +7321,7 @@ Rulebricks automatically analyzes your decision tables and warns you about poten
 
 # Rule Warnings
 
-Rulebricks analyzes your decision tables and warns you about structural issues—rows that can never be reached, conditions that shadow later rows, gaps where inputs might fall through.
+Rulebricks analyzes your decision tables and warns you about structural issues: rows that can never be reached, conditions that shadow later rows, gaps where inputs might fall through.
 
 Warning detection is fairly powerful and can identify situations where conditions are structured in ways that overlap in strange and ambiguous ways, encouraging rule developers to write clearer rules.
 
@@ -6881,18 +7330,18 @@ Warning detection is fairly powerful and can identify situations where condition
 Warnings appear in the rule editor footer. Click to see details and jump to the affected rows.
 
 <Callout type="info">
-  Warnings use **static analysis**—they examine your rule structure without
+  Warnings use **static analysis**. They examine your rule structure without
   needing production data. For runtime analysis based on actual traffic, use
   [Analysis Tools](/analysis-tools).
 </Callout>
 
 ## Severity Levels
 
-**Error (Red)** — Definite problems that will cause incorrect behavior. Unreachable rows, catch-alls blocking everything below them. Fix these before publishing.
+**Error (Red).** Definite problems that will cause incorrect behavior. Unreachable rows, catch-alls blocking everything below them. Fix these before publishing.
 
-**Warning (Yellow)** — Likely issues that deserve attention. Partial overlaps, coverage gaps, unhandled boundary values. Review to ensure the behavior is intentional.
+**Warning (Yellow).** Likely issues that deserve attention. Partial overlaps, coverage gaps, unhandled boundary values. Review to ensure the behavior is intentional.
 
-**Info (Blue)** — Informational notices. Missing catch-all row, incomplete coverage suggestions. Consider whether these apply to your use case.
+**Info (Blue).** Informational notices. Missing catch-all row, incomplete coverage suggestions. Consider whether these apply to your use case.
 
 ## Common Issues
 
@@ -6971,7 +7420,7 @@ A gold-tier customer with score 750 matches both, but gets Plan A.
 **Fix:** If unintentional, make conditions mutually exclusive. If intentional, document why and ignore the warning.
 
 <Callout>
-  Partial overlaps aren't always bugs—sometimes you want earlier rows to take
+  Partial overlaps aren't always bugs. Sometimes you want earlier rows to take
   precedence.
 </Callout>
 
@@ -7019,7 +7468,7 @@ Without a catch-all, unmatched inputs return an error.
 **Fix:** Add a final row with "any" for all conditions if you want a default result. Leave it out if you want unhandled cases to error.
 
 <Callout>
-  This is informational—intentionally omitting a catch-all is valid when you
+  This is informational. Intentionally omitting a catch-all is valid when you
   want unhandled cases flagged as errors.
 </Callout>
 
@@ -7029,7 +7478,7 @@ Without a catch-all, unmatched inputs return an error.
   It is important to note that warnings aren't always available. Warnings don't
   appear when your rule uses row groups with priorities, individual row
   priorities, or OR rows. These features change evaluation semantics in ways
-  static analysis can't predict—use [Reachability
+  static analysis can't predict. Use [Reachability
   Analysis](/analysis-tools/reachability-analysis) for runtime validation
   instead.
 </Callout>
@@ -7047,11 +7496,11 @@ Roles control what users can access and modify. Assign them from the **Team** ta
 
 ## System Roles
 
-**Developer** — Full access to rules, flows, API keys, logs, Dynamic Values, and settings. Cannot edit team membership or billing.
+**Developer.** Full access to rules, flows, API keys, logs, Dynamic Values, and settings. Cannot edit team membership or billing.
 
-**Editor** — Can view and edit existing rules. Cannot create/delete rules, access API keys, logs, flows, or settings.
+**Editor.** Can view and edit existing rules. Cannot create/delete rules, access API keys, logs, flows, or settings.
 
-**Administrator** — Complete control including team management and billing. Reserved for the workspace owner.
+**Administrator.** Complete control including team management and billing. Reserved for the workspace owner.
 
 ## Custom Roles
 
@@ -7071,11 +7520,11 @@ Select which capabilities this role should have:
 
 ![Fine-Grained Permissions](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/roles/fine-grained.png)
 
-**Rules & Flows** — View, edit, create, delete, publish
+**Rules & Flows:** View, edit, create, delete, publish
 
-**Data & Settings** — API keys, logs, Dynamic Values, settings
+**Data & Settings:** API keys, logs, Dynamic Values, settings
 
-**Team** — View members, invite members, manage roles
+**Team:** View members, invite members, manage roles
 
 ### Save
 
@@ -7085,7 +7534,7 @@ Name it descriptively and save.
 
 <Callout type="info">
   Custom roles combine with [User
-  Groups](/workspace-management/creating-tenants) for precise scoping– roles
+  Groups](/workspace-management/creating-tenants) for precise scoping. Roles
   control what Rulebricks functionality they can use, and user groups control
   what data they see.
 </Callout>
@@ -7097,7 +7546,7 @@ Partition your workspace into isolated User Groups for different teams, clients,
 
 # User Groups
 
-User Groups partition your workspace into isolated sections. Users only see rules and flows in their assigned groups—useful for multi-team organizations, client isolation, or separating environments.
+User Groups partition your workspace into isolated sections. Users only see rules and flows in their assigned groups, which is useful for multi-team organizations, client isolation, or separating environments.
 
 ![Team Tenants Tab](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/creating-tenants/team-tenants-tab.png)
 
@@ -7116,7 +7565,7 @@ Add users to the group. Users can belong to multiple groups. Their [role permiss
 Administrators & Developers, by default, see all groups and data within. Everyone else sees only their assigned groups, and data explicitly assigned to that group.
 
 <Callout type="info">
-  User Groups are unlimited on all plans—create as many as you need at no
+  User Groups are unlimited on all plans. Create as many as you need at no
   additional cost.
 </Callout>
 
@@ -7168,8 +7617,8 @@ Click the **Invite** button to open the invitation dialog.
 
 Enter their email address and choose a role:
 
-- **Developer** — Full access to rules, flows, API keys, logs, and settings
-- **Editor** — Can view and edit existing rules only
+- **Developer:** Full access to rules, flows, API keys, logs, and settings
+- **Editor:** Can view and edit existing rules only
 
 ### Send invitation
 
@@ -7181,7 +7630,7 @@ They'll receive an email with instructions to join. Once accepted, they appear i
 For more granular control, create [custom roles](/workspace-management/assigning-roles) with specific permissions.
 </Callout>
 
-Collaborators cannot edit team membership, view billing, or remove the workspace owner—those are admin-only.
+Collaborators cannot edit team membership, view billing, or remove the workspace owner. Those are admin-only.
 
 ## Updating Your Account
 /workspace-management/updating-your-account

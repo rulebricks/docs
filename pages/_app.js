@@ -1,8 +1,8 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/router'
 import scrollIntoView from 'scroll-into-view-if-needed'
+import '@scalar/api-reference-react/style.css'
 import '../styles/globals.css'
-import '../styles/scalar.css'
 
 function SidebarActiveScroll() {
   const router = useRouter()

@@ -881,8 +881,18 @@ html.dark .api-tab.active {
 .api-reference-wrapper .scalar-api-reference {
   margin-left: 0 !important;
   margin-right: 0 !important;
-  height: calc(100vh - 70px) !important;
-  min-height: unset !important;
+  height: auto !important;
+  min-height: 100% !important;
+  --refs-sidebar-height: calc(100dvh - 70px);
+}
+
+.api-reference-wrapper .t-doc__sidebar {
+  position: sticky !important;
+  top: 0 !important;
+  align-self: start;
+  height: var(--refs-sidebar-height) !important;
+  max-height: var(--refs-sidebar-height) !important;
+  overflow-y: auto;
 }
 
 /* SDK Documentation wrapper */

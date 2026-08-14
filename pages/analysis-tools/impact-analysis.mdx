@@ -12,7 +12,7 @@ import { Tabs, Callout } from 'nextra/components'
 
 ![Impact Analysis](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/revisions/rule-analysis-tools/impact-analysis.png)
 
-The tool replays a configurable sample of real production requests through your modified rule logic and shows you exactly what would change—approval rates, output distributions, everything.
+The tool replays a configurable sample of real production requests through your modified rule logic and shows you exactly what would change: approval rates, output distributions, everything.
 
 ## Analysis Methods
 
@@ -43,7 +43,7 @@ Compare the current (working) rule against a previously published version:
 2. Select a previous version from the dropdown
 3. Click **Run Analysis**
 
-This is useful when something seems off after a deploy— you can see precisely what changed between versions and how it affected your output distribution.
+This is useful when something seems off after a deploy. You can see precisely what changed between versions and how it affected your output distribution.
 
 <Callout type="warning">
   While it will still run, we do not recommend this approach if your schema
@@ -81,11 +81,11 @@ Timeline distributions for date outputs. Useful for rules that set deadlines or 
 </Tabs.Tab>
 </Tabs>
 
-Watch for **null shifts**—when values suddenly become null, it often means requests stopped matching any row. Impact Analysis will surface this in an alert if it detects it.
+Watch for **null shifts**. When values suddenly become null, it often means requests stopped matching any row. Impact Analysis will surface this in an alert if it detects it.
 
 <Callout>
   While computation is done on our servers and included with your Rulebricks
-  plan, we recommend being very deliberate about the sample size you use–
+  plan, we recommend being very deliberate about the sample size you use,
   particularly between the 100k - 1M range; these can be large reports.
 </Callout>
 
