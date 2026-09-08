@@ -4,6 +4,61 @@ metaDescription: Track the latest updates, improvements, and bug fixes to the Ru
 
 ![SDK Banner](https://d1zic6dm9txw4h.cloudfront.net/rulebricks-docs-assets/static/images/changelog-banner-dark.png)
 
+## August 15 - September 6, 2026 🌳
+
+### Rules & Testing
+
+- **Tree-Based Rule Editing**: Build and edit decision tables in a hierarchical tree view, with selection, deletion, reparenting, test results, and AI review states kept in sync with the table view
+- **Large Rule Performance**: Large decision tables now load, save, and evaluate incrementally, avoiding full-table transfers and rewrites when only a small number of rows change
+- **Faster Rule Reviews**: Show only changed rows during version comparisons, return to your previous compare setup automatically, and find Vocabulary-backed conditions by their human-readable values
+- **Flexible Test Matching**: Rule and Flow tests can now check that output contains data, matches exactly, or excludes a specified result
+- **Create Rules from Objects**: A guided workflow turns selected Object fields into rule inputs and outputs, with folder and access-group placement built into creation
+
+### Flows & Execution
+
+- **Version-Pinned Rule Nodes**: Flow steps can target a specific published rule version for reproducible execution instead of always following the latest version
+- **Centralized Flow Controls**: Configure schema validation, required outputs, default handling, continuous testing, nested-flow behavior, and whether execution failures return a result or an HTTP error
+- **Clearer Bulk Results**: Bulk Rule and Flow calls now return one ordered result or error for every input instead of replacing failed items with `null`
+- **End-to-End Execution Tracing**: Execution IDs now follow Context-triggered runs and nested flows, while trace exports include subflow activity and iteration errors identify the exact flow, node, and item that failed
+- **More Reliable Flow Editing**: Serialized autosaves prevent pending edits from overtaking each other, code steps handle complex input keys more reliably, and flow search can find nodes by ID
+
+### Contexts
+
+- **Concurrent, Transactional Updates**: Context operations serialize conflicting writes while allowing independent targets to run concurrently, keeping state, history, expiry, execution metadata, and bound decisions consistent
+- **Resumable Cascades**: Large dependent Context cascades now run in checkpointed pages, allowing interrupted work to continue without resubmitting already completed output facts
+- **Production-Accurate Derived Fact Testing**: Test unsaved derived expressions against real instance state, relationships, and history with the same server-side evaluator used during live execution
+- **More Precise Context APIs**: Select which fields and execution details Context endpoints return, receive clearer committed and failed record outcomes, and retain Flow execution IDs in compact responses
+- **Stronger Context Isolation**: Derived expressions run in a tighter time-bounded sandbox, and Context metadata now respects asset access groups before exposing relationships, bindings, or execution history
+
+### Vocabulary, Objects & Workspace
+
+- **Resumable Vocabulary Imports**: Large imports now show progress and can resume after transient failures, while pasted rule data automatically resolves exact matches to existing Vocabulary references
+- **Safer Value Management**: Large value collections load on demand, and rename, type-change, and deletion safeguards preserve references used by active and historical rules and flows
+- **Richer Object APIs**: Create, update, preview deletion impact, and safely remove Objects while protecting managed Vocabulary values and dependent rule schemas
+- **Predictable Manifest Imports**: Choose Override, Preserve, or Block conflict handling, preview whether an import can run, and see exactly which assets were created, updated, skipped, or rejected
+- **Better Organization and Deletion Safety**: Reusable labels and hierarchical folder pickers make large workspaces easier to navigate, while fresh dependency checks prevent deleting rules or flows that are still in use
+
+### Filament AI
+
+- **Live, Recoverable Builds**: Follow high-level build phases and subagent activity in real time; checkpoints preserve completed work and allow interrupted builds to retry safely
+- **Build History and Exports**: Review immutable build records with status, timing, asset changes, transcripts, input documents, retries, and downloadable Markdown summaries
+- **Organized Source Libraries**: Arrange Filament documents in nested folders with breadcrumbs, drag-and-drop moves, inline renaming, and recursive deletion
+- **Complete Source-Backed Tables**: Filament can enforce expected row counts for source-driven decision tables, preventing sampling or partial approximations when a complete dataset is required
+- **Administrator Guardrails**: Workspace administrators can control which assisted creation workflows and Filament capabilities are available to their teams
+
+### Forms & Logs
+
+- **Forms That Match Production Rules**: Generated forms now handle Collect Matches, asynchronous rules, no-match outcomes, and numbered bulk spreadsheet results more consistently
+- **Faster Log Investigation**: Decision Logs add folder-aware Rule and Flow filters, plus query suggestions for fields nested inside Collect Matches responses
+
+### Private Deployment
+
+- **More Reliable SSO Provisioning**: Passthrough authentication now handles email casing consistently, reports mismatched administrator records clearly, and proxies OIDC user information more robustly
+
+_These changes are now available in Rulebricks version 2.0.84_
+
+---
+
 ## July 24 - August 14, 2026 🧪
 
 ### Compare & Simulate
@@ -874,4 +929,4 @@ _Now available in `rulebricks/app:0.0.11`_
 
 ---
 
-_Last updated: August 14, 2026_
+_Last updated: September 6, 2026_

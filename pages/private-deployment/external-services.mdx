@@ -135,13 +135,19 @@ Ask your Kafka team to create (names take your configured topic prefix):
 | `solution-response` | Must equal `rulebricks.hps.workers.solutionPartitions`                  | Same as `solution`                      | Same as `solution`                                                 |
 | `logs`              | 8-24 depending on volume                                                | 2-3 in production (long-lived data)     | Size to your Vector outage tolerance, e.g. `retention.ms=86400000` |
 
-Set `max.message.bytes` to `8388608` (8 MiB) on `solution` and `solution-response`, matching the chart's in-cluster defaults. Request chunks are planner-capped at 2 MiB of input, so the headroom exists for **responses**: a worker's result rides as a single Kafka message and may legitimately grow to several times its chunk's input when rules expand payloads. A result that exceeds the cap fails the request with an explicit HTTP 413 rather than a timeout. The `logs` topic only needs `2097152` (2 MB) - decision-log records are sliced far below it.
+Set `max.message.bytes` to `33554432` (32 MiB) on `solution` and `solution-response`. Request chunks are normally planner-capped at 2 MiB of input, while a legal 20 MiB single item occupies its own chunk. A worker result rides as one Kafka message and may grow when rules expand payloads; a result above the cap fails with an explicit HTTP 413 rather than a timeout.
 
-Managed-service caveats for the 8 MiB profile:
+Set the `logs` topic to `max.message.bytes=67108864` (64 MiB). A full-fidelity single-item decision log stores both request and response as JSON strings inside a second JSON envelope, so a 40 MiB nominal pair needs additional encoding headroom. The broker must use `message.max.bytes >= 67108864`, `replica.fetch.max.bytes >= 134217728`, and, where exposed, `replica.fetch.response.max.bytes >= 134217728`. The chart's bridge hook reconciles topic caps but cannot change these broker settings.
 
-- **AWS MSK Serverless** allows exactly 8 MiB (`max.message.bytes` maxes out at `8388608`), but its per-topic *default* is ~1 MiB - set the cap explicitly when creating the topics.
-- **Azure Event Hubs** Standard and Premium cap events at 1 MB, which cannot carry the default large-payload profile; either lower the HPS payload envelope (`rulebricks.hps.limits` in the Helm values) to keep chunks and responses under 1 MB, or use a self-serve Dedicated cluster (20 MB events).
-- **Confluent Cloud / Aiven / Redpanda** support 8 MiB per-topic caps on standard tiers.
+Managed-service caveats for this profile:
+
+- **Provisioned/self-managed Kafka** works when its broker and topic limits are configured before installation. For provisioned MSK, attach a custom cluster configuration with the broker settings above.
+- **AWS MSK Serverless** tops out at 8 MiB and cannot carry this profile.
+- **Azure Event Hubs** tiers top out below 64 MiB and cannot carry full-fidelity decision logs for 20 MiB payloads.
+- **Confluent Cloud** tiers currently top out below 64 MiB and cannot carry this profile.
+- **GCP Managed Kafka** defaults to 10 MiB. Raise the broker/topic settings out of band and verify that the selected service tier permits 64 MiB records.
+
+For a provider with a lower hard limit, override the complete HPS/Kafka/Vector size envelope rather than changing one cap in isolation.
 
 Partition count on `solution` is the worker fleet's concurrency ceiling, not a worker quota; the 2x headroom recommendation and the full sizing model are explained in [Performance & Scaling](/private-deployment/performance#the-sizing-model).
 
@@ -172,7 +178,7 @@ If you raise a topic's partition count later, HPS Kafka clients observe the chan
 
 ### ZooKeeper vs KRaft
 
-HPS does not care how your Kafka cluster manages metadata. It never connects to ZooKeeper directly; it only speaks the Kafka wire protocol to brokers via a bootstrap address. Both ZooKeeper-backed clusters and KRaft-mode clusters work identically. Managed services like AWS MSK (in either mode), Confluent Cloud, Aiven, and Redpanda are all compatible.
+HPS does not care how your Kafka cluster manages metadata. It never connects to ZooKeeper directly; it only speaks the Kafka wire protocol to brokers via a bootstrap address. ZooKeeper-backed and KRaft-mode clusters work identically, but the selected service tier must also support the chart's message-size envelope.
 
 The bundled Kafka deployment is managed by Strimzi and runs in KRaft mode. That is an internal broker implementation detail and has no bearing on external cluster compatibility.
 
@@ -193,19 +199,20 @@ The HPS Kafka client is pre-tuned for a low-latency request/response workload. T
 - **`maxWaitTimeInMs: 50`** makes the broker return fetched messages quickly for low-latency response delivery.
 - Workers process up to 4 partitions concurrently per pod. Throughput scales by adding worker replicas, not by raising concurrency.
 
-No tuning is needed on the external Kafka side beyond ensuring the three topics exist with correct partition counts and reasonable ISR settings (e.g., `min.insync.replicas=1` for single-broker, `2` for multi-broker production).
+External Kafka must be tuned for the 64 MiB broker/log cap, 32 MiB execution topics, and 128 MiB replica fetches described above. Also ensure the three topics have the correct partition counts and reasonable ISR settings (for example, `min.insync.replicas=1` for a single broker or `2` for multi-broker production).
 
 ### Request Size Limits
 
 Admission is byte-first; item counts are not limited by default. The Helm chart ships a **large-batch profile** sized for 100MB-class bulk requests; every bound below is an env var on HPS (chart value in `rulebricks.hps.limits`), and the Kafka message caps, ingress timeouts, and HPS memory are sized in lockstep with them. Useful when setting client expectations:
 
 - **Total request body:** 128 MiB chart default (HTTP 413 above it; `HTTP_BODY_LIMIT_BYTES`). Without the chart env, the HPS binary defaults to 6 MiB. Clients get the best latency profile around 1 MB or less; larger bodies execute fine but cost proportionally more parse time and fan out into more chunks.
-- **Single payload:** 6 MiB serialized chart default (HTTP 413 naming the offending array index; `ITEM_MAX_BYTES`, which must stay below the topics' `max.message.bytes` minus envelope headroom).
+- **Single payload:** 20 MiB serialized chart default (HTTP 413 naming the offending array index; `ITEM_MAX_BYTES`), with envelope headroom under the 32 MiB execution-topic cap.
 - **Item count:** unlimited by default. Operators can opt into a cap with `BULK_MAX_ITEMS` (HTTP 400 above it).
 - **Execution deadline:** the whole request shares one 300-second deadline regardless of size (`RPC_TIMEOUT_MS`; 60s without the chart env). Anything in front of HPS - ingress read timeouts, L4 idle timeouts - must sit above it; the chart configures Traefik accordingly, and the CLI raises Azure's 4-minute load-balancer idle timeout.
 - **Concurrent large bodies:** each HPS replica admits at most 2 requests larger than 8 MiB at once (`LARGE_BODY_MAX_CONCURRENT` / `LARGE_BODY_THRESHOLD_BYTES`); excess requests are shed immediately with HTTP 429 + `Retry-After` instead of queueing in memory. Clients sending large batches should honor 429 with a short backoff.
-- **Response amplification:** each chunk's response rides as a single Kafka message and must fit the topic's `max.message.bytes` (8 MiB chart default). Request chunks carry at most 2 MiB of input, so rules can expand outputs roughly 4x before a result is undeliverable - at which point the request fails with an explicit HTTP 413 identifying the response as too large, rather than timing out.
-- **Context batch requests** (`POST /api/v1/contexts/batch/{slug}`, self-hosted bulk mode) accept 128 MiB bodies and cap records per request at 100,000 by chart default (HTTP 413 above it; `CONTEXT_BATCH_BODY_LIMIT_BYTES` / `CONTEXT_BATCH_MAX_ITEMS`). Database writes are chunked at 500 records per statement (`CONTEXT_BATCH_DB_CHUNK`). See [Bulk Ingestion](/contexts/bulk-ingestion) for the endpoint contract.
+- **Response amplification:** each chunk's response rides as a single Kafka message and must fit the 32 MiB execution-topic cap. Ordinary request chunks carry at most 2 MiB of input, leaving roughly 16x expansion headroom before the request fails with an explicit HTTP 413 rather than timing out.
+- **Decision logs:** a single-item log retains the full request and response in one record. The logs topic and broker allow 64 MiB records, Vector fetches up to 128 MiB at a time, and each HPS/worker producer keeps a 128 MiB retry buffer.
+- **Context batch requests** (`POST /api/v1/contexts/batch/{slug}`, self-hosted bulk mode) use the shared HTTP body limit, 128 MiB by chart default, with no separate Context record-count cap. Each stored instance permits 64 MiB of combined state and execution metadata. Database writes use chunks of 500 records by default (`CONTEXT_BATCH_DB_CHUNK`); larger requests continue across chunks. See [Bulk Ingestion](/contexts/bulk-ingestion) for execution, partial-failure, and capacity behavior.
 
 ### KEDA Autoscaling with External Kafka
 

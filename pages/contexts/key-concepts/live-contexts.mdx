@@ -18,11 +18,11 @@ POST /api/v1/contexts/loan-application/APP-12345
 { "annual_income": 85000 }
 ```
 
-It persists as you submit more facts over time. Each submission merges into the existing state: new fields are added, existing fields are updated, missing fields are left alone.
+It persists as you submit more facts over time. Each submission merges into the existing state: new fields are added, existing fields are updated, missing fields are left alone. Declared defaults are applied only when an identity is first created (or recreated after expiration), not on every update.
 
 When all schema-required facts are present, the status changes from `pending` to `complete`. This status describes the instance as a whole; an individual bound rule can execute earlier as soon as that rule's own inputs are present.
 
-Eventually, live contexts expire based on their TTL (time-to-live) setting. Expired contexts are no longer accessible; POST requests to that identity create a fresh instance.
+Eventually, live contexts expire based on their TTL (time-to-live) setting. Expired contexts are no longer accessible; a later POST to that identity creates a fresh lifecycle, clearing the prior state, history, and execution metadata before applying defaults and the new payload.
 
 ## The Have/Need Pattern
 
@@ -55,6 +55,6 @@ Get the current state of any live context:
 GET /api/v1/contexts/loan-application/APP-12345
 ```
 
-The response reports base facts under `state` and expression-computed facts under a separate `derived` object, alongside the have/need arrays, per-asset execution metadata, timestamps, and expiration time. (POST responses combine base and derived facts in `state`.) Add `?include_relations=*` (or a comma-separated list of relationship names) to embed related live instances in the response.
+The response reports base facts under `state` and expression-computed facts under a separate `derived` object, alongside the have/need arrays, per-asset execution metadata, timestamps, and expiration time. (POST responses combine base and derived facts in `state`.) Add `?include_relations=*` (or a comma-separated list of relationship names) to embed related live instances in the response. `has_many` results include every live match in deterministic identity order rather than an arbitrary first page.
 
 Instances can also be deleted explicitly. `DELETE` to the same path removes the instance and cancels any pending evaluations registered for it.

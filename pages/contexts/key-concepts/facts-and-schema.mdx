@@ -18,6 +18,12 @@ Each fact has a type (string, number, boolean, date, list, or object) and can be
 - **Output only:** Can only be written by rules, not submitted externally
 - **Track history:** Stores previous values for temporal queries
 
+Every write is checked against the declared fact type. Facts with **Values
+only** enabled must also match a live value in their configured vocabulary
+collection. `on_schema_mismatch` controls only undeclared facts: `ignore` drops
+them, `reject` rejects that item, and `store` keeps them. It does not disable
+type, output-only, or vocabulary validation for declared facts.
+
 ## The Identity Fact
 
 One fact must be the **identity fact**, the unique identifier for each context instance. For a loan application context, this might be `application_id`. For transaction processing, `transaction_id`.
@@ -52,10 +58,28 @@ ifelse(
 // Aggregate from the configured "transactions" relationship
 sum($transactions, 'total')
 
-// Available functions are listed directly in app UI
+// The equivalent namespaced relationship form is also supported
+sum($relations.transactions, 'total')
 ```
 
 They update whenever their dependencies change. No manual recalculation needed.
+
+Expressions use synchronous JavaScript syntax in an isolated, allowlisted
+sandbox. Available helpers are `sum`, `avg`, `min`, `max`, `count`, `first`,
+`last`, `stddev`, `within`, `since`, `coalesce`, `ifelse`, `round`, `ceil`,
+`floor`, `abs`, `now`, `daysAgo`, `hoursAgo`, `historySum`, `historyAvg`,
+`historyLast`, and `historyTrend`. Network APIs, process globals, randomness,
+timers, constructors, and asynchronous results are not available. An expression
+that fails or exceeds its execution limit resolves to that derived fact's
+configured default.
+
+Use **Test Expression** to preview a derived fact against a live instance. The
+preview uses your unsaved schema, evaluates dependent derived facts in order,
+and loads the instance's recorded history and live related data. It does not
+save your schema, update the instance, or execute bound rules or flows. Errors
+show the configured runtime default; missing related data is shown as pending,
+including for facts that depend on another pending derived fact. A successfully
+loaded, empty collection is available data, so its sum and count are zero.
 
 ## Relationships
 
@@ -98,7 +122,7 @@ For example, on a Customer context, I might use:
 total_spend: sum($transactions, 'total')
 
 // Number of completed transactions
-transaction_count: count($transactions, 'status == "complete"')
+transaction_count: count($transactions.filter((item) => item.status === 'complete'))
 
 // Most recent transaction date
 last_transaction_date: max($transactions, 'created_at')
@@ -154,6 +178,13 @@ When `need` is empty, `status` becomes `complete`. Rule and flow readiness is as
 
 Enable **Track history** on facts whose prior values matter. Contexts append a history entry only when a tracked value changes and retain up to the context's configured `history_limit` entries per fact.
 
+Removing a tracked fact or disabling its history tracking removes its retained history on that instance's next update. Reducing `history_limit` trims existing history on the next update as well. History is stored separately from the instance's 64 MiB state-and-execution-metadata allowance.
+
+Tracking is not retroactive: values written before **Track history** was enabled
+do not appear later. History is ordered newest first with a deterministic
+tie-breaker, including when several changes to the same identity arrive in one
+batch.
+
 Read history with:
 
 ```bash
@@ -175,4 +206,18 @@ The response groups entries by fact, newest first:
 }
 ```
 
-Derived expressions can access tracked values through `$history`, such as `last($history.credit_limit).value`.
+The history endpoint defaults to 50 entries per fact. `limit` must be an integer from 1 to 10,000; invalid values return HTTP 400. A requested `field` must have history tracking enabled.
+
+Derived expressions can read the raw entries through `$history` or use the
+history helpers:
+
+```javascript
+historySum('credit_limit')       // finite numeric values; 0 when empty
+historyAvg('credit_limit')       // finite numeric values; null when empty
+historyLast('credit_limit')      // newest value, or null
+historyLast('credit_limit', 3)   // up to three newest values
+historyTrend('credit_limit')     // 1 increasing, -1 decreasing, 0 flat/insufficient
+```
+
+Fact paths are string arguments, so nested facts use
+`historySum('account.credit_limit')`.

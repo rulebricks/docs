@@ -370,15 +370,14 @@ The memory limit is sized for the large-payload envelope below: a couple of conc
 | `rulebricks.hps.limits.bodyLimitBytes`                 | `134217728` | `HTTP_BODY_LIMIT_BYTES`          | Max HTTP request body on execution endpoints (128 MiB). HTTP 413 above it.                                                                    |
 | `rulebricks.hps.limits.rpcTimeoutMs`                   | `300000`    | `RPC_TIMEOUT_MS`                 | Whole-request execution deadline (produce + worker processing + gather). Traefik `graceTimeOut` and the pod termination grace sit above it.   |
 | `rulebricks.hps.limits.requestTimeoutMs`               | `300000`    | `HTTP_REQUEST_TIMEOUT_MS`        | Deadline for receiving one request's entire body (a 128 MiB upload on a ~4 Mbps link takes ~270s).                                            |
-| `rulebricks.hps.limits.itemMaxBytes`                   | `6291456`   | `ITEM_MAX_BYTES`                 | Serialized cap per single payload inside a bulk array (6 MiB). Must stay below the topics' `max.message.bytes` minus envelope headroom.       |
-| `rulebricks.hps.limits.contextBatchBodyLimitBytes`     | `134217728` | `CONTEXT_BATCH_BODY_LIMIT_BYTES` | NDJSON body cap for `contexts/batch` (128 MiB).                                                                                               |
-| `rulebricks.hps.limits.contextBatchMaxItems`           | `100000`    | `CONTEXT_BATCH_MAX_ITEMS`        | Records per context batch request.                                                                                                            |
+| `rulebricks.hps.limits.itemMaxBytes`                   | `20971520`  | `ITEM_MAX_BYTES`                 | Serialized cap per single payload inside a bulk array (20 MiB), with envelope headroom under the 32 MiB execution-topic cap.                  |
 | `rulebricks.hps.limits.largeBodyThresholdBytes`        | `8388608`   | `LARGE_BODY_THRESHOLD_BYTES`     | Bodies above this (8 MiB) count against the large-request admission gate.                                                                     |
 | `rulebricks.hps.limits.largeBodyMaxConcurrent`         | `2`         | `LARGE_BODY_MAX_CONCURRENT`      | Concurrent large bodies admitted per HPS replica; excess is shed with HTTP 429 + `Retry-After` instead of queueing in memory.                 |
 | `rulebricks.hps.limits.chunkMaxChunks`                 | `128`       | `CHUNK_MAX_CHUNKS`               | Chunk-planner fan-out ceiling; match the `solution` topic's partition count so one large request can spread across the whole worker fleet.    |
-| `rulebricks.hps.limits.chunkHardMaxBytes`              | `2097152`   | `CHUNK_HARD_MAX_BYTES`           | Hard per-chunk input cap (2 MiB), leaving 4x response-amplification headroom under the 8 MiB Kafka message cap.                               |
-| `rulebricks.hps.limits.responseFetchMaxBytes`          | `16777216`  | `RESPONSE_MAX_BYTES_PER_PARTITION` | Gather-side consumer fetch ceiling per partition; keep at ~2x the Kafka message cap.                                                        |
-| `rulebricks.hps.limits.workerFetchMaxBytes`            | `16777216`  | `WORKER_MAX_BYTES_PER_PARTITION` | Worker request-consumer fetch ceiling per partition; same 2x rule.                                                                            |
+| `rulebricks.hps.limits.chunkHardMaxBytes`              | `2097152`   | `CHUNK_HARD_MAX_BYTES`           | Hard per-chunk input cap (2 MiB), leaving 16x response-amplification headroom under the 32 MiB execution-topic cap.                           |
+| `rulebricks.hps.limits.responseFetchMaxBytes`          | `67108864`  | `RESPONSE_MAX_BYTES_PER_PARTITION` | Gather-side consumer fetch ceiling per partition; 2x the 32 MiB execution-topic cap.                                                       |
+| `rulebricks.hps.limits.workerFetchMaxBytes`            | `67108864`  | `WORKER_MAX_BYTES_PER_PARTITION` | Worker request-consumer fetch ceiling per partition; same 2x rule.                                                                            |
+| `rulebricks.hps.limits.logRetryBufferMaxBytes`         | `134217728` | `LOG_RETRY_BUFFER_MAX_BYTES`     | HPS/worker decision-log retry buffer (128 MiB), enough for a full 64 MiB log record plus one bounded retry.                                  |
 | `rulebricks.hps.limits.shutdownDrainMs`                | `315000`    | `KAFKA_SHUTDOWN_DRAIN_MS`        | On SIGTERM, keep the response consumer alive until in-flight RPCs resolve; must cover `rpcTimeoutMs`.                                         |
 | `rulebricks.hps.limits.terminationGracePeriodSeconds`  | `330`       | (pod spec)                       | Pod termination grace; sits just above `shutdownDrainMs`.                                                                                     |
 | `rulebricks.hps.limits.nodeHeapMb`                     | `3584`      | `NODE_OPTIONS`                   | Node.js old-space heap (MB) for the HPS server, ~85% of the memory limit. Unset to use the image default (1024).                              |
@@ -398,8 +397,6 @@ Performance and safety knobs, set via `rulebricks.hps.extraEnv` (the API/gateway
 | Variable                         | Default | Set on          | Description                                                                                                                                                                                                 |
 | :------------------------------- | :------ | :-------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `RB_FN_CONTEXT_REUSE`            | `1`     | gateway+workers | Reuse one hardened V8 sandbox context per execution unit instead of creating a fresh one per derived field per record (and per function-column cell). Large speedup for context ingest with derived fields and for vocabulary-heavy rule/flow evaluation. Set `0` to disable. |
-| `CONTEXT_CASCADE_MAX_INSTANCES`  | `2000`  | gateway         | Max dependent (parent) instances re-evaluated per relationship when a context batch cascades into related contexts. Bounds worst-case ingest tail latency; excess is reported with `truncated: true`.       |
-| `CONTEXT_CASCADE_BUDGET_MS`      | `45000` | gateway         | Wall-clock budget for the whole cascade phase of one batch request. Once spent, remaining relationships are reported as deferred (`reason: cascade_budget_exceeded`) instead of running unbounded.           |
 | `BULK_MAX_ITEMS`                 | `0`     | gateway+workers | Optional hard cap on array length for `bulk-solve`, `flows`, and `parallel-solve`. `0` (default) disables the cap entirely on self-hosted; these endpoints accept arbitrarily large batches bounded only by the request body size.                       |
 
 Request body limits: `bulk-solve`, `flows`, and `contexts/batch` accept up to `HTTP_BODY_LIMIT_BYTES` (128 MiB chart default via `rulebricks.hps.limits.bodyLimitBytes`; the HPS binary defaults to 6 MiB without it). Rule and flow imports (`/api/v1/admin/rules/import`, `/api/v1/admin/flows/import`) and manifest import accept up to 10 MB. If you front the deployment with the nginx ingress controller, the chart raises its `proxy-body-size` to `128m` and its read/send timeouts to 330s so large batches are not rejected or cut off at the edge (the default Traefik ingress imposes no body cap, and the chart raises its timeouts directly).
@@ -493,12 +490,12 @@ A Kafka Prometheus exporter is also deployed by default (`rulebricks.kafkaExport
 
 ### Kafka Topics
 
-The chart manages application topics explicitly rather than relying on broker auto-creation. For the in-cluster broker, `kafka.topics` renders Strimzi `KafkaTopic` resources that the Topic Operator reconciles. When you externalize Kafka with a token-auth bridge, the same topic list can feed the external topic provisioning hook.
+The chart manages application topics explicitly rather than relying on broker auto-creation. For the in-cluster broker, `kafka.topics` renders Strimzi `KafkaTopic` resources that the Topic Operator reconciles. When you externalize Kafka with a token-auth bridge, the same topic list feeds a hook that creates missing topics and reconciles their `max.message.bytes` on upgrades.
 
 | Parameter                              | Type    | Default      | Description                                                                 |
 | :------------------------------------- | :------ | :----------- | :-------------------------------------------------------------------------- |
 | `kafka.topics`                         | list    | three topics | Per-topic name, partitions, replication, and config                         |
-| `kafka.provisioning.enabled`           | boolean | `true`       | Enable the external-Kafka topic creation hook when `kafka.enabled: false`   |
+| `kafka.provisioning.enabled`           | boolean | `true`       | Enable the external-Kafka topic management hook when `kafka.enabled: false` |
 | `kafka.provisioning.replicationFactor` | integer | `3`          | Replication factor used by that external provisioning hook                  |
 
 The defaults define `solution`, `solution-response`, and `logs` topics with per-topic retention and size limits. Each entry looks like:
@@ -512,11 +509,11 @@ kafka:
       config:
         retention.ms: '300000'
         retention.bytes: '134217728'
-        max.message.bytes: '8388608'
+        max.message.bytes: '33554432'
     # ... see the chart's values.yaml for the full default topic list
 ```
 
-The RPC topics (`solution`, `solution-response`) default to an 8 MiB `max.message.bytes`, matching the broker's `message.max.bytes`, so worker responses keep 4x amplification headroom over the 2 MiB request chunks. The `logs` topic stays at 2 MB. If you lower these, lower `rulebricks.hps.limits` (chunk sizes, item cap) to match.
+The RPC topics (`solution`, `solution-response`) use a 32 MiB `max.message.bytes`, leaving envelope headroom around the 20 MiB item cap and 16x response-amplification headroom over ordinary 2 MiB request chunks. The `logs` topic uses 64 MiB because a full-fidelity single-item decision log contains both request and response inside another JSON envelope. The broker therefore uses `message.max.bytes=67108864`, with 128 MiB replica fetch ceilings; Vector's librdkafka source is sized to consume the same 64 MiB records. Keep the complete HPS, topic, broker, replication, and Vector envelope aligned when overriding any value.
 
 <Callout type="warning">
   Topic names must carry the configured `kafkaTopicPrefix`. If you change the

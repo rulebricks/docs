@@ -70,7 +70,7 @@ Enter a customer ID like `c_001` to fetch the instance and see all base facts (n
 Submit facts to a context instance via POST:
 
 ```bash
-curl -X POST "https://rulebricks.com/api/v1/contexts/customer/c_001" \
+curl -X POST "https://rulebricks.com/api/v1/contexts/customer/c_001?include=execution_results,state,status,have,need,triggered" \
   -H "x-api-key: YOUR_API_KEY" \
   -d '{ "tier": "gold", "income": 200000 }'
 ```

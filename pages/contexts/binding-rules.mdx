@@ -61,7 +61,7 @@ Facts arrive: credit_score, annual_income
 [Pricing Rule] now has all inputs → executes → writes: rate, max_amount
 ```
 
-This happens within a single API response. The `cascaded` array shows what ran, and each rule's outputs are also merged into the response's `state`:
+This happens within a single API response. With `?include=execution_results,state,cascaded`, the `cascaded` array shows what ran, and each rule's outputs are also merged into the response's `state`:
 
 ```json
 {
@@ -94,7 +94,7 @@ From the Context dashboard, the **Assets** tab shows all currently bound rules &
 
 ## Targeting a Version or Environment
 
-By default, a bound rule or flow executes its **latest** published version. New publishes take effect immediately, and any vocabulary values it references resolve live at execution time.
+By default, a bound rule or flow executes its **latest** published version. A new publish takes effect on the next context submission, including an identical retry. Publishing alone does not replay stored instances, and any vocabulary values it references resolve live at execution time.
 
 The **Target** column in the Assets tab lets you change this per binding:
 

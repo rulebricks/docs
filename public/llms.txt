@@ -157,14 +157,33 @@ You can visually identify groups in your decision table by the group indicator, 
 
 In addition to group-level hit policies, you can set a hit policy for your **entire rule**. Open Rule Settings by clicking the settings icon in the rule editor navbar, and find the **Hit Policy** option under the **Execution** tab.
 
-By default, rules use **First Match**. When multiple rows are satisfied by a request, only the first satisfied row (or the first satisfied group) determines the response, and any other matches are ignored. Selecting **Fill Values**, **Add Values**, or **Compute Values** instead combines the responses of *all* satisfied rows in your decision table using that strategy, exactly as the equivalent group hit policies do. Rows are always combined in the order they appear in your decision table.
+By default, rules use **First Match**. When multiple rows are satisfied by a request, only the first satisfied row (or the first satisfied group) determines the response, and any other matches are ignored. **Collect Matches**, shown immediately after First Match, keeps each matching response separate. Selecting **Fill Values**, **Add Values**, or **Compute Values** instead combines the responses of *all* satisfied rows in your decision table using that strategy, exactly as the equivalent group hit policies do. Rows are always processed in the order they appear in your decision table.
+
+### Collect Matches
+
+Collect Matches returns one response object for every satisfied row inside a stable `results` envelope:
+
+```json
+{
+  "results": [
+    { "status": "approved", "fee": 10 },
+    { "status": "review", "fee": null }
+  ]
+}
+```
+
+Each item preserves the rule's response-column types and null values. If a group matches, that group first applies its own group-level hit policy and contributes one collapsed item. Collect Matches itself is available only at the rule level, not in group settings.
+
+No matches is a successful filter-like result: the solve API returns HTTP `200` with `{ "results": [] }`. Collect Matches is unavailable for context-bound rules because context write-back requires one response object keyed by context fields.
+
+Decision logs retain the response shape used by each execution, so switching between First Match and Collect Matches does not rewrite or invalidate history. In Decision Data Query Language or the Decisions API, use `response.results.*.status` to match any collected item or `response.results.0.status` for the first item. An unprefixed expression such as `status=approved` spans ordinary responses and all collected items.
 
 A few things to keep in mind:
 
 - **Groups keep their meaning.** If your rule contains groups, each group's satisfied rows are combined first using that group's own hit policy. The rule-level hit policy then combines those group results together with any other satisfied rows, in table order.
 - **Priorities still apply.** If satisfied rows or groups have different priorities, only the highest-priority matches are combined. Priority continues to select which rows are in play, and the hit policy decides how their responses combine.
 - **Priority isn't configurable at the rule level.** Priorities are only meaningful for subsets of rows competing within a rule, so the rule-level setting is purely a hit policy.
-- Like other execution settings, the rule-level hit policy takes effect as soon as it is saved.
+- The rule-level hit policy can be changed until the rule is first published and is locked afterward.
 
 ## Scheduled Conditions
 /advanced-features/scheduled-conditions
@@ -972,7 +991,7 @@ Facts arrive: credit_score, annual_income
 [Pricing Rule] now has all inputs → executes → writes: rate, max_amount
 ```
 
-This happens within a single API response. The `cascaded` array shows what ran, and each rule's outputs are also merged into the response's `state`:
+This happens within a single API response. With `?include=execution_results,state,cascaded`, the `cascaded` array shows what ran, and each rule's outputs are also merged into the response's `state`:
 
 ```json
 {
@@ -1005,7 +1024,7 @@ From the Context dashboard, the **Assets** tab shows all currently bound rules &
 
 ## Targeting a Version or Environment
 
-By default, a bound rule or flow executes its **latest** published version. New publishes take effect immediately, and any vocabulary values it references resolve live at execution time.
+By default, a bound rule or flow executes its **latest** published version. A new publish takes effect on the next context submission, including an identical retry. Publishing alone does not replay stored instances, and any vocabulary values it references resolve live at execution time.
 
 The **Target** column in the Assets tab lets you change this per binding:
 
@@ -1049,12 +1068,15 @@ The body is a JSON array of records (private deployments also accept NDJSON with
 ]
 ```
 
-Send chunks sequentially or in parallel from your pipeline. Each request is independent.
+Send chunks sequentially or in parallel from your pipeline. Independent instances can run concurrently. Requests that write overlapping Context state wait for their admitted predecessors; arrival at different clients does not define a global order. Send sequential requests when your application needs an explicit business order.
 
-**Chunk limits by platform:**
+**Instance size and deployment capacity:**
 
-- **Cloud:** a batch may not contain more records than your plan has monthly rule executions remaining (HTTP 402 above it; the batch size cap *is* your plan headroom), with a 4.5MB request body limit. Rules and flows executed by batches count toward plan usage; batches that only merge data cost nothing.
-- **Private deployments:** up to **100,000 records and 128 MiB per request** by default (configurable via `CONTEXT_BATCH_MAX_ITEMS` and `CONTEXT_BATCH_BODY_LIMIT_BYTES`; the Helm chart sets both under `rulebricks.hps.limits`). No plan gating. Chunks of 1,000–10,000 records still give the best per-request latency; go bigger when pipeline round-trips dominate. Each HPS replica admits at most 2 requests larger than 8 MiB at a time and sheds the rest with HTTP 429 + `Retry-After`, so honor 429 with a short backoff when sending large chunks in parallel.
+Each instance can store **64 MiB of combined state and execution metadata**, measured as serialized database JSON. History is stored separately and retains the configured number of entries per tracked fact (default 100, maximum 10,000). There are no separate Context limits on request record counts, accumulated results, relationship expansion, fact counts, tracked-value sizes, or trigger rounds. An update that exceeds the instance limit fails with HTTP 413 and rolls back that database transaction; earlier transactions in the request can already have committed.
+
+Cloud hosting still applies its own HTTP body and execution limits. Private Context batches use the same HTTP admission settings as other HPS routes: the Helm default is 128 MiB per request, controlled by `HTTP_BODY_LIMIT_BYTES`. Existing HPS overload admission can return HTTP 429 with `Retry-After`. Rule and flow evaluations count toward usage; merge-only records do not consume rule executions or use remaining executions as a record-count allowance.
+
+Choose batch sizes for the resources available to your deployment. A small incoming patch can read large existing state or related histories, and a large response can consume substantial memory and bandwidth. `include` reduces the returned fields. Query paging and database chunks control individual operations without imposing an aggregate Context request budget. Runtime deadlines still terminate unfinished work and report known partial progress.
 
 ## The Response
 
@@ -1104,7 +1126,7 @@ Each response reports admission results, execution outcomes, and the full resolv
 
 Per-record validation failures appear in `rejections` with their array position, following the context's `on_schema_mismatch` setting (a `reject` context fails individual records carrying unknown facts; `ignore` drops the unknown facts; `store` keeps them). Execution outcomes per bound asset are `success`, `evaluation_error`, `infrastructure_error`, or `skipped_already_run`, and each instance's `executions` metadata durably records every asset's last input hash, status, run count, and timestamp.
 
-When nothing executed for an instance, `triggered` is `false` and `reason` explains why: `not_ready` (required facts still missing), `no_bound_assets`, `auto_execute_disabled`, `execution_unavailable` (self-hosted execution backend unreachable), or `inputs_unchanged`. Note that assets skipped because their inputs match their last successful run appear as `skipped_already_run` entries in `executed` with `triggered` still `true`.
+When nothing executed for an instance, `triggered` is `false` and `reason` explains why: `not_ready` (required facts still missing), `no_bound_assets`, `auto_execute_disabled`, `execution_unavailable` (self-hosted execution backend unreachable), or `inputs_unchanged`. Assets skipped because their effective version and inputs match their last successful run appear as `skipped_already_run`; skipped work alone does not set `triggered` to `true`.
 
 **Record what each response tells you.** Since the response is the complete record of what happened to that chunk, your pipeline should capture rejections and execution errors as it goes. There is no server-side job ledger to consult later.
 
@@ -1116,26 +1138,43 @@ By default each result carries the instance's full resolved state, so response s
 POST /api/v1/contexts/batch/loan-application?include=status,executed
 ```
 
-`instance_id` is always present; everything else (`positions`, `is_new`, `status`, `have`, `need`, `state`, `expires_at`, `executions`, `executed`, `triggered`, `reason`) is opt-in when `include` is set. Top-level counts and rejections are unaffected.
+`instance_id` is always present; everything else (`positions`, `is_new`, `status`, `have`, `need`, `state`, `expires_at`, `executions`, `executed`, `triggered`, `reason`) is opt-in when `include` is set. Accumulated `executions` metadata always requires an explicit include; raw decision results require `execution_results`. Top-level counts and rejections are unaffected.
 
-## Retries Are Always Safe
+## Retry Semantics
 
-Retrying a chunk after a timeout, a crash, or just to be sure always converges:
+Retrying a chunk after a timeout or crash makes persisted Context state
+converge:
 
 - **Merges are idempotent.** Re-sending the same facts changes nothing.
-- **Executions are deduplicated by input hash.** An asset re-runs only when its inputs differ from its last *successful* run. A retry after success skips execution (`skipped_already_run`); a retry after a crash or failure runs the work that never completed.
+- **Executions are deduplicated by effective version and input hash.** A pinned target remains pinned. A latest target uses the current published version on the next submission; a new effective version can execute even when its inputs are unchanged. Publication alone does not replay stored instances. An unchanged retry after success skips execution (`skipped_already_run`); known failed work can be retried.
 
-This means a failed or interrupted load can simply be re-run from the start.
+A failed request can have committed earlier chunks. When known, error responses contain `committed_count` and `committed_instance_ids`; do not infer rollback from an HTTP error. A lost response or interrupted write can have an unknown outcome. Ordered work remains fenced when a write cannot be reconciled; repeated blind retries do not clear that fence. Private operators should follow the Context ordering recovery runbook before resuming those identities.
+
+Successful submission responses can also contain `execution_degraded`, execution errors, or `cascade_rejections`. Inspect these even when using a narrow `include` projection. Correct the underlying failure and resubmit the same source facts to revisit dependent work. A failed foreign-key move retains its former targets until that dependent work succeeds. Physical deletion removes that source record: after a reported delete-cascade failure, retry the reported dependent identities directly; an identical delete cannot reconstruct the removed foreign key.
+
+The persistence and decision-result state therefore converge when a failed or
+interrupted load is re-run. External side effects performed by rules or flows
+are **at least once**, not exactly once: if execution completed but its success
+record was not durably written before interruption, a retry can perform that
+side effect again. Use idempotency keys in downstream integrations when this
+matters.
 
 ## Execution Semantics
 
-Bound rules and flows follow the same triggering model as interactive submissions: an asset executes when all of its inputs are present and those inputs changed. Rules execute in dependency order (writers before readers) with outputs written back to the context between rounds; flows run afterward and write back through their own Context Operations steps. All execution flows through the platform's bulk-solve and flow machinery, so decision logging, tracing, and worker autoscaling behave exactly as direct API calls.
+Bound rules and flows follow the same triggering model as interactive submissions: an asset executes when its required inputs are present and its effective version or inputs changed. Outputs are written back between rounds. After a flow writes Context state, newly ready assets are reconsidered against fresh stored data. Repeated states and active ancestor flows are bounded to prevent infinite execution; incomplete work is reported explicitly. Rule writebacks cannot change the instance's identity fact.
+
+Context decisions use the existing rule and flow execution machinery. Dependent state operations share their parent ordering ownership. A hot instance therefore has serial state transitions even when other decision work runs in parallel; adding workers does not make one state transition chain arbitrarily fast. Measure independent-instance throughput separately from hot-instance latency.
+
+On private deployments, batches with triggered work distribute complete instance operations across Kafka workers. Independent records within a worker chunk retain bulk database writes; repeated identities retain their input order. Staging-only batches use the direct bulk database path. Batches that change related dependent contexts retain one coordinator to coalesce their cascade. Inputs too large for the configured Kafka item transport execute locally under the same ordering ownership. Context instance state is read from Postgres and is no longer copied into Redis; Redis holds coordination data proportional to outstanding work.
 
 Manual execution mode (`auto_execute_decisions: false`) is honored: ordinary batches merge data without starting new work. If a manual solve previously returned `202 pending`, a later batch that supplies its missing facts can settle that registered rule or flow.
 
 ## Working with Relationships
 
-Computed facts that aggregate related contexts (`$relations`) are supported in bulk mode. Relation lookups add per-chunk query cost, so prefer smaller chunks for relation-heavy schemas.
+Computed facts that aggregate related contexts are supported in bulk mode using
+either `$transactions` or `$relations.transactions` (replace `transactions`
+with the relationship name). Relation lookups add per-chunk query cost, so
+prefer smaller chunks for relation-heavy schemas.
 
 ### Dependent Contexts Re-Evaluate Automatically
 
@@ -1158,6 +1197,8 @@ When a batch changes records that other contexts depend on through relationships
 ```
 
 Dependency chains deeper than one level still call for an explicit follow-up batch of identity-only payloads (`[{ "customer_id": "C-1" }, ...]`) per additional level. Input-hash triggering makes that follow-up cheap: only instances whose aggregates actually changed re-execute.
+
+Large dependent sets are paged. Successful pages record progress on the source instance, so retrying unchanged source data after an interruption resumes incomplete work. Changing the source facts starts a fresh pass; completed progress is removed.
 
 ## Getting Started with Contexts
 /contexts/getting-started
@@ -1230,7 +1271,7 @@ Enter a customer ID like `c_001` to fetch the instance and see all base facts (n
 Submit facts to a context instance via POST:
 
 ```bash
-curl -X POST "https://rulebricks.com/api/v1/contexts/customer/c_001" \
+curl -X POST "https://rulebricks.com/api/v1/contexts/customer/c_001?include=execution_results,state,status,have,need,triggered" \
   -H "x-api-key: YOUR_API_KEY" \
   -d '{ "tier": "gold", "income": 200000 }'
 ```
@@ -1339,6 +1380,12 @@ Each fact has a type (string, number, boolean, date, list, or object) and can be
 - **Output only:** Can only be written by rules, not submitted externally
 - **Track history:** Stores previous values for temporal queries
 
+Every write is checked against the declared fact type. Facts with **Values
+only** enabled must also match a live value in their configured vocabulary
+collection. `on_schema_mismatch` controls only undeclared facts: `ignore` drops
+them, `reject` rejects that item, and `store` keeps them. It does not disable
+type, output-only, or vocabulary validation for declared facts.
+
 ## The Identity Fact
 
 One fact must be the **identity fact**, the unique identifier for each context instance. For a loan application context, this might be `application_id`. For transaction processing, `transaction_id`.
@@ -1373,10 +1420,28 @@ ifelse(
 // Aggregate from the configured "transactions" relationship
 sum($transactions, 'total')
 
-// Available functions are listed directly in app UI
+// The equivalent namespaced relationship form is also supported
+sum($relations.transactions, 'total')
 ```
 
 They update whenever their dependencies change. No manual recalculation needed.
+
+Expressions use synchronous JavaScript syntax in an isolated, allowlisted
+sandbox. Available helpers are `sum`, `avg`, `min`, `max`, `count`, `first`,
+`last`, `stddev`, `within`, `since`, `coalesce`, `ifelse`, `round`, `ceil`,
+`floor`, `abs`, `now`, `daysAgo`, `hoursAgo`, `historySum`, `historyAvg`,
+`historyLast`, and `historyTrend`. Network APIs, process globals, randomness,
+timers, constructors, and asynchronous results are not available. An expression
+that fails or exceeds its execution limit resolves to that derived fact's
+configured default.
+
+Use **Test Expression** to preview a derived fact against a live instance. The
+preview uses your unsaved schema, evaluates dependent derived facts in order,
+and loads the instance's recorded history and live related data. It does not
+save your schema, update the instance, or execute bound rules or flows. Errors
+show the configured runtime default; missing related data is shown as pending,
+including for facts that depend on another pending derived fact. A successfully
+loaded, empty collection is available data, so its sum and count are zero.
 
 ## Relationships
 
@@ -1419,7 +1484,7 @@ For example, on a Customer context, I might use:
 total_spend: sum($transactions, 'total')
 
 // Number of completed transactions
-transaction_count: count($transactions, 'status == "complete"')
+transaction_count: count($transactions.filter((item) => item.status === 'complete'))
 
 // Most recent transaction date
 last_transaction_date: max($transactions, 'created_at')
@@ -1475,6 +1540,13 @@ When `need` is empty, `status` becomes `complete`. Rule and flow readiness is as
 
 Enable **Track history** on facts whose prior values matter. Contexts append a history entry only when a tracked value changes and retain up to the context's configured `history_limit` entries per fact.
 
+Removing a tracked fact or disabling its history tracking removes its retained history on that instance's next update. Reducing `history_limit` trims existing history on the next update as well. History is stored separately from the instance's 64 MiB state-and-execution-metadata allowance.
+
+Tracking is not retroactive: values written before **Track history** was enabled
+do not appear later. History is ordered newest first with a deterministic
+tie-breaker, including when several changes to the same identity arrive in one
+batch.
+
 Read history with:
 
 ```bash
@@ -1496,7 +1568,21 @@ The response groups entries by fact, newest first:
 }
 ```
 
-Derived expressions can access tracked values through `$history`, such as `last($history.credit_limit).value`.
+The history endpoint defaults to 50 entries per fact. `limit` must be an integer from 1 to 10,000; invalid values return HTTP 400. A requested `field` must have history tracking enabled.
+
+Derived expressions can read the raw entries through `$history` or use the
+history helpers:
+
+```javascript
+historySum('credit_limit')       // finite numeric values; 0 when empty
+historyAvg('credit_limit')       // finite numeric values; null when empty
+historyLast('credit_limit')      // newest value, or null
+historyLast('credit_limit', 3)   // up to three newest values
+historyTrend('credit_limit')     // 1 increasing, -1 decreasing, 0 flat/insufficient
+```
+
+Fact paths are string arguments, so nested facts use
+`historySum('account.credit_limit')`.
 
 ## Live Contexts
 /contexts/key-concepts/live-contexts
@@ -1519,11 +1605,11 @@ POST /api/v1/contexts/loan-application/APP-12345
 { "annual_income": 85000 }
 ```
 
-It persists as you submit more facts over time. Each submission merges into the existing state: new fields are added, existing fields are updated, missing fields are left alone.
+It persists as you submit more facts over time. Each submission merges into the existing state: new fields are added, existing fields are updated, missing fields are left alone. Declared defaults are applied only when an identity is first created (or recreated after expiration), not on every update.
 
 When all schema-required facts are present, the status changes from `pending` to `complete`. This status describes the instance as a whole; an individual bound rule can execute earlier as soon as that rule's own inputs are present.
 
-Eventually, live contexts expire based on their TTL (time-to-live) setting. Expired contexts are no longer accessible; POST requests to that identity create a fresh instance.
+Eventually, live contexts expire based on their TTL (time-to-live) setting. Expired contexts are no longer accessible; a later POST to that identity creates a fresh lifecycle, clearing the prior state, history, and execution metadata before applying defaults and the new payload.
 
 ## The Have/Need Pattern
 
@@ -1556,7 +1642,7 @@ Get the current state of any live context:
 GET /api/v1/contexts/loan-application/APP-12345
 ```
 
-The response reports base facts under `state` and expression-computed facts under a separate `derived` object, alongside the have/need arrays, per-asset execution metadata, timestamps, and expiration time. (POST responses combine base and derived facts in `state`.) Add `?include_relations=*` (or a comma-separated list of relationship names) to embed related live instances in the response.
+The response reports base facts under `state` and expression-computed facts under a separate `derived` object, alongside the have/need arrays, per-asset execution metadata, timestamps, and expiration time. (POST responses combine base and derived facts in `state`.) Add `?include_relations=*` (or a comma-separated list of relationship names) to embed related live instances in the response. `has_many` results include every live match in deterministic identity order rather than an arbitrary first page.
 
 Instances can also be deleted explicitly. `DELETE` to the same path removes the instance and cancels any pending evaluations registered for it.
 
@@ -1598,7 +1684,7 @@ Writes: risk_tier = "low"
 Writes: rate = 4.5, max_amount = 500000
 ```
 
-The response tells you what ran:
+The response tells you what ran. This example requests `?include=execution_results,state,status,cascaded` to include raw results:
 
 ```json
 {
@@ -2976,7 +3062,13 @@ We offer two conflict resolution schemes, that help address what happens if you'
 - **Rules** export with all conditions, results, schema, referenced dynamic values, settings, test cases, and publication histories.
 - **Flows** export the complete flow definition plus all embedded rules.
 
-We do not obfuscate our schemas in exported files and encourage users to review how their assets are stored. RBM files are stored as large amounts of JSON, but they are structured in a way your team may be able to build custom tools directly against them!
+We do not obfuscate our schemas in exported files and encourage users to review how their assets are stored. RBM files are stored as JSON, structured in a way your team may be able to build custom tools directly against!
+
+## File Format & Compression
+
+To keep large exports small, `.rbm` files downloaded from the dashboard are compressed. Importing accepts compressed and uncompressed files interchangeably, whether uploaded through the dashboard or sent to the import API, so tools that construct RBM manifests programmatically can keep producing ordinary JSON.
+
+The export API returns an uncompressed manifest by default; pass `compress: true` to receive the compact form. To inspect a compressed export, one line recovers the readable manifest using the compress-json package: `decompress(JSON.parse(fileContents))`.
 
 ## Publishing Rules
 /managing-rules/publishing-rules
@@ -3093,6 +3185,11 @@ customer_id = "CUST-12345"
 amount > 10000 AND risk_score < 0.2
 tier:gold OR tier:platinum
 ```
+
+> **Collect Matches:** Logs retain the response shape used by each execution.
+> Use `response.results.*.status` to match any collected item, or
+> `response.results.0.status` to target the first item. An unprefixed expression
+> such as `status=approved` spans ordinary responses and all collected items.
 
 ### Operators
 
@@ -4734,15 +4831,14 @@ The memory limit is sized for the large-payload envelope below: a couple of conc
 | `rulebricks.hps.limits.bodyLimitBytes`                 | `134217728` | `HTTP_BODY_LIMIT_BYTES`          | Max HTTP request body on execution endpoints (128 MiB). HTTP 413 above it.                                                                    |
 | `rulebricks.hps.limits.rpcTimeoutMs`                   | `300000`    | `RPC_TIMEOUT_MS`                 | Whole-request execution deadline (produce + worker processing + gather). Traefik `graceTimeOut` and the pod termination grace sit above it.   |
 | `rulebricks.hps.limits.requestTimeoutMs`               | `300000`    | `HTTP_REQUEST_TIMEOUT_MS`        | Deadline for receiving one request's entire body (a 128 MiB upload on a ~4 Mbps link takes ~270s).                                            |
-| `rulebricks.hps.limits.itemMaxBytes`                   | `6291456`   | `ITEM_MAX_BYTES`                 | Serialized cap per single payload inside a bulk array (6 MiB). Must stay below the topics' `max.message.bytes` minus envelope headroom.       |
-| `rulebricks.hps.limits.contextBatchBodyLimitBytes`     | `134217728` | `CONTEXT_BATCH_BODY_LIMIT_BYTES` | NDJSON body cap for `contexts/batch` (128 MiB).                                                                                               |
-| `rulebricks.hps.limits.contextBatchMaxItems`           | `100000`    | `CONTEXT_BATCH_MAX_ITEMS`        | Records per context batch request.                                                                                                            |
+| `rulebricks.hps.limits.itemMaxBytes`                   | `20971520`  | `ITEM_MAX_BYTES`                 | Serialized cap per single payload inside a bulk array (20 MiB), with envelope headroom under the 32 MiB execution-topic cap.                  |
 | `rulebricks.hps.limits.largeBodyThresholdBytes`        | `8388608`   | `LARGE_BODY_THRESHOLD_BYTES`     | Bodies above this (8 MiB) count against the large-request admission gate.                                                                     |
 | `rulebricks.hps.limits.largeBodyMaxConcurrent`         | `2`         | `LARGE_BODY_MAX_CONCURRENT`      | Concurrent large bodies admitted per HPS replica; excess is shed with HTTP 429 + `Retry-After` instead of queueing in memory.                 |
 | `rulebricks.hps.limits.chunkMaxChunks`                 | `128`       | `CHUNK_MAX_CHUNKS`               | Chunk-planner fan-out ceiling; match the `solution` topic's partition count so one large request can spread across the whole worker fleet.    |
-| `rulebricks.hps.limits.chunkHardMaxBytes`              | `2097152`   | `CHUNK_HARD_MAX_BYTES`           | Hard per-chunk input cap (2 MiB), leaving 4x response-amplification headroom under the 8 MiB Kafka message cap.                               |
-| `rulebricks.hps.limits.responseFetchMaxBytes`          | `16777216`  | `RESPONSE_MAX_BYTES_PER_PARTITION` | Gather-side consumer fetch ceiling per partition; keep at ~2x the Kafka message cap.                                                        |
-| `rulebricks.hps.limits.workerFetchMaxBytes`            | `16777216`  | `WORKER_MAX_BYTES_PER_PARTITION` | Worker request-consumer fetch ceiling per partition; same 2x rule.                                                                            |
+| `rulebricks.hps.limits.chunkHardMaxBytes`              | `2097152`   | `CHUNK_HARD_MAX_BYTES`           | Hard per-chunk input cap (2 MiB), leaving 16x response-amplification headroom under the 32 MiB execution-topic cap.                           |
+| `rulebricks.hps.limits.responseFetchMaxBytes`          | `67108864`  | `RESPONSE_MAX_BYTES_PER_PARTITION` | Gather-side consumer fetch ceiling per partition; 2x the 32 MiB execution-topic cap.                                                       |
+| `rulebricks.hps.limits.workerFetchMaxBytes`            | `67108864`  | `WORKER_MAX_BYTES_PER_PARTITION` | Worker request-consumer fetch ceiling per partition; same 2x rule.                                                                            |
+| `rulebricks.hps.limits.logRetryBufferMaxBytes`         | `134217728` | `LOG_RETRY_BUFFER_MAX_BYTES`     | HPS/worker decision-log retry buffer (128 MiB), enough for a full 64 MiB log record plus one bounded retry.                                  |
 | `rulebricks.hps.limits.shutdownDrainMs`                | `315000`    | `KAFKA_SHUTDOWN_DRAIN_MS`        | On SIGTERM, keep the response consumer alive until in-flight RPCs resolve; must cover `rpcTimeoutMs`.                                         |
 | `rulebricks.hps.limits.terminationGracePeriodSeconds`  | `330`       | (pod spec)                       | Pod termination grace; sits just above `shutdownDrainMs`.                                                                                     |
 | `rulebricks.hps.limits.nodeHeapMb`                     | `3584`      | `NODE_OPTIONS`                   | Node.js old-space heap (MB) for the HPS server, ~85% of the memory limit. Unset to use the image default (1024).                              |
@@ -4762,8 +4858,6 @@ Performance and safety knobs, set via `rulebricks.hps.extraEnv` (the API/gateway
 | Variable                         | Default | Set on          | Description                                                                                                                                                                                                 |
 | :------------------------------- | :------ | :-------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `RB_FN_CONTEXT_REUSE`            | `1`     | gateway+workers | Reuse one hardened V8 sandbox context per execution unit instead of creating a fresh one per derived field per record (and per function-column cell). Large speedup for context ingest with derived fields and for vocabulary-heavy rule/flow evaluation. Set `0` to disable. |
-| `CONTEXT_CASCADE_MAX_INSTANCES`  | `2000`  | gateway         | Max dependent (parent) instances re-evaluated per relationship when a context batch cascades into related contexts. Bounds worst-case ingest tail latency; excess is reported with `truncated: true`.       |
-| `CONTEXT_CASCADE_BUDGET_MS`      | `45000` | gateway         | Wall-clock budget for the whole cascade phase of one batch request. Once spent, remaining relationships are reported as deferred (`reason: cascade_budget_exceeded`) instead of running unbounded.           |
 | `BULK_MAX_ITEMS`                 | `0`     | gateway+workers | Optional hard cap on array length for `bulk-solve`, `flows`, and `parallel-solve`. `0` (default) disables the cap entirely on self-hosted; these endpoints accept arbitrarily large batches bounded only by the request body size.                       |
 
 Request body limits: `bulk-solve`, `flows`, and `contexts/batch` accept up to `HTTP_BODY_LIMIT_BYTES` (128 MiB chart default via `rulebricks.hps.limits.bodyLimitBytes`; the HPS binary defaults to 6 MiB without it). Rule and flow imports (`/api/v1/admin/rules/import`, `/api/v1/admin/flows/import`) and manifest import accept up to 10 MB. If you front the deployment with the nginx ingress controller, the chart raises its `proxy-body-size` to `128m` and its read/send timeouts to 330s so large batches are not rejected or cut off at the edge (the default Traefik ingress imposes no body cap, and the chart raises its timeouts directly).
@@ -4857,12 +4951,12 @@ A Kafka Prometheus exporter is also deployed by default (`rulebricks.kafkaExport
 
 ### Kafka Topics
 
-The chart manages application topics explicitly rather than relying on broker auto-creation. For the in-cluster broker, `kafka.topics` renders Strimzi `KafkaTopic` resources that the Topic Operator reconciles. When you externalize Kafka with a token-auth bridge, the same topic list can feed the external topic provisioning hook.
+The chart manages application topics explicitly rather than relying on broker auto-creation. For the in-cluster broker, `kafka.topics` renders Strimzi `KafkaTopic` resources that the Topic Operator reconciles. When you externalize Kafka with a token-auth bridge, the same topic list feeds a hook that creates missing topics and reconciles their `max.message.bytes` on upgrades.
 
 | Parameter                              | Type    | Default      | Description                                                                 |
 | :------------------------------------- | :------ | :----------- | :-------------------------------------------------------------------------- |
 | `kafka.topics`                         | list    | three topics | Per-topic name, partitions, replication, and config                         |
-| `kafka.provisioning.enabled`           | boolean | `true`       | Enable the external-Kafka topic creation hook when `kafka.enabled: false`   |
+| `kafka.provisioning.enabled`           | boolean | `true`       | Enable the external-Kafka topic management hook when `kafka.enabled: false` |
 | `kafka.provisioning.replicationFactor` | integer | `3`          | Replication factor used by that external provisioning hook                  |
 
 The defaults define `solution`, `solution-response`, and `logs` topics with per-topic retention and size limits. Each entry looks like:
@@ -4876,11 +4970,11 @@ kafka:
       config:
         retention.ms: '300000'
         retention.bytes: '134217728'
-        max.message.bytes: '8388608'
+        max.message.bytes: '33554432'
     # ... see the chart's values.yaml for the full default topic list
 ```
 
-The RPC topics (`solution`, `solution-response`) default to an 8 MiB `max.message.bytes`, matching the broker's `message.max.bytes`, so worker responses keep 4x amplification headroom over the 2 MiB request chunks. The `logs` topic stays at 2 MB. If you lower these, lower `rulebricks.hps.limits` (chunk sizes, item cap) to match.
+The RPC topics (`solution`, `solution-response`) use a 32 MiB `max.message.bytes`, leaving envelope headroom around the 20 MiB item cap and 16x response-amplification headroom over ordinary 2 MiB request chunks. The `logs` topic uses 64 MiB because a full-fidelity single-item decision log contains both request and response inside another JSON envelope. The broker therefore uses `message.max.bytes=67108864`, with 128 MiB replica fetch ceilings; Vector's librdkafka source is sized to consume the same 64 MiB records. Keep the complete HPS, topic, broker, replication, and Vector envelope aligned when overriding any value.
 
 <Callout type="warning">
   Topic names must carry the configured `kafkaTopicPrefix`. If you change the
@@ -5416,13 +5510,19 @@ Ask your Kafka team to create (names take your configured topic prefix):
 | `solution-response` | Must equal `rulebricks.hps.workers.solutionPartitions`                  | Same as `solution`                      | Same as `solution`                                                 |
 | `logs`              | 8-24 depending on volume                                                | 2-3 in production (long-lived data)     | Size to your Vector outage tolerance, e.g. `retention.ms=86400000` |
 
-Set `max.message.bytes` to `8388608` (8 MiB) on `solution` and `solution-response`, matching the chart's in-cluster defaults. Request chunks are planner-capped at 2 MiB of input, so the headroom exists for **responses**: a worker's result rides as a single Kafka message and may legitimately grow to several times its chunk's input when rules expand payloads. A result that exceeds the cap fails the request with an explicit HTTP 413 rather than a timeout. The `logs` topic only needs `2097152` (2 MB) - decision-log records are sliced far below it.
+Set `max.message.bytes` to `33554432` (32 MiB) on `solution` and `solution-response`. Request chunks are normally planner-capped at 2 MiB of input, while a legal 20 MiB single item occupies its own chunk. A worker result rides as one Kafka message and may grow when rules expand payloads; a result above the cap fails with an explicit HTTP 413 rather than a timeout.
 
-Managed-service caveats for the 8 MiB profile:
+Set the `logs` topic to `max.message.bytes=67108864` (64 MiB). A full-fidelity single-item decision log stores both request and response as JSON strings inside a second JSON envelope, so a 40 MiB nominal pair needs additional encoding headroom. The broker must use `message.max.bytes >= 67108864`, `replica.fetch.max.bytes >= 134217728`, and, where exposed, `replica.fetch.response.max.bytes >= 134217728`. The chart's bridge hook reconciles topic caps but cannot change these broker settings.
 
-- **AWS MSK Serverless** allows exactly 8 MiB (`max.message.bytes` maxes out at `8388608`), but its per-topic *default* is ~1 MiB - set the cap explicitly when creating the topics.
-- **Azure Event Hubs** Standard and Premium cap events at 1 MB, which cannot carry the default large-payload profile; either lower the HPS payload envelope (`rulebricks.hps.limits` in the Helm values) to keep chunks and responses under 1 MB, or use a self-serve Dedicated cluster (20 MB events).
-- **Confluent Cloud / Aiven / Redpanda** support 8 MiB per-topic caps on standard tiers.
+Managed-service caveats for this profile:
+
+- **Provisioned/self-managed Kafka** works when its broker and topic limits are configured before installation. For provisioned MSK, attach a custom cluster configuration with the broker settings above.
+- **AWS MSK Serverless** tops out at 8 MiB and cannot carry this profile.
+- **Azure Event Hubs** tiers top out below 64 MiB and cannot carry full-fidelity decision logs for 20 MiB payloads.
+- **Confluent Cloud** tiers currently top out below 64 MiB and cannot carry this profile.
+- **GCP Managed Kafka** defaults to 10 MiB. Raise the broker/topic settings out of band and verify that the selected service tier permits 64 MiB records.
+
+For a provider with a lower hard limit, override the complete HPS/Kafka/Vector size envelope rather than changing one cap in isolation.
 
 Partition count on `solution` is the worker fleet's concurrency ceiling, not a worker quota; the 2x headroom recommendation and the full sizing model are explained in [Performance & Scaling](/private-deployment/performance#the-sizing-model).
 
@@ -5453,7 +5553,7 @@ If you raise a topic's partition count later, HPS Kafka clients observe the chan
 
 ### ZooKeeper vs KRaft
 
-HPS does not care how your Kafka cluster manages metadata. It never connects to ZooKeeper directly; it only speaks the Kafka wire protocol to brokers via a bootstrap address. Both ZooKeeper-backed clusters and KRaft-mode clusters work identically. Managed services like AWS MSK (in either mode), Confluent Cloud, Aiven, and Redpanda are all compatible.
+HPS does not care how your Kafka cluster manages metadata. It never connects to ZooKeeper directly; it only speaks the Kafka wire protocol to brokers via a bootstrap address. ZooKeeper-backed and KRaft-mode clusters work identically, but the selected service tier must also support the chart's message-size envelope.
 
 The bundled Kafka deployment is managed by Strimzi and runs in KRaft mode. That is an internal broker implementation detail and has no bearing on external cluster compatibility.
 
@@ -5474,19 +5574,20 @@ The HPS Kafka client is pre-tuned for a low-latency request/response workload. T
 - **`maxWaitTimeInMs: 50`** makes the broker return fetched messages quickly for low-latency response delivery.
 - Workers process up to 4 partitions concurrently per pod. Throughput scales by adding worker replicas, not by raising concurrency.
 
-No tuning is needed on the external Kafka side beyond ensuring the three topics exist with correct partition counts and reasonable ISR settings (e.g., `min.insync.replicas=1` for single-broker, `2` for multi-broker production).
+External Kafka must be tuned for the 64 MiB broker/log cap, 32 MiB execution topics, and 128 MiB replica fetches described above. Also ensure the three topics have the correct partition counts and reasonable ISR settings (for example, `min.insync.replicas=1` for a single broker or `2` for multi-broker production).
 
 ### Request Size Limits
 
 Admission is byte-first; item counts are not limited by default. The Helm chart ships a **large-batch profile** sized for 100MB-class bulk requests; every bound below is an env var on HPS (chart value in `rulebricks.hps.limits`), and the Kafka message caps, ingress timeouts, and HPS memory are sized in lockstep with them. Useful when setting client expectations:
 
 - **Total request body:** 128 MiB chart default (HTTP 413 above it; `HTTP_BODY_LIMIT_BYTES`). Without the chart env, the HPS binary defaults to 6 MiB. Clients get the best latency profile around 1 MB or less; larger bodies execute fine but cost proportionally more parse time and fan out into more chunks.
-- **Single payload:** 6 MiB serialized chart default (HTTP 413 naming the offending array index; `ITEM_MAX_BYTES`, which must stay below the topics' `max.message.bytes` minus envelope headroom).
+- **Single payload:** 20 MiB serialized chart default (HTTP 413 naming the offending array index; `ITEM_MAX_BYTES`), with envelope headroom under the 32 MiB execution-topic cap.
 - **Item count:** unlimited by default. Operators can opt into a cap with `BULK_MAX_ITEMS` (HTTP 400 above it).
 - **Execution deadline:** the whole request shares one 300-second deadline regardless of size (`RPC_TIMEOUT_MS`; 60s without the chart env). Anything in front of HPS - ingress read timeouts, L4 idle timeouts - must sit above it; the chart configures Traefik accordingly, and the CLI raises Azure's 4-minute load-balancer idle timeout.
 - **Concurrent large bodies:** each HPS replica admits at most 2 requests larger than 8 MiB at once (`LARGE_BODY_MAX_CONCURRENT` / `LARGE_BODY_THRESHOLD_BYTES`); excess requests are shed immediately with HTTP 429 + `Retry-After` instead of queueing in memory. Clients sending large batches should honor 429 with a short backoff.
-- **Response amplification:** each chunk's response rides as a single Kafka message and must fit the topic's `max.message.bytes` (8 MiB chart default). Request chunks carry at most 2 MiB of input, so rules can expand outputs roughly 4x before a result is undeliverable - at which point the request fails with an explicit HTTP 413 identifying the response as too large, rather than timing out.
-- **Context batch requests** (`POST /api/v1/contexts/batch/{slug}`, self-hosted bulk mode) accept 128 MiB bodies and cap records per request at 100,000 by chart default (HTTP 413 above it; `CONTEXT_BATCH_BODY_LIMIT_BYTES` / `CONTEXT_BATCH_MAX_ITEMS`). Database writes are chunked at 500 records per statement (`CONTEXT_BATCH_DB_CHUNK`). See [Bulk Ingestion](/contexts/bulk-ingestion) for the endpoint contract.
+- **Response amplification:** each chunk's response rides as a single Kafka message and must fit the 32 MiB execution-topic cap. Ordinary request chunks carry at most 2 MiB of input, leaving roughly 16x expansion headroom before the request fails with an explicit HTTP 413 rather than timing out.
+- **Decision logs:** a single-item log retains the full request and response in one record. The logs topic and broker allow 64 MiB records, Vector fetches up to 128 MiB at a time, and each HPS/worker producer keeps a 128 MiB retry buffer.
+- **Context batch requests** (`POST /api/v1/contexts/batch/{slug}`, self-hosted bulk mode) use the shared HTTP body limit, 128 MiB by chart default, with no separate Context record-count cap. Each stored instance permits 64 MiB of combined state and execution metadata. Database writes use chunks of 500 records by default (`CONTEXT_BATCH_DB_CHUNK`); larger requests continue across chunks. See [Bulk Ingestion](/contexts/bulk-ingestion) for execution, partial-failure, and capacity behavior.
 
 ### KEDA Autoscaling with External Kafka
 

@@ -45,6 +45,11 @@ amount > 10000 AND risk_score < 0.2
 tier:gold OR tier:platinum
 ```
 
+> **Collect Matches:** Logs retain the response shape used by each execution.
+> Use `response.results.*.status` to match any collected item, or
+> `response.results.0.status` to target the first item. An unprefixed expression
+> such as `status=approved` spans ordinary responses and all collected items.
+
 ### Operators
 
 | Operator          | Description                  | Example            |
