@@ -16,24 +16,19 @@ metaDescription: Track the latest updates, improvements, and bug fixes to the Ru
 
 ### Flows & Execution
 
-- **Version-Pinned Rule Nodes**: Flow steps can target a specific published rule version for reproducible execution instead of always following the latest version
-- **Centralized Flow Controls**: Configure schema validation, required outputs, default handling, continuous testing, nested-flow behavior, and whether execution failures return a result or an HTTP error
+- **Better Flow Settings**: Configure schema validation, required outputs, default handling, continuous testing, nested-flow behavior, and whether execution failures return a result or an HTTP error
 - **Clearer Bulk Results**: Bulk Rule and Flow calls now return one ordered result or error for every input instead of replacing failed items with `null`
 - **End-to-End Execution Tracing**: Execution IDs now follow Context-triggered runs and nested flows, while trace exports include subflow activity and iteration errors identify the exact flow, node, and item that failed
-- **More Reliable Flow Editing**: Serialized autosaves prevent pending edits from overtaking each other, code steps handle complex input keys more reliably, and flow search can find nodes by ID
 
 ### Contexts
 
 - **Concurrent, Transactional Updates**: Context operations serialize conflicting writes while allowing independent targets to run concurrently, keeping state, history, expiry, execution metadata, and bound decisions consistent
-- **Resumable Cascades**: Large dependent Context cascades now run in checkpointed pages, allowing interrupted work to continue without resubmitting already completed output facts
 - **Production-Accurate Derived Fact Testing**: Test unsaved derived expressions against real instance state, relationships, and history with the same server-side evaluator used during live execution
 - **More Precise Context APIs**: Select which fields and execution details Context endpoints return, receive clearer committed and failed record outcomes, and retain Flow execution IDs in compact responses
 - **Stronger Context Isolation**: Derived expressions run in a tighter time-bounded sandbox, and Context metadata now respects asset access groups before exposing relationships, bindings, or execution history
 
 ### Vocabulary, Objects & Workspace
 
-- **Resumable Vocabulary Imports**: Large imports now show progress and can resume after transient failures, while pasted rule data automatically resolves exact matches to existing Vocabulary references
-- **Safer Value Management**: Large value collections load on demand, and rename, type-change, and deletion safeguards preserve references used by active and historical rules and flows
 - **Richer Object APIs**: Create, update, preview deletion impact, and safely remove Objects while protecting managed Vocabulary values and dependent rule schemas
 - **Predictable Manifest Imports**: Choose Override, Preserve, or Block conflict handling, preview whether an import can run, and see exactly which assets were created, updated, skipped, or rejected
 - **Better Organization and Deletion Safety**: Reusable labels and hierarchical folder pickers make large workspaces easier to navigate, while fresh dependency checks prevent deleting rules or flows that are still in use
